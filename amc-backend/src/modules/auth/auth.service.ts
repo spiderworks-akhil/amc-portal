@@ -5,7 +5,7 @@ import { InjectKysely } from "nestjs-kysely";
 import { Kysely, sql } from "kysely";
 import { randomUUID } from "crypto";
 import axios from "axios";
-import type { DB } from "../db/database.interface";
+import { DB } from "src/db/database.interface";
 
 @Injectable()
 export class AuthService {

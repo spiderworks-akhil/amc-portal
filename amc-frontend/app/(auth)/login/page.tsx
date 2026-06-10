@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Loading from "@/components/common/loader";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -21,7 +22,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
   const token = searchParams.get("token");
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
@@ -117,9 +118,9 @@ function LoginContent() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Megaphone className="h-7 w-7" />
           </div>
-          <CardTitle className="text-2xl">Nexus Portal</CardTitle>
+          <CardTitle className="text-2xl">AMC Portal</CardTitle>
           <CardDescription>
-            Sign in with your SpiderWorks account to manage your campaigns
+            Sign in with your SpiderWorks account to manage client assets
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -144,9 +145,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <Loading/>
       }
     >
       <LoginContent />

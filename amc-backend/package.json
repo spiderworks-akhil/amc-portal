@@ -18,12 +18,14 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migrate:create": "ts-node src/scripts/create-migration.ts",
     "migrate": "ts-node src/scripts/migrate.ts",
     "migrate:down": "ts-node src/scripts/migrate.ts down",
     "seed": "ts-node src/scripts/seed.ts",
     "db:setup": "npm run migrate && npm run seed"
   },
   "dependencies": {
+    "@nestjs/axios": "^4.0.1",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -40,6 +42,7 @@
     "helmet": "^8.2.0",
     "kysely": "^0.29.2",
     "nestjs-kysely": "^3.1.2",
+    "nestjs-pino": "^4.6.1",
     "nodemailer": "^8.0.10",
     "pg": "^8.21.0",
     "ping": "^1.0.0",
