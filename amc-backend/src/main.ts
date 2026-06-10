@@ -1,13 +1,13 @@
 import { NestFactory } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
-import { ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import compression from "compression";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix("api");
@@ -28,6 +28,8 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useLogger(new Logger());
 
   const port = config.get("PORT", 5000);
   await app.listen(port);
