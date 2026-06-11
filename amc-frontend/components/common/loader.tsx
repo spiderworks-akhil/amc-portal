@@ -7,7 +7,6 @@ export default function Loading() {
         <MobiusLoopIcon className="h-10 w-10 animate-pulse text-primary" />
         <p className="text-sm text-muted-foreground">Loading...</p>
       </div>
-      showvds
     </div>
   );
 }

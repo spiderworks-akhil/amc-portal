@@ -38,6 +38,7 @@ export class AuthController {
     return result;
   }
 
+  @Public()
   @Post("refresh")
   @Throttle({ default: { ttl: 60000, limit: 20 } })
   @HttpCode(HttpStatus.OK)

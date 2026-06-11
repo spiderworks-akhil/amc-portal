@@ -57,6 +57,7 @@ export interface AssetTypes {
   created_at: Generated<Timestamp>;
   description: string | null;
   id: Generated<string>;
+  is_active: Generated<boolean>;
   name: string;
 }
 

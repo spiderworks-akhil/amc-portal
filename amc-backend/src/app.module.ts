@@ -8,7 +8,9 @@ import { AppService } from "./app.service";
 import { DatabaseModule } from "./db/database.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClientModule } from './modules/client/client.module';
+import { AssetModule } from './modules/asset/asset.module';
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -60,6 +62,8 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
     DatabaseModule,
     AuthModule,
     ClientModule,
+    AssetModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [

@@ -85,7 +85,7 @@ export const authOptions: AuthOptions = {
     },
   },
   pages: {
-    signIn: "/auth/login",
-    error: "/auth/login", // Show errors on the login page
+    signIn: "/login",
+    error: "/login",
   },
 };

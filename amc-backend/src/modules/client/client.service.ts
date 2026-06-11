@@ -36,7 +36,10 @@ export class ClientService {
     const { page = 1, limit = 50, search, sort_by = ClientSortBy.NAME, sort_order = SortOrder.ASC } = dto;
     const offset = (page - 1) * limit;
 
-    let query = this.db.selectFrom('clients').where('deleted_at', 'is', null);
+    let query = this.db
+      .selectFrom('clients')
+      .where('deleted_at', 'is', null)
+      .where('is_active', '=', true);
 
     if (search) {
       const pattern = `%${search}%`;
@@ -57,6 +60,8 @@ export class ClientService {
         .select([
           'clients.id',
           'clients.name',
+          'clients.company',
+          'clients.email',
           'clients.is_active',
         ])
         .orderBy(sort_by, sort_order)
@@ -65,8 +70,56 @@ export class ClientService {
         .execute(),
     ]);
 
+    let enriched = data;
+
+    if (data.length > 0) {
+      const clientIds = data.map((c) => c.id);
+      const [managers, assetCounts] = await Promise.all([
+        this.db
+          .selectFrom('client_account_managers')
+          .innerJoin('users', 'users.id', 'client_account_managers.manager_id')
+          .select([
+            'client_account_managers.client_id',
+            'users.name',
+          ])
+          .where('client_account_managers.client_id', 'in', clientIds)
+          .where('client_account_managers.deleted_at', 'is', null)
+          .execute(),
+        this.db
+          .selectFrom('assets')
+          .select([
+            'assets.client_id',
+            this.db.fn.countAll<number>().as('asset_count'),
+          ])
+          .where('assets.client_id', 'in', clientIds)
+          .where('assets.deleted_at', 'is', null)
+          .groupBy('assets.client_id')
+          .execute(),
+      ]);
+
+      const managerMap = new Map<string, { count: number; names: string[] }>();
+      for (const m of managers) {
+        let entry = managerMap.get(m.client_id);
+        if (!entry) {
+          entry = { count: 0, names: [] };
+          managerMap.set(m.client_id, entry);
+        }
+        entry.count++;
+        if (entry.names.length < 3) entry.names.push(m.name);
+      }
+
+      const assetMap = new Map(assetCounts.map((row) => [row.client_id, Number(row.asset_count ?? 0)] as const));
+
+      enriched = data.map((c) => ({
+        ...c,
+        manager_count: managerMap.get(c.id)?.count ?? 0,
+        manager_names: managerMap.get(c.id)?.names ?? [],
+        asset_count: assetMap.get(c.id) ?? 0,
+      }));
+    }
+
     return {
-      data,
+      data: enriched,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -103,15 +156,15 @@ export class ClientService {
     return { ...client, accountManagers, contacts };
   }
 
-  // async createClient(dto: CreateClientDto) {
-  //   const client = await this.db
-  //     .insertInto('clients')
-  //     .values(dto)
-  //     .returningAll()
-  //     .executeTakeFirst();
+  async createClient(dto: CreateClientDto) {
+    const client = await this.db
+      .insertInto('clients')
+      .values(dto)
+      .returningAll()
+      .executeTakeFirst();
 
-  //   return client;
-  // }
+    return client;
+  }
 
   async updateClient(id: string, dto: UpdateClientDto) {
     await this.checkExists(id);
@@ -268,7 +321,7 @@ export class ClientService {
             imported++;
           }
         } catch (error) {
-          this.logger.error(`Failed to upsert client with external ID ${client?.id}`, error);
+          this.logger.error(`Failed to upsert client with external ID ${client?.id}`, error.data);
           skipped++;
         }
       }

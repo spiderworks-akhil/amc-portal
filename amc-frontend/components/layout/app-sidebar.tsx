@@ -61,7 +61,7 @@ export function AppSidebar() {
   const { data: session } = useSession()
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
+    <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -80,7 +80,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="bg-none">
         {navItems.map((group) => (
           <SidebarGroup key={group.group}>
             <SidebarGroupLabel>{group.group}</SidebarGroupLabel>
@@ -91,7 +91,7 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                        <Link href={item.href}>
+                        <Link href={item.href} className="bg-none">
                           <item.icon />
                           <span>{item.title}</span>
                         </Link>

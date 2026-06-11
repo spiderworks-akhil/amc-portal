@@ -80,10 +80,24 @@ export class AuthService {
 
   async refreshToken(currentToken: string) {
     let decoded: any;
+    let tokenExpired = false;
+
+    // First try normal verification
     try {
       decoded = this.jwtService.verify(currentToken);
     } catch {
-      throw new UnauthorizedException("Invalid or expired token");
+      // If expired, try with ignoreExpiration to check within grace period (30 min)
+      try {
+        decoded = this.jwtService.verify(currentToken, { ignoreExpiration: true });
+        tokenExpired = true;
+
+        // Reject tokens that expired more than 30 minutes ago
+        if (decoded.exp && Date.now() / 1000 - decoded.exp > 1800) {
+          throw new UnauthorizedException("Token expired too long ago, please log in again");
+        }
+      } catch {
+        throw new UnauthorizedException("Invalid or expired token");
+      }
     }
 
     if (decoded.jti) {

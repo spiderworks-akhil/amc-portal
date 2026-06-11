@@ -7,5 +7,7 @@ export interface AssetTypes {
 
   description: string | null;
 
+  is_active: boolean;
+
   created_at: Timestamp;
 }

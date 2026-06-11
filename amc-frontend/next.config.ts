@@ -18,6 +18,19 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  async headers() {
+    return [
+      {
+        // Prevent browser from caching HTML navigation responses;
+        // static assets (_next/static/*) are content-hashed and unaffected.
+        source: "/((?!_next/static|_next/image|favicon\\.ico).*)",
+        headers: [
+          { key: "Cache-Control", value: "no-store, must-revalidate" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

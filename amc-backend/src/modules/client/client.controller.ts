@@ -7,6 +7,7 @@ import type { Request } from 'express';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { ClientService } from './client.service';
 import {
+  CreateClientDto,
   ListClientsDto,
   UpdateClientDto,
   ManagerIdsDto,
@@ -17,6 +18,13 @@ import {
 @Controller('client')
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Client created successfully')
+  async create(@Body() dto: CreateClientDto) {
+    return this.clientService.createClient(dto);
+  }
 
   @Get('list')
   @HttpCode(HttpStatus.OK)
