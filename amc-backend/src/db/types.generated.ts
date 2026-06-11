@@ -75,21 +75,25 @@ export interface AuditLogs {
 export interface ClientAccountManagers {
   client_id: string;
   created_at: Generated<Timestamp>;
+  created_by: string | null;
   deleted_at: Timestamp | null;
   id: Generated<string>;
   manager_id: string;
   updated_at: Generated<Timestamp>;
+  updated_by: string | null;
 }
 
 export interface ClientContacts {
   client_id: string;
   created_at: Generated<Timestamp>;
+  created_by: string | null;
   designation: string | null;
   email: string | null;
   id: Generated<string>;
   is_primary: Generated<boolean>;
   name: string;
   phone: string | null;
+  updated_by: string | null;
 }
 
 export interface Clients {
@@ -99,6 +103,7 @@ export interface Clients {
   custom_fields: Json | null;
   deleted_at: Timestamp | null;
   email: string | null;
+  external_id: string | null;
   id: Generated<string>;
   is_active: Generated<boolean>;
   name: string;

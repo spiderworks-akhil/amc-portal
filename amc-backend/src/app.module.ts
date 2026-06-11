@@ -18,8 +18,39 @@ import { ClientModule } from './modules/client/client.module';
           options: {
             colorize: true,
             translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
-            ignore: "pid,hostname",
+            ignore: "pid,hostname,req.headers,res.headers",
           },
+        },
+        redact: {
+          paths: [
+            "req.headers.authorization",
+            "req.headers.cookie",
+            "req.headers['set-cookie']",
+            "req.remoteAddress",
+            "req.remotePort",
+          ],
+          censor: "[REDACTED]",
+        },
+        serializers: {
+          req: (req) => ({
+            method: req.method,
+            url: req.url,
+          }),
+          res: (res) => ({
+            statusCode: res.statusCode,
+          }),
+          err: (err) => ({
+            type: err.type,
+            message: err.message,
+            ...(process.env.NODE_ENV !== "production" && err.stack
+              ? { stack: err.stack.split("\n").slice(0, 4).join("\n") }
+              : {}),
+          }),
+        },
+        customLogLevel: (_req, res, err) => {
+          if (res.statusCode >= 500 || err) return "error";
+          if (res.statusCode >= 400) return "warn";
+          return "info";
         },
       },
     }),

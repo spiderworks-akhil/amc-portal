@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { Kysely, PostgresDialect } from "kysely";
-import { DB } from "../db/database.interface";
+import { DB } from "../db/types.generated";
 
 async function main() {
   const db = new Kysely<DB>({

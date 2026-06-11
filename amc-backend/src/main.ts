@@ -1,6 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
-import { Logger, ValidationPipe } from "@nestjs/common";
+import { ValidationPipe } from "@nestjs/common";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import compression from "compression";
@@ -28,8 +28,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-
-  app.useLogger(new Logger());
 
   const port = config.get("PORT", 5000);
   await app.listen(port);

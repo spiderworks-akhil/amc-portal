@@ -3,6 +3,8 @@ import { UUID, Timestamp, Json } from "./common.types";
 export interface Clients {
   id: UUID;
 
+  external_id: string | null;
+
   name: string;
 
   company: string | null;

@@ -1,12 +1,12 @@
-import { Timestamp, UUID } from "./common.types";
+import { Timestamp, UUID } from './common.types';
 
 export interface ClientAccountManagers {
-  id:  UUID;
+  id: UUID;
   client_id: string;
   manager_id: string;
   deleted_at: Timestamp | null;
- 
-   created_at: Timestamp;
- 
-   updated_at: Timestamp;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  created_by: string | null;
+  updated_by: string | null;
 }

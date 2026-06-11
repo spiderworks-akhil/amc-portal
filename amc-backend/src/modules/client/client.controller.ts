@@ -1,6 +1,16 @@
-import { Controller, Post, Req, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  HttpCode,
+  HttpStatus,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { ClientService } from './client.service';
+import { ListClientsDto } from './dto';
 
 @Controller('client')
 export class ClientController {
@@ -16,6 +26,12 @@ export class ClientController {
     return this.clientService.importClientsFromApi(token);
   }
 
+  @Get('list')
+  @HttpCode(HttpStatus.OK)
+  async list(@Query() dto: ListClientsDto) {
+    return this.clientService.listClients(dto);
+  }
+  
   private extractToken(req: Request): string | undefined {
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {

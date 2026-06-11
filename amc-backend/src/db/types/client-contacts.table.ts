@@ -16,4 +16,7 @@ export interface ClientContacts {
   is_primary: boolean;
 
   created_at: Timestamp;
+  updated_at: Timestamp;
+  created_by: string | null;
+  updated_by: string | null;
 }
