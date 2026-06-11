@@ -15,11 +15,7 @@ export interface Clients {
 
   is_active: boolean;
 
-  tags: string[];
-
   custom_fields: Json | null;
-
-  account_manager_id: string | null;
 
   notes: string | null;
 
