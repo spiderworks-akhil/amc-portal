@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
@@ -7,6 +8,7 @@ import { AppService } from "./app.service";
 import { DatabaseModule } from "./db/database.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClientModule } from './modules/client/client.module';
+import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 
 @Module({
   imports: [
@@ -60,6 +62,9 @@ import { ClientModule } from './modules/client/client.module';
     ClientModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+  ],
 })
 export class AppModule {}

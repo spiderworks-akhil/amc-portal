@@ -1,11 +1,20 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely } from 'kysely';
 import { firstValueFrom } from 'rxjs';
 import { DB } from 'src/db/types.generated';
-import { AddContactsDto, AddManagersDto, ListClientsDto, ClientSortBy, SortOrder } from './dto';
+import {
+  ManagerIdsDto,
+  ListClientsDto,
+  CreateClientDto,
+  UpdateClientDto,
+  CreateContactDto,
+  UpdateContactDto,
+  ClientSortBy,
+  SortOrder,
+} from './dto';
 
 @Injectable()
 export class ClientService {
@@ -17,11 +26,10 @@ export class ClientService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.EXTERNAL_CLIENTS_API_URL =
-      this.configService.get<string>(
-        'EXTERNAL_CLIENTS_API_URL',
-        'https://api.accounts.spiderworks.org/api/accounts',
-      );
+    this.EXTERNAL_CLIENTS_API_URL = this.configService.get<string>(
+      'EXTERNAL_CLIENTS_API_URL',
+      'https://api.accounts.spiderworks.org/api/accounts',
+    );
   }
 
   async listClients(dto: ListClientsDto) {
@@ -39,38 +47,172 @@ export class ClientService {
       ]));
     }
 
-    const countResult = await query
-      .select(this.db.fn.countAll<number>().as('total'))
-      .executeTakeFirst();
-    const total = Number(countResult?.total ?? 0);
-
-    const data = await query
-      .clearSelect()
-      .select(["id","name"])
-      .orderBy(sort_by, sort_order)
-      .limit(limit)
-      .offset(offset)
-      .execute();
+    const [{ total }, data] = await Promise.all([
+      query
+        .select(this.db.fn.countAll<number>().as('total'))
+        .executeTakeFirst()
+        .then((r) => ({ total: Number(r?.total ?? 0) })),
+      query
+        .clearSelect()
+        .select([
+          'clients.id',
+          'clients.name',
+          'clients.is_active',
+        ])
+        .orderBy(sort_by, sort_order)
+        .limit(limit)
+        .offset(offset)
+        .execute(),
+    ]);
 
     return {
       data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
-  /**
-   * Full reconciliation with external source-of-truth API.
-   * 1. Fetch ALL pages from external API
-   * 2. Upsert each client (matched by external_id)
-   * 3. Soft-delete local clients not present in external data
-   * Runs in a single transaction for atomicity.
-   */
+
+  async getClient(id: string) {
+    const client = await this.db
+      .selectFrom('clients')
+      .selectAll('clients')
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    if (!client) throw new NotFoundException(`Client ${id} not found`);
+
+    const [accountManagers, contacts] = await Promise.all([
+      this.db
+        .selectFrom('client_account_managers')
+        .innerJoin('users', 'users.id', 'client_account_managers.manager_id')
+        .select([
+          'users.id',
+          'users.name',
+          'users.email',
+        ])
+        .where('client_account_managers.client_id', '=', id)
+        .where('client_account_managers.deleted_at', 'is', null)
+        .execute(),
+      this.db
+        .selectFrom('client_contacts')
+        .selectAll('client_contacts')
+        .where('client_id', '=', id)
+        .execute(),
+    ]);
+
+    return { ...client, accountManagers, contacts };
+  }
+
+  // async createClient(dto: CreateClientDto) {
+  //   const client = await this.db
+  //     .insertInto('clients')
+  //     .values(dto)
+  //     .returningAll()
+  //     .executeTakeFirst();
+
+  //   return client;
+  // }
+
+  async updateClient(id: string, dto: UpdateClientDto) {
+    await this.checkExists(id);
+
+    const client = await this.db
+      .updateTable('clients')
+      .set({ ...dto, updated_at: new Date() })
+      .where('id', '=', id)
+      .returningAll()
+      .executeTakeFirst();
+
+    return client;
+  }
+
+  async deleteClient(id: string) {
+    await this.checkExists(id);
+
+    await this.db
+      .updateTable('clients')
+      .set({ deleted_at: new Date(), is_active: false })
+      .where('id', '=', id)
+      .execute();
+
+    return { message: 'Client deleted successfully' };
+  }
+
+  async addAccountManagers(clientId: string, dto: ManagerIdsDto) {
+    await this.checkExists(clientId);
+
+    const rows = dto.manager_ids.map((manager_id) => ({ client_id: clientId, manager_id }));
+
+    const result = await this.db
+      .insertInto('client_account_managers')
+      .values(rows)
+      .onConflict((oc) => oc.columns(['client_id', 'manager_id']).doNothing())
+      .execute();
+
+    return { inserted: Number(result[0]?.numInsertedOrUpdatedRows ?? 0) };
+  }
+
+  async removeAccountManagers(clientId: string, dto: ManagerIdsDto) {
+    await this.checkExists(clientId);
+
+    const result = await this.db
+      .deleteFrom('client_account_managers')
+      .where('client_id', '=', clientId)
+      .where('manager_id', 'in', dto.manager_ids)
+      .execute();
+
+    return { deleted: Number(result[0]?.numDeletedRows ?? 0) };
+  }
+
+  async addContact(clientId: string, dto: CreateContactDto) {
+    await this.checkExists(clientId);
+
+    const contact = await this.db
+      .insertInto('client_contacts')
+      .values({ ...dto, client_id: clientId })
+      .returningAll()
+      .executeTakeFirst();
+
+    return contact;
+  }
+
+  async updateContact(contactId: string, dto: UpdateContactDto) {
+    const contact = await this.db
+      .selectFrom('client_contacts')
+      .selectAll()
+      .where('id', '=', contactId)
+      .executeTakeFirst();
+
+    if (!contact) throw new NotFoundException(`Contact ${contactId} not found`);
+
+    const updated = await this.db
+      .updateTable('client_contacts')
+      .set(dto)
+      .where('id', '=', contactId)
+      .returningAll()
+      .executeTakeFirst();
+
+    return updated;
+  }
+
+  async deleteContact(contactId: string) {
+    const contact = await this.db
+      .selectFrom('client_contacts')
+      .select('id')
+      .where('id', '=', contactId)
+      .executeTakeFirst();
+
+    if (!contact) throw new NotFoundException(`Contact ${contactId} not found`);
+
+    await this.db
+      .deleteFrom('client_contacts')
+      .where('id', '=', contactId)
+      .execute();
+
+    return { message: 'Contact deleted successfully' };
+  }
+
   async importClientsFromApi(token: string) {
-    // Phase 1: Fetch all external clients (paginated)
     const allExternalClients = await this.fetchAllExternalClients(token);
 
     if (allExternalClients.length === 0) {
@@ -81,30 +223,23 @@ export class ClientService {
       };
     }
 
-    // Build the set of all external IDs from the source of truth
     const externalIds = new Set(allExternalClients.map((c) => String(c.id)));
 
-    // Phase 2: Reconcile in a single transaction
     const result = await this.db.transaction().execute(async (trx) => {
       let imported = 0;
       let updated = 0;
       let skipped = 0;
 
-      const now = new Date();
-
       for (const client of allExternalClients) {
         try {
           const externalId = String(client.id);
-          const createdAt = this.isValidDate(client.created_at)
-            ? new Date(client.created_at)
-            : now;
-          const updatedAt = this.isValidDate(client.updated_at)
-            ? new Date(client.updated_at)
-            : now;
+          const now = new Date();
+          const createdAt = this.isValidDate(client.created_at) ? new Date(client.created_at) : now;
+          const updatedAt = this.isValidDate(client.updated_at) ? new Date(client.updated_at) : now;
 
           const existing = await trx
             .selectFrom('clients')
-            .select(['id', 'external_id'])
+            .select(['id'])
             .where('external_id', '=', externalId)
             .executeTakeFirst();
 
@@ -133,23 +268,18 @@ export class ClientService {
             imported++;
           }
         } catch (error) {
-          this.logger.error(
-            `Failed to upsert client with external ID ${client?.id}`,
-            error,
-          );
+          this.logger.error(`Failed to upsert client with external ID ${client?.id}`, error);
           skipped++;
         }
       }
 
-      // Phase 3: Soft-delete local clients not in the external source of truth
-      const softDeleted = await this.reconcileDeletedClients(trx, externalIds, now);
+      const softDeleted = await this.reconcileDeletedClients(trx, externalIds, new Date());
 
       return { imported, updated, skipped, softDeleted };
     });
 
     this.logger.log(
-      `Client reconciliation complete. Imported: ${result.imported}, ` +
-      `Updated: ${result.updated}, Soft-deleted: ${result.softDeleted}, Skipped: ${result.skipped}`,
+      `Client reconciliation complete. Imported: ${result.imported}, Updated: ${result.updated}, Soft-deleted: ${result.softDeleted}, Skipped: ${result.skipped}`,
     );
 
     return {
@@ -164,9 +294,6 @@ export class ClientService {
     };
   }
 
-  /**
-   * Paginate through the external API and collect ALL client records.
-   */
   private async fetchAllExternalClients(token: string): Promise<any[]> {
     const allClients: any[] = [];
     let page = 1;
@@ -174,30 +301,19 @@ export class ClientService {
 
     while (hasNextPage) {
       const response = await firstValueFrom(
-        this.httpService.get(
-          `${this.EXTERNAL_CLIENTS_API_URL}?page=${page}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-            },
-          },
-        ),
+        this.httpService.get(`${this.EXTERNAL_CLIENTS_API_URL}?page=${page}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        }),
       );
 
-      const { data: clients, current_page, last_page } =
-        response.data?.data || {};
+      const { data: clients, current_page, last_page } = response.data?.data || {};
 
       if (!Array.isArray(clients)) {
-        this.logger.error(
-          `Invalid clients structure on page ${page}`,
-          response.data,
-        );
+        this.logger.error(`Invalid clients structure on page ${page}`, response.data);
         break;
       }
 
       allClients.push(...clients);
-
       hasNextPage = current_page < last_page;
       if (hasNextPage) page++;
     }
@@ -205,16 +321,11 @@ export class ClientService {
     return allClients;
   }
 
-  /**
-   * Soft-delete local clients whose external_id is NOT in the external source-of-truth set.
-   * Only touches clients with a non-null external_id and not already deleted.
-   */
   private async reconcileDeletedClients(
     trx: Kysely<DB>,
     externalIds: Set<string>,
     now: Date,
   ): Promise<number> {
-    // Get all active local clients that have an external_id
     const localExternalClients = await trx
       .selectFrom('clients')
       .select(['id', 'external_id'])
@@ -222,53 +333,32 @@ export class ClientService {
       .where('deleted_at', 'is', null)
       .execute();
 
-    const toSoftDelete = localExternalClients
-      .filter((c) => !externalIds.has(c.external_id!))
+    const toDelete = localExternalClients
+      .filter((c) => c.external_id && !externalIds.has(c.external_id))
       .map((c) => c.id);
 
-    if (toSoftDelete.length === 0) return 0;
+    if (toDelete.length === 0) return 0;
 
     await trx
       .updateTable('clients')
       .set({ deleted_at: now, is_active: false })
-      .where('id', 'in', toSoftDelete)
+      .where('id', 'in', toDelete)
       .execute();
 
-    this.logger.log(
-      `Soft-deleted ${toSoftDelete.length} local client(s) no longer in external source.`,
-    );
-
-    return toSoftDelete.length;
-  }
- 
-  async addAccountManagersToClients(dto: AddManagersDto) {
-    const { client_id, manager_ids } = dto;
-    await this.checkExists(client_id);
-
-    const rows = manager_ids.map((manager_id) => ({
-      client_id,
-      manager_id,
-    }));
-
-    return this.db
-      .insertInto('client_account_managers')
-      .values(rows)
-      .onConflict((oc) => oc.columns(['client_id', 'manager_id']).doNothing())
-      .execute();
+    this.logger.log(`Soft-deleted ${toDelete.length} client(s) no longer in external source.`);
+    return toDelete.length;
   }
 
-  async addContactsToClients(dto: AddContactsDto) {
-    const  {contacts} = dto
-
-  }
-
-  private async checkExists(clientId:string) {
-    const client = await this.db.selectFrom('clients')
-      .selectAll()
-      .where('id', '=', clientId)
+  private async checkExists(id: string) {
+    const client = await this.db
+      .selectFrom('clients')
+      .select('id')
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if(!client) throw new NotFoundException(`Client does not exist with this ${clientId}`)
-      return client  
+
+    if (!client) throw new NotFoundException(`Client ${id} not found`);
+    return client;
   }
 
   private isValidDate(value: any): boolean {

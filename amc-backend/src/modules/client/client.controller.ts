@@ -1,23 +1,33 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-  HttpCode,
-  HttpStatus,
-  UnauthorizedException,
+  Controller, Get, Post, Put, Delete,
+  Param, Query, Body, Req,
+  HttpCode, HttpStatus, UnauthorizedException, ParseUUIDPipe,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { ClientService } from './client.service';
-import { ListClientsDto } from './dto';
+import {
+  ListClientsDto,
+  UpdateClientDto,
+  ManagerIdsDto,
+  CreateContactDto,
+  UpdateContactDto,
+} from './dto';
 
 @Controller('client')
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 
+  @Get('list')
+  @HttpCode(HttpStatus.OK)
+  async list(@Query() dto: ListClientsDto) {
+    return this.clientService.listClients(dto);
+  }
+
+
   @Post('sync')
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Clients synced successfully')
   async syncClients(@Req() req: Request) {
     const token = this.extractToken(req);
     if (!token) {
@@ -26,12 +36,76 @@ export class ClientController {
     return this.clientService.importClientsFromApi(token);
   }
 
-  @Get('list')
+  @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async list(@Query() dto: ListClientsDto) {
-    return this.clientService.listClients(dto);
+  async get(@Param('id', ParseUUIDPipe) id: string) {
+    return this.clientService.getClient(id);
   }
-  
+
+  @Put(':id')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Client updated successfully')
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateClientDto,
+  ) {
+    return this.clientService.updateClient(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Client deleted successfully')
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.clientService.deleteClient(id);
+  }
+
+  @Post(':id/managers')
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Managers assigned successfully')
+  async addManagers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ManagerIdsDto,
+  ) {
+    return this.clientService.addAccountManagers(id, dto);
+  }
+
+  @Delete(':id/managers')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Managers removed successfully')
+  async removeManagers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ManagerIdsDto,
+  ) {
+    return this.clientService.removeAccountManagers(id, dto);
+  }
+
+  @Post(':id/contacts')
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Contact added successfully')
+  async addContacts(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateContactDto,
+  ) {
+    return this.clientService.addContact(id, dto);
+  }
+
+  @Put('contacts/:contactId')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Contact updated successfully')
+  async updateContact(
+    @Param('contactId', ParseUUIDPipe) contactId: string,
+    @Body() dto: UpdateContactDto,
+  ) {
+    return this.clientService.updateContact(contactId, dto);
+  }
+
+  @Delete('contacts/:contactId')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Contact deleted successfully')
+  async removeContact(@Param('contactId', ParseUUIDPipe) contactId: string) {
+    return this.clientService.deleteContact(contactId);
+  }
+
   private extractToken(req: Request): string | undefined {
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {

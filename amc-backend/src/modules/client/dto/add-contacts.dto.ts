@@ -35,9 +35,35 @@ export class ContactDto {
   @IsBoolean()
   @IsOptional()
   is_primary?: boolean;
+
   @IsUUID()
+  @IsOptional()
+  client_id?: string;
+}
+
+export class CreateContactDto {
+  @IsString()
   @IsNotEmpty()
-  client_id: string;
+  @MaxLength(255)
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  designation?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  phone?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  is_primary?: boolean;
 }
 
 export class AddContactsDto {
