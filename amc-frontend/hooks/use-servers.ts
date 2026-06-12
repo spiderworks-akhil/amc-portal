@@ -42,6 +42,25 @@ export function useCreateServer() {
   })
 }
 
+export interface DetectProviderResult {
+  detected: boolean
+  provider_id?: string
+  organization?: string
+  region?: string
+  city?: string
+  country?: string
+  message?: string
+}
+
+export function useDetectServerProvider() {
+  return useMutation({
+    mutationFn: async (ip: string) => {
+      const { data } = await apiClient.get<DetectProviderResult>("/server/detect-provider", { params: { ip } })
+      return data
+    },
+  })
+}
+
 export function useLinkAssetToServer() {
   const qc = useQueryClient()
   return useMutation({

@@ -58,6 +58,12 @@ export class DomainController {
     return this.domainService.triggerCheck(id);
   }
 
+  @Get('verify-fqdn')
+  @HttpCode(HttpStatus.OK)
+  async verifyFqdn(@Query('fqdn') fqdn: string) {
+    return this.domainService.lookupDomainDetails(fqdn);
+  }
+
   @Get(':id/snapshots')
   @HttpCode(HttpStatus.OK)
   async listSnapshots(@Param('id', ParseUUIDPipe) id: string) {

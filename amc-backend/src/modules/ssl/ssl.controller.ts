@@ -45,6 +45,14 @@ export class SslController {
     return this.sslService.getExpiringCerts(days ?? 30);
   }
 
+  @Get('lookup-details')
+  @HttpCode(HttpStatus.OK)
+  async lookupDetails(
+    @Query('hostname') hostname: string,
+  ) {
+    return this.sslService.lookupSslCertDetails(hostname);
+  }
+
   @Get('stats')
   @HttpCode(HttpStatus.OK)
   async getStats() {

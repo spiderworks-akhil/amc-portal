@@ -1,14 +1,19 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { format } from "date-fns"
+import { useDebounce } from "@/hooks/use-debounce"
+import { useDetectServerProvider } from "@/hooks/use-servers"
+import type { DetectProviderResult } from "@/hooks/use-servers"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Info, Loader2 } from "lucide-react"
+import { Check, Info, Loader2 } from "lucide-react"
+import DatePicker from "@/components/date-picker"
 import {
   Tooltip,
   TooltipContent,
@@ -71,7 +76,7 @@ export function CreateServerForm({
   isPending,
   providers,
 }: CreateServerFormProps) {
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<ServerFormValues>({
+  const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<ServerFormValues>({
     resolver: zodResolver(serverSchema),
     defaultValues: {
       provider_id: "",
@@ -87,10 +92,149 @@ export function CreateServerForm({
     },
   })
 
+  const detectProvider = useDetectServerProvider()
+  const [detectedOrg, setDetectedOrg] = useState<string | null>(null)
+  const [detectedRegion, setDetectedRegion] = useState<string | null>(null)
+  const [detectedCity, setDetectedCity] = useState<string | null>(null)
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null)
+  const [detectingProvider, setDetectingProvider] = useState(false)
+  const userModifiedProvider = useRef(false)
+  const userModifiedRegion = useRef(false)
+  const userModifiedLabel = useRef(false)
+
+  const watchedIpAddresses = watch("ip_addresses")
+  const watchedPanelUrl = watch("panel_url")
+  const debouncedIps = useDebounce(watchedIpAddresses ?? "", 800)
+  const debouncedPanelUrl = useDebounce(watchedPanelUrl ?? "", 800)
+
+  // Shared detection logic used by both IP and panel URL effects
+  const handleDetectionResult = useRef<(result: DetectProviderResult) => void>(() => {})
+  handleDetectionResult.current = (result: DetectProviderResult) => {
+    if (result.region) setDetectedRegion(result.region)
+    if (result.city) setDetectedCity(result.city)
+    if (result.country) setDetectedCountry(result.country)
+
+    if (result.detected && result.organization) {
+      setDetectedOrg(result.organization)
+      if (result.provider_id && !userModifiedProvider.current) {
+        setValue("provider_id", result.provider_id, { shouldValidate: true })
+      }
+      if (!userModifiedLabel.current) {
+        setValue("label", result.organization, { shouldValidate: true })
+      }
+    }
+
+    if (!userModifiedRegion.current) {
+      const regionValue = result.region || result.city || result.country
+      if (regionValue) {
+        setValue("region", regionValue, { shouldValidate: true })
+      }
+    }
+  }
+
+  // Detect provider from IP address
+  useEffect(() => {
+    if (!debouncedIps || debouncedIps.length < 7) {
+      setDetectedOrg(null)
+      setDetectedRegion(null)
+      setDetectedCity(null)
+      setDetectedCountry(null)
+      return
+    }
+
+    const firstIp = debouncedIps.split(",")[0].trim()
+    if (!firstIp) {
+      setDetectedOrg(null)
+      setDetectedRegion(null)
+      setDetectedCity(null)
+      setDetectedCountry(null)
+      return
+    }
+
+    let cancelled = false
+    setDetectingProvider(true)
+    setDetectedOrg(null)
+    setDetectedRegion(null)
+    setDetectedCity(null)
+    setDetectedCountry(null)
+
+    detectProvider.mutate(firstIp, {
+      onSuccess: (result: DetectProviderResult) => {
+        if (cancelled) return
+        handleDetectionResult.current(result)
+        setDetectingProvider(false)
+      },
+      onError: () => {
+        if (cancelled) return
+        setDetectingProvider(false)
+      },
+    })
+
+    return () => { cancelled = true }
+  }, [debouncedIps])
+
+  // Detect provider from panel URL hostname
+  useEffect(() => {
+    if (!debouncedPanelUrl || debouncedPanelUrl.length < 10) {
+      return
+    }
+
+    // Extract hostname from URL (e.g., "https://panel.digitalocean.com/" → "panel.digitalocean.com")
+    let hostname: string | null = null
+    try {
+      hostname = new URL(debouncedPanelUrl).hostname
+    } catch {
+      return // Invalid URL
+    }
+    if (!hostname || hostname.length < 4 || hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+      return // Skip raw IPs (already handled by IP field) and localhost
+    }
+
+    let cancelled = false
+    setDetectingProvider(true)
+    setDetectedOrg(null)
+    setDetectedRegion(null)
+    setDetectedCity(null)
+    setDetectedCountry(null)
+
+    // Derive a label from the hostname (e.g., "panel.digitalocean.com" → "DigitalOcean Panel")
+    const labelFromHostname = hostnameToLabel(hostname)
+
+    detectProvider.mutate(hostname, {
+      onSuccess: (result: DetectProviderResult) => {
+        if (cancelled) return
+        handleDetectionResult.current(result)
+        // Override label with hostname-derived label if user hasn't modified it
+        if (labelFromHostname && !userModifiedLabel.current) {
+          setValue("label", labelFromHostname, { shouldValidate: true })
+        }
+        setDetectingProvider(false)
+      },
+      onError: () => {
+        if (cancelled) return
+        setDetectingProvider(false)
+      },
+    })
+
+    return () => { cancelled = true }
+  }, [debouncedPanelUrl])
+
   // Reset form whenever drawer opens
   useEffect(() => {
-    if (open) reset()
+    if (open) {
+      reset()
+      setDetectedOrg(null)
+      setDetectedRegion(null)
+      setDetectedCity(null)
+      setDetectedCountry(null)
+      setDetectingProvider(false)
+      userModifiedProvider.current = false
+      userModifiedRegion.current = false
+      userModifiedLabel.current = false
+    }
   }, [open, reset])
+
+  const watchedRenewalDate = watch("renewal_date")
 
   const onFormSubmit = (data: ServerFormValues) => {
     const ips = data.ip_addresses
@@ -133,7 +277,14 @@ export function CreateServerForm({
               name="provider_id"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    userModifiedProvider.current = true
+                    setDetectedOrg(null)
+                    field.onChange(value)
+                  }}
+                >
                   <SelectTrigger id="server-provider" size="sm">
                     <SelectValue placeholder="Select a provider..." />
                   </SelectTrigger>
@@ -153,7 +304,14 @@ export function CreateServerForm({
             <Label htmlFor="server-label">
               Label <span className="text-destructive">*</span>
             </Label>
-            <Input id="server-label" {...register("label")} placeholder="e.g., Production Web Server" autoFocus />
+            <Input
+              id="server-label"
+              {...register("label", {
+                onChange: () => { userModifiedLabel.current = true },
+              })}
+              placeholder="e.g., Production Web Server"
+              autoFocus
+            />
             {errors.label?.message && <p className="text-xs text-destructive">{errors.label.message}</p>}
           </div>
 
@@ -181,12 +339,36 @@ export function CreateServerForm({
             <p className="text-xs text-muted-foreground">
               Separate multiple IPs with commas. IPv4 and IPv6 are both supported.
             </p>
+            {detectingProvider && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="size-3 animate-spin" />
+                Detecting provider from IP...
+              </div>
+            )}
+            {!detectingProvider && detectedOrg && (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-500">
+                <Check className="size-3.5" />
+                Detected: {detectedOrg}
+              </div>
+            )}
           </div>
 
           {/* Region */}
           <div className="space-y-2">
             <Label htmlFor="server-region">Region</Label>
-            <Input id="server-region" {...register("region")} placeholder="e.g., us-east-1, EU West" />
+            <Input
+              id="server-region"
+              {...register("region", {
+                onChange: () => { userModifiedRegion.current = true },
+              })}
+              placeholder="e.g., us-east-1, EU West"
+            />
+            {!detectingProvider && (detectedRegion || detectedCity || detectedCountry) && (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-500">
+                <Check className="size-3.5" />
+                Detected: {[detectedCity, detectedRegion, detectedCountry].filter(Boolean).join(", ")}
+              </div>
+            )}
           </div>
 
           {/* OS */}
@@ -231,8 +413,14 @@ export function CreateServerForm({
 
           {/* Renewal Date */}
           <div className="space-y-2">
-            <Label htmlFor="server-renewal">Renewal Date</Label>
-            <Input id="server-renewal" type="date" {...register("renewal_date")} />
+            <Label>Renewal Date</Label>
+            <DatePicker
+              value={watchedRenewalDate ? new Date(watchedRenewalDate) : null}
+              onChange={(date) =>
+                setValue("renewal_date", format(date, "yyyy-MM-dd"), { shouldValidate: true })
+              }
+              placeholder="Renewal date"
+            />
           </div>
 
           {/* Notes */}

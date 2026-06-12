@@ -52,6 +52,14 @@ export class ServerController {
     return this.serverService.getRenewalStats();
   }
 
+  @Get('detect-provider')
+  @HttpCode(HttpStatus.OK)
+  async detectProvider(
+    @Query('ip') ip: string,
+  ) {
+    return this.serverService.detectProviderByIp(ip);
+  }
+
   @Get('total-cost')
   @HttpCode(HttpStatus.OK)
   async getTotalMonthlyCost() {

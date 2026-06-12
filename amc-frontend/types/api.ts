@@ -305,6 +305,50 @@ export interface ServerListItem {
   provider_type: string
 }
 
+export interface DomainDetail extends DomainListItem {
+  sslCertificates: Array<{
+    id: string
+    domain_id: string
+    asset_id?: string | null
+    issuer?: string | null
+    common_name?: string | null
+    sans: string[]
+    valid_from?: string | null
+    valid_to?: string | null
+    type?: string | null
+    last_checked_at?: string | null
+    created_at: string
+    updated_at: string
+  }>
+  snapshots: Array<{
+    id: string
+    domain_id: string
+    registrar?: string | null
+    expiry_date?: string | null
+    nameservers: string[]
+    checked_at: string
+  }>
+}
+
+export interface DomainListItem {
+  id: string
+  asset_id: string
+  fqdn: string
+  registrar_id?: string | null
+  registered_date?: string | null
+  expiry_date?: string | null
+  auto_renew: boolean
+  nameservers: string[]
+  notes?: string | null
+  last_checked_at?: string | null
+  created_at: string
+  updated_at: string
+  asset_name: string
+  registrar_name?: string | null
+  ssl_count: number
+  days_to_expiry: number | null
+}
+
 export interface Provider {
   id: string
   name: string
@@ -324,6 +368,79 @@ export interface ServerDetail extends ServerListItem {
     status: string
     type_name: string
   }>
+}
+
+export interface SslDetail extends SslListItem {
+  domain_expiry_date?: string | null
+  snapshots: Array<{
+    id: string
+    ssl_id: string
+    issuer?: string | null
+    valid_from?: string | null
+    valid_to?: string | null
+    checked_at: string
+  }>
+}
+
+export interface SslListItem {
+  id: string
+  domain_id: string
+  asset_id?: string | null
+  issuer?: string | null
+  common_name?: string | null
+  sans: string[]
+  valid_from?: string | null
+  valid_to?: string | null
+  type?: string | null
+  last_checked_at?: string | null
+  created_at: string
+  updated_at: string
+  domain_fqdn: string
+  asset_name?: string | null
+  days_to_expiry: number | null
+}
+
+export interface CreateDomainPayload {
+  asset_id: string
+  fqdn: string
+  registrar_id?: string
+  registered_date?: string
+  expiry_date?: string
+  auto_renew?: boolean
+  nameservers?: string[]
+  notes?: string
+}
+
+export interface CreateSslPayload {
+  domain_id: string
+  asset_id?: string
+  issuer?: string
+  common_name?: string
+  sans?: string[]
+  valid_from?: string
+  valid_to?: string
+  type?: string
+}
+
+export interface UpdateDomainPayload {
+  fqdn?: string
+  registrar_id?: string
+  registered_date?: string
+  expiry_date?: string
+  auto_renew?: boolean
+  nameservers?: string[]
+  notes?: string
+}
+
+export interface UpdateSslPayload {
+  domain_id?: string
+  asset_id?: string
+  issuer?: string
+  common_name?: string
+  sans?: string[]
+  valid_from?: string
+  valid_to?: string
+  type?: string
 }
 
 export interface UpdateAssetPayload {

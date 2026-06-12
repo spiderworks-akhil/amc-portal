@@ -36,11 +36,13 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/throttler": "^6.5.0",
     "axios": "^1.17.0",
+    "bullmq": "^5.78.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "helmet": "^8.2.0",
+    "ioredis": "^5.11.1",
     "kysely": "^0.29.2",
     "kysely-codegen": "^0.20.0",
     "nestjs-kysely": "^3.1.2",
@@ -52,7 +54,8 @@
     "redis": "^6.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "tcp-port-used": "^1.0.3"
+    "tcp-port-used": "^1.0.3",
+    "whoiser": "^2.0.0-beta.10"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

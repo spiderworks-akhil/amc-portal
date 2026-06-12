@@ -1,8 +1,13 @@
+import { promises as dns } from 'dns';
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ProviderType } from '../../db/types/enums';
+import * as rdap from 'node-rdap';
+import * as whoiser from 'whoiser';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
@@ -23,6 +28,8 @@ export class DomainService {
   ) {}
 
   async create(dto: CreateDomainDto) {
+    await this.verifyDomainExists(dto.fqdn);
+
     const domain = await this.db
       .insertInto('domains')
       .values({
@@ -32,7 +39,7 @@ export class DomainService {
         registered_date: dto.registered_date ? new Date(dto.registered_date) : null,
         expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
         auto_renew: dto.auto_renew ?? false,
-        nameservers: (dto.nameservers ?? []) as any,
+        nameservers: JSON.stringify(dto.nameservers ?? []),
         notes: dto.notes ?? null,
       })
       .returningAll()
@@ -233,12 +240,15 @@ export class DomainService {
     const updateData: Record<string, unknown> = { updated_at: new Date() };
 
     if (dto.asset_id !== undefined) updateData.asset_id = dto.asset_id;
-    if (dto.fqdn !== undefined) updateData.fqdn = dto.fqdn;
+    if (dto.fqdn !== undefined) {
+      await this.verifyDomainExists(dto.fqdn);
+      updateData.fqdn = dto.fqdn;
+    }
     if (dto.registrar_id !== undefined) updateData.registrar_id = dto.registrar_id;
     if (dto.registered_date !== undefined) updateData.registered_date = new Date(dto.registered_date);
     if (dto.expiry_date !== undefined) updateData.expiry_date = new Date(dto.expiry_date);
     if (dto.auto_renew !== undefined) updateData.auto_renew = dto.auto_renew;
-    if (dto.nameservers !== undefined) updateData.nameservers = dto.nameservers as any;
+    if (dto.nameservers !== undefined) updateData.nameservers = JSON.stringify(dto.nameservers);
     if (dto.notes !== undefined) updateData.notes = dto.notes;
 
     const domain = await this.db
@@ -376,6 +386,274 @@ export class DomainService {
 
   // ── Helpers ──
 
+  /** Exposed for frontend DNS verification endpoint — validates domain exists */
+  async verifyFqdn(fqdn: string) {
+    await this.verifyDomainExists(fqdn);
+  }
+
+  /** Extract a date string (yyyy-MM-dd) from a variety of WHOIS date formats */
+  private normalizeWhoisDate(raw: string): string | undefined {
+    if (!raw) return undefined;
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
+    }
+    // Try parsing common WHOIS date formats like "14-sep-2028" or "2028-09-14T00:00:00Z"
+    const cleaned = raw.replace(/(\d{1,2})\-([a-z]{3})\-(\d{4})/i, (_, d, m, y) => {
+      const months: Record<string, string> = {
+        jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+        jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+      };
+      return `${y}-${months[m.toLowerCase()] || '01'}-${d.padStart(2, '0')}`;
+    });
+    if (cleaned !== raw) {
+      const d2 = new Date(cleaned);
+      if (!isNaN(d2.getTime())) return d2.toISOString().split('T')[0];
+    }
+    return undefined;
+  }
+
+  /** Attempt RDAP lookup using node-rdap */
+  private async lookupRdap(fqdn: string) {
+    const result = await rdap.domain(fqdn);
+
+    let registeredDate: string | undefined;
+    let expiryDate: string | undefined;
+    let registrar: string | undefined;
+
+    // Extract events (registration, expiration)
+    const events = (result as { events?: Array<{ eventAction: string; eventDate: string }> }).events;
+    if (events) {
+      for (const event of events) {
+        const dateStr = event.eventDate?.split('T')[0];
+        if (event.eventAction === 'registration' && dateStr) {
+          registeredDate = dateStr;
+        } else if (event.eventAction === 'expiration' && dateStr) {
+          expiryDate = dateStr;
+        }
+      }
+    }
+
+    // Extract registrar name from entities → vcard
+    const entities = (result as { entities?: Array<{ vcardArray?: [string, Array<[string, unknown, string, string]>] }> }).entities;
+    if (entities) {
+      for (const entity of entities) {
+        const vcard = entity.vcardArray?.[1];
+        if (!vcard) continue;
+        for (const field of vcard) {
+          if (field[0] === 'fn' && field[3]) {
+            registrar = field[3] as string;
+            break;
+          }
+        }
+        if (registrar) break;
+      }
+    }
+
+    // Extract nameservers
+    const nsEntries = (result as { nameservers?: Array<{ ldhName: string }> }).nameservers;
+    const nameservers = nsEntries
+      ? nsEntries.map((ns) => ns.ldhName).filter(Boolean)
+      : [];
+
+    return { registeredDate, expiryDate, registrar, nameservers };
+  }
+
+  /** Fallback WHOIS lookup using whoiser package */
+  private async lookupWhois(fqdn: string) {
+    const raw = await whoiser.whoisDomain(fqdn);
+    const first = await whoiser.firstResult(raw);
+
+    if (!first || typeof first !== 'object') {
+      return { registeredDate: undefined, expiryDate: undefined, registrar: undefined, nameservers: [] as string[] };
+    }
+
+    const record = first as Record<string, string | string[]>;
+
+    const registrar =
+      typeof record.Registrar === 'string' ? record.Registrar : undefined;
+
+    const registeredDate = this.normalizeWhoisDate(
+      typeof record['Created Date'] === 'string' ? record['Created Date'] : '',
+    );
+
+    const expiryDate = this.normalizeWhoisDate(
+      typeof record['Expiry Date'] === 'string' ? record['Expiry Date'] : '',
+    );
+
+    // Name Server can be a string with multiple values separated by spaces/newlines
+    let nameservers: string[] = [];
+    const ns = record['Name Server'];
+    if (Array.isArray(ns)) {
+      nameservers = ns.filter(Boolean);
+    } else if (typeof ns === 'string') {
+      nameservers = ns
+        .split(/[\s,]+/)
+        .map((s) => s.trim().toLowerCase())
+        .filter((s) => s.length > 0 && s.includes('.'));
+    }
+    this.logger.log("Registrar:", registrar)
+    return { registeredDate, expiryDate, registrar, nameservers };
+  }
+
+  /** Try to match a registrar name to a provider in the database */
+  private async matchRegistrarToProvider(
+    registrarName: string,
+  ): Promise<string | undefined> {
+    if (!registrarName) return undefined;
+
+    const normalized = registrarName.toLowerCase().trim();
+
+    // 1. Exact match
+    const exact = await this.db
+      .selectFrom('service_providers')
+      .select('id')
+      .where('type', '=', 'registrar')
+      .where(sql`LOWER(name)`, '=', normalized)
+      .executeTakeFirst();
+    if (exact) return exact.id;
+
+    // 2. Provider name is a substring of the registrar name (e.g. "MarkMonitor" in "MarkMonitor Inc.")
+    //    Uses ILIKE for case-insensitive matching
+    const allRegistrars = await this.db
+      .selectFrom('service_providers')
+      .select(['id', 'name'])
+      .where('type', '=', 'registrar')
+      .execute();
+
+    // Check if any provider name is contained within the RDAP registrar name
+    for (const p of allRegistrars) {
+      if (normalized.includes(p.name.toLowerCase())) {
+        return p.id;
+      }
+    }
+
+    // 3. RDAP registrar name is contained within a provider name
+    for (const p of allRegistrars) {
+      if (p.name.toLowerCase().includes(normalized)) {
+        return p.id;
+      }
+    }
+
+    // 4. Match by first word
+    const firstWord = normalized.split(/[\s,]+/)[0];
+    if (firstWord) {
+      for (const p of allRegistrars) {
+        if (p.name.toLowerCase().startsWith(firstWord)) {
+          return p.id;
+        }
+      }
+    }
+
+    // 5. No match found — auto-create a new provider record
+    this.logger.log(
+      `Auto-creating registrar provider from RDAP/WHOIS data: "${registrarName}"`,
+    );
+    const created = await this.db
+      .insertInto('service_providers')
+      .values({
+        name: registrarName.trim(),
+        type: ProviderType.REGISTRAR,
+        website: null,
+        notes: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+
+    return created.id;
+  }
+
+  /** Look up a domain via RDAP → WHOIS → DNS fallback chain */
+  async lookupDomainDetails(fqdn: string) {
+    await this.verifyDomainExists(fqdn);
+
+    let registeredDate: string | undefined;
+    let expiryDate: string | undefined;
+    let registrar: string | undefined;
+    let nameservers: string[] = [];
+
+    // 1. Try RDAP (node-rdap handles TLD-specific bootstrapping)
+    try {
+      const rdapResult = await this.lookupRdap(fqdn);
+      registeredDate = rdapResult.registeredDate;
+      expiryDate = rdapResult.expiryDate;
+      registrar = rdapResult.registrar;
+      nameservers = rdapResult.nameservers;
+
+      this.logger.log(
+        `RDAP lookup succeeded for ${fqdn}: registered=${registeredDate ?? '—'}, ` +
+        `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
+        `${nameservers.length} nameservers`,
+      );
+    } catch (rdapErr: unknown) {
+      this.logger.warn(
+        `RDAP lookup failed for ${fqdn}: ${rdapErr instanceof Error ? rdapErr.message : rdapErr}`,
+      );
+
+      // 2. Fallback: WHOIS via whoiser
+      try {
+        const whoisResult = await this.lookupWhois(fqdn);
+        registeredDate = whoisResult.registeredDate;
+        expiryDate = whoisResult.expiryDate;
+        registrar = whoisResult.registrar;
+        nameservers = whoisResult.nameservers;
+
+        this.logger.log(
+          `WHOIS fallback succeeded for ${fqdn}: registered=${registeredDate ?? '—'}, ` +
+          `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
+          `${nameservers.length} nameservers`,
+        );
+      } catch (whoisErr: unknown) {
+        this.logger.warn(
+          `WHOIS fallback also failed for ${fqdn}: ${whoisErr instanceof Error ? whoisErr.message : whoisErr}`,
+        );
+
+        // 3. Final fallback: DNS NS resolution
+        try {
+          nameservers = await dns.resolveNs(fqdn);
+          this.logger.log(`Fallback DNS NS resolution succeeded for ${fqdn}`);
+        } catch {
+          // NS records are optional
+        }
+      }
+    }
+
+    // Match the registrar name to a provider ID in our database
+    const registrarId = registrar
+      ? await this.matchRegistrarToProvider(registrar)
+      : undefined;
+
+    return {
+      valid: true,
+      fqdn,
+      nameservers,
+      registered_date: registeredDate,
+      expiry_date: expiryDate,
+      registrar,
+      registrar_id: registrarId,
+    };
+  }
+
+  private async verifyDomainExists(fqdn: string) {
+    try {
+      await dns.resolve(fqdn);
+      this.logger.log(`Verified domain ${fqdn}`);
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        (err as NodeJS.ErrnoException).code === 'ENOTFOUND'
+      ) {
+        throw new BadRequestException(
+          `Domain "${fqdn}" does not resolve — please verify it exists and try again.`,
+        );
+      }
+      // For other DNS errors (timeouts, network issues), log and allow through
+      this.logger.warn(
+        `DNS lookup warning for ${fqdn}: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
+
   private async createSnapshot(domainId: string) {
     const domainRow = await this.db
       .selectFrom('domains')
@@ -402,7 +680,7 @@ export class DomainService {
         domain_id: domainId,
         registrar: registrarName,
         expiry_date: domainRow.expiry_date,
-        nameservers: domainRow.nameservers,
+        nameservers: JSON.stringify(domainRow.nameservers),
       })
       .returningAll()
       .executeTakeFirst();

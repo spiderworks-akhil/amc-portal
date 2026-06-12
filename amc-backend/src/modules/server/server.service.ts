@@ -1,11 +1,15 @@
+import { promises as dns } from 'dns';
 import {
   Injectable,
   Logger,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
+import * as rdap from 'node-rdap';
 import { DB } from '../../db/types.generated';
+import { ProviderType } from '../../db/types/enums';
 import {
   CreateServerDto,
   UpdateServerDto,
@@ -371,6 +375,197 @@ export class ServerService {
       .executeTakeFirst();
 
     return { total_monthly_cost: Number(result?.total_cost ?? 0) };
+  }
+
+  // ── IP provider detection ──
+
+  /** Extract the organization name from IP RDAP response */
+  private extractOrgNameFromRdap(result: unknown): string | undefined {
+    const entities = (result as { entities?: Array<{ vcardArray?: [string, Array<[string, unknown, string, string]>] }> }).entities;
+    if (!entities) return undefined;
+
+    for (const entity of entities) {
+      const vcard = entity.vcardArray?.[1];
+      if (!vcard) continue;
+      for (const field of vcard) {
+        if (field[0] === 'fn' && field[3]) {
+          return field[3] as string;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /** Extract location info (region, city, country) from IP RDAP response */
+  private extractLocationFromRdap(result: unknown): {
+    region?: string;
+    city?: string;
+    country?: string;
+  } {
+    const entities = (result as { entities?: Array<{ vcardArray?: [string, Array<[string, unknown, string, string | string[]]>] }> }).entities;
+    if (!entities) return {};
+
+    for (const entity of entities) {
+      const vcard = entity.vcardArray?.[1];
+      if (!vcard) continue;
+      for (const field of vcard) {
+        // adr field: ["adr", params, "text", [pobox, ext, street, locality, region, code, country]]
+        if (field[0] === 'adr' && Array.isArray(field[3])) {
+          const adrParts = field[3] as string[];
+          const city = adrParts[3]?.trim() || undefined;
+          const region = adrParts[4]?.trim() || undefined;
+          const country = adrParts[6]?.trim() || undefined;
+          if (city || region || country) {
+            return { region, city, country };
+          }
+        }
+      }
+    }
+    return {};
+  }
+
+  /** Try to match an organization name to a provider in the database, auto-creating if not found */
+  private async matchOrgToProvider(orgName: string): Promise<string | undefined> {
+    if (!orgName) return undefined;
+
+    const normalized = orgName.toLowerCase().trim();
+
+    // 1. Exact match
+    const exact = await this.db
+      .selectFrom('service_providers')
+      .select('id')
+      .where('type', '=', 'hosting')
+      .where(sql`LOWER(name)`, '=', normalized)
+      .executeTakeFirst();
+    if (exact) return exact.id;
+
+    // Also try matching against providers without a type filter (e.g., 'registrar' + 'hosting' types)
+    const exactAnyType = await this.db
+      .selectFrom('service_providers')
+      .select('id')
+      .where(sql`LOWER(name)`, '=', normalized)
+      .executeTakeFirst();
+    if (exactAnyType) return exactAnyType.id;
+
+    // 2. Fetch all providers and fuzzy match
+    const allProviders = await this.db
+      .selectFrom('service_providers')
+      .select(['id', 'name'])
+      .execute();
+
+    // Check if any provider name is contained within the organization name
+    for (const p of allProviders) {
+      if (normalized.includes(p.name.toLowerCase())) {
+        return p.id;
+      }
+    }
+
+    // 3. Organization name is contained within a provider name
+    for (const p of allProviders) {
+      if (p.name.toLowerCase().includes(normalized)) {
+        return p.id;
+      }
+    }
+
+    // 4. Match by first word
+    const firstWord = normalized.split(/[\s,]+/)[0];
+    if (firstWord) {
+      for (const p of allProviders) {
+        if (p.name.toLowerCase().startsWith(firstWord)) {
+          return p.id;
+        }
+      }
+    }
+
+    // 5. No match found — auto-create a new provider record (type: hosting)
+    this.logger.log(
+      `Auto-creating hosting provider from IP RDAP data: "${orgName}"`,
+    );
+    const created = await this.db
+      .insertInto('service_providers')
+      .values({
+        name: orgName.trim(),
+        type: ProviderType.HOSTING,
+        website: null,
+        notes: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+
+    return created.id;
+  }
+
+  /** Resolve a hostname to an IPv4 address */
+  private async resolveHostname(hostname: string): Promise<string | null> {
+    try {
+      const addresses = await dns.resolve4(hostname);
+      return addresses[0] ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Detect provider from an IP address or hostname using RDAP lookup */
+  async detectProviderByIp(input: string) {
+    let targetIp = input;
+
+    // Check if input is already an IPv4 address
+    const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    const ipMatch = input.match(ipv4Regex);
+
+    if (ipMatch) {
+      // Validate each octet
+      for (let i = 1; i <= 4; i++) {
+        const octet = parseInt(ipMatch[i], 10);
+        if (octet < 0 || octet > 255) {
+          throw new BadRequestException(`Invalid IP address: "${input}"`);
+        }
+      }
+    } else {
+      // Not an IP — try resolving as a hostname
+      this.logger.log(`Resolving hostname: ${input}`);
+      const resolved = await this.resolveHostname(input);
+      if (!resolved) {
+        throw new BadRequestException(
+          `Could not resolve "${input}" — enter a valid IP address or hostname`,
+        );
+      }
+      targetIp = resolved;
+      this.logger.log(`Resolved ${input} → ${resolved}`);
+    }
+
+    this.logger.log(`Looking up provider for IP: ${targetIp}`);
+
+    try {
+      const result = await rdap.ip(targetIp);
+      const orgName = this.extractOrgNameFromRdap(result);
+      const location = this.extractLocationFromRdap(result);
+
+      if (!orgName) {
+        return {
+          detected: false,
+          message: 'No organization info found for this IP',
+          ...location,
+        };
+      }
+
+      const providerId = await this.matchOrgToProvider(orgName);
+
+      return {
+        detected: true,
+        provider_id: providerId,
+        organization: orgName,
+        ...location,
+      };
+    } catch (err: unknown) {
+      this.logger.warn(
+        `IP RDAP lookup failed for ${targetIp}: ${err instanceof Error ? err.message : err}`,
+      );
+      return {
+        detected: false,
+        message: 'Could not detect provider from this IP',
+      };
+    }
   }
 
   // ── Helpers ──

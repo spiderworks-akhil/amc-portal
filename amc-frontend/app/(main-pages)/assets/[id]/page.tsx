@@ -7,6 +7,8 @@ import { useProviders } from "@/hooks/use-providers"
 import { useCreateProvider } from "@/hooks/use-create-provider"
 import { useCreateServer, useLinkAssetToServer } from "@/hooks/use-servers"
 import { useCreateContract, useLinkAssetToContract } from "@/hooks/use-contracts"
+import { useCreateDomain, useUpdateDomain, useDeleteDomain } from "@/hooks/use-domains"
+import { useCreateSsl, useUpdateSsl, useDeleteSsl } from "@/hooks/use-ssl"
 
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,8 +18,13 @@ import { DetailSkeleton } from "@/components/clients/client-details/detail-skele
 import { AssetEditForm } from "@/components/assets/asset-details/asset-edit-form"
 import { CreateServerForm } from "@/components/assets/asset-details/create-server-form"
 import { CreateContractForm } from "@/components/assets/asset-details/create-contract-form"
+import { CreateDomainForm } from "@/components/assets/asset-details/create-domain-form"
+import { CreateSslForm } from "@/components/assets/asset-details/create-ssl-form"
+import { DomainEditForm } from "@/components/assets/asset-details/domain-edit-form"
+import { SslEditForm } from "@/components/assets/asset-details/ssl-edit-form"
 import { CreateProviderDialog } from "@/components/providers/create-provider-dialog"
 import { formatDate, formatCurrency } from "@/lib/format-utils"
+import type { AssetDetail } from "@/types/api"
 import {
   ArrowLeft,
   Globe,
@@ -39,6 +46,7 @@ import {
   ShieldCheck,
   Layers,
   Cpu,
+  Pencil,
 } from "lucide-react"
 
 const STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
@@ -76,12 +84,24 @@ export default function AssetDetailPage() {
   const linkAssetToServer = useLinkAssetToServer()
   const createContract = useCreateContract()
   const linkAssetToContract = useLinkAssetToContract()
+  const createDomain = useCreateDomain()
+  const updateDomain = useUpdateDomain()
+  const deleteDomain = useDeleteDomain()
+  const createSsl = useCreateSsl()
+  const updateSsl = useUpdateSsl()
+  const deleteSsl = useDeleteSsl()
   const createProvider = useCreateProvider()
 
   const [editOpen, setEditOpen] = useState(false)
   const [createServerOpen, setCreateServerOpen] = useState(false)
   const [createContractOpen, setCreateContractOpen] = useState(false)
+  const [createDomainOpen, setCreateDomainOpen] = useState(false)
+  const [createSslOpen, setCreateSslOpen] = useState(false)
   const [createProviderOpen, setCreateProviderOpen] = useState(false)
+  const [editDomainOpen, setEditDomainOpen] = useState(false)
+  const [editSslOpen, setEditSslOpen] = useState(false)
+  const [editingDomain, setEditingDomain] = useState<AssetDetail['domains'][number] | null>(null)
+  const [editingSsl, setEditingSsl] = useState<AssetDetail['ssl_certificates'][number] | null>(null)
 
   const handleUpdateAsset = useCallback(
     (data: { name: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; status?: string; monitoring_enabled?: boolean; notes?: string }) => {
@@ -146,6 +166,93 @@ export default function AssetDetailPage() {
     [id, createContract, linkAssetToContract]
   )
 
+  const handleUpdateDomain = useCallback(
+    (data: {
+      fqdn: string
+      registrar_id?: string
+      registered_date?: string
+      expiry_date?: string
+      auto_renew?: boolean
+      nameservers?: string[]
+      notes?: string
+    }) => {
+      if (!editingDomain) return
+      updateDomain.mutate(
+        { id: editingDomain.id, ...data },
+        { onSuccess: () => setEditDomainOpen(false) }
+      )
+    },
+    [editingDomain, updateDomain]
+  )
+
+  const handleDeleteDomain = useCallback(() => {
+    if (!editingDomain) return
+    deleteDomain.mutate(editingDomain.id, {
+      onSuccess: () => setEditDomainOpen(false),
+    })
+  }, [editingDomain, deleteDomain])
+
+  const handleUpdateSsl = useCallback(
+    (data: {
+      common_name?: string
+      issuer?: string
+      sans?: string[]
+      valid_from?: string
+      valid_to?: string
+      type?: string
+    }) => {
+      if (!editingSsl) return
+      updateSsl.mutate(
+        { id: editingSsl.id, ...data },
+        { onSuccess: () => setEditSslOpen(false) }
+      )
+    },
+    [editingSsl, updateSsl]
+  )
+
+  const handleDeleteSsl = useCallback(() => {
+    if (!editingSsl) return
+    deleteSsl.mutate(editingSsl.id, {
+      onSuccess: () => setEditSslOpen(false),
+    })
+  }, [editingSsl, deleteSsl])
+
+  const handleCreateDomain = useCallback(
+    (data: {
+      asset_id: string
+      fqdn: string
+      registrar_id?: string
+      registered_date?: string
+      expiry_date?: string
+      auto_renew?: boolean
+      nameservers?: string[]
+      notes?: string
+    }) => {
+      createDomain.mutate(data, {
+        onSuccess: () => setCreateDomainOpen(false),
+      })
+    },
+    [createDomain]
+  )
+
+  const handleCreateSsl = useCallback(
+    (data: {
+      domain_id: string
+      asset_id?: string
+      common_name?: string
+      issuer?: string
+      sans?: string[]
+      valid_from?: string
+      valid_to?: string
+      type?: string
+    }) => {
+      createSsl.mutate(data, {
+        onSuccess: () => setCreateSslOpen(false),
+      })
+    },
+    [createSsl]
+  )
+
   const handleCreateProvider = useCallback(
     (data: { name: string; type: string; website?: string; notes?: string }) => {
       createProvider.mutate(data, {
@@ -160,6 +267,15 @@ export default function AssetDetailPage() {
 
   const isCreatingServer = createServer.isPending || linkAssetToServer.isPending
   const isCreatingContract = createContract.isPending || linkAssetToContract.isPending
+  const isCreatingDomain = createDomain.isPending
+  const isCreatingSsl = createSsl.isPending
+  const isUpdatingDomain = updateDomain.isPending
+  const isDeletingDomain = deleteDomain.isPending
+  const isUpdatingSsl = updateSsl.isPending
+  const isDeletingSsl = deleteSsl.isPending
+
+  // Filter providers to get registrars for domain creation
+  const registrars = (providersData?.data ?? []).filter((p) => p.type === "registrar")
 
   if (isLoading) return <DetailSkeleton />
 
@@ -376,17 +492,23 @@ export default function AssetDetailPage() {
 
       {/* Domains Section */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe2 className="size-4" />
-            Linked Domains
-          </CardTitle>
-          <CardDescription>
-            {asset.domains.length === 0
-              ? "No domains linked to this asset"
-              : `${asset.domains.length} domain${asset.domains.length > 1 ? "s" : ""}`
-            }
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Globe2 className="size-4" />
+              Linked Domains
+            </CardTitle>
+            <CardDescription>
+              {asset.domains.length === 0
+                ? "No domains linked to this asset"
+                : `${asset.domains.length} domain${asset.domains.length > 1 ? "s" : ""}`
+              }
+            </CardDescription>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setCreateDomainOpen(true)}>
+            <Plus className="size-3.5 mr-1.5" />
+            Create Domain
+          </Button>
         </CardHeader>
         <CardContent>
           {asset.domains.length === 0 ? (
@@ -409,17 +531,25 @@ export default function AssetDetailPage() {
                 return (
                   <div
                     key={domain.id}
-                    className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group cursor-pointer"
-                    onClick={() => router.push("/domains")}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/domains") }}
+                    className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                      <div
+                        className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0 cursor-pointer"
+                        onClick={() => router.push("/domains")}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/domains") }}
+                      >
                         <Globe2 className="size-4 text-muted-foreground" />
                       </div>
-                      <div className="min-w-0 flex-1">
+                      <div
+                        className="min-w-0 flex-1 cursor-pointer"
+                        onClick={() => router.push("/domains")}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/domains") }}
+                      >
                         <p className="text-sm font-medium truncate">{domain.fqdn}</p>
                         {domain.registrar_name && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -427,6 +557,14 @@ export default function AssetDetailPage() {
                           </p>
                         )}
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setEditingDomain(domain); setEditDomainOpen(true) }}
+                        className="size-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 mt-0.5"
+                        aria-label="Edit domain"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
                     </div>
                     <div className="mt-3 space-y-1.5 text-xs text-muted-foreground border-t border-border/40 pt-3">
                       {expiryDate && (
@@ -456,17 +594,23 @@ export default function AssetDetailPage() {
 
       {/* SSL Certificates Section */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShieldCheck className="size-4" />
-            SSL Certificates
-          </CardTitle>
-          <CardDescription>
-            {asset.ssl_certificates.length === 0
-              ? "No SSL certificates linked to this asset"
-              : `${asset.ssl_certificates.length} certificate${asset.ssl_certificates.length > 1 ? "s" : ""}`
-            }
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="size-4" />
+              SSL Certificates
+            </CardTitle>
+            <CardDescription>
+              {asset.ssl_certificates.length === 0
+                ? "No SSL certificates linked to this asset"
+                : `${asset.ssl_certificates.length} certificate${asset.ssl_certificates.length > 1 ? "s" : ""}`
+              }
+            </CardDescription>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setCreateSslOpen(true)}>
+            <Plus className="size-3.5 mr-1.5" />
+            Create SSL
+          </Button>
         </CardHeader>
         <CardContent>
           {asset.ssl_certificates.length === 0 ? (
@@ -489,22 +633,38 @@ export default function AssetDetailPage() {
                 return (
                   <div
                     key={cert.id}
-                    className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group cursor-pointer"
-                    onClick={() => router.push("/ssl-certificates")}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/ssl-certificates") }}
+                    className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                      <div
+                        className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0 cursor-pointer"
+                        onClick={() => router.push("/ssl-certificates")}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/ssl-certificates") }}
+                      >
                         <ShieldCheck className="size-4 text-muted-foreground" />
                       </div>
-                      <div className="min-w-0 flex-1">
+                      <div
+                        className="min-w-0 flex-1 cursor-pointer"
+                        onClick={() => router.push("/ssl-certificates")}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/ssl-certificates") }}
+                      >
                         <p className="text-sm font-medium truncate">{cert.common_name || cert.domain_fqdn || "SSL Certificate"}</p>
                         {cert.issuer && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5">{cert.issuer}</p>
                         )}
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setEditingSsl(cert); setEditSslOpen(true) }}
+                        className="size-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 mt-0.5"
+                        aria-label="Edit SSL certificate"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
                     </div>
                     <div className="mt-3 space-y-1.5 text-xs text-muted-foreground border-t border-border/40 pt-3">
                       {validTo && (
@@ -747,6 +907,57 @@ export default function AssetDetailPage() {
         isPending={isCreatingContract}
         clientId={asset.client_id}
       />
+
+      {/* Create Domain Drawer */}
+      <CreateDomainForm
+        key={`create-domain-${createDomainOpen}`}
+        open={createDomainOpen}
+        onOpenChange={setCreateDomainOpen}
+        onSubmit={handleCreateDomain}
+        isPending={isCreatingDomain}
+        assetId={id}
+        registrars={registrars}
+      />
+
+      {/* Create SSL Drawer */}
+      <CreateSslForm
+        key={`create-ssl-${createSslOpen}`}
+        open={createSslOpen}
+        onOpenChange={setCreateSslOpen}
+        onSubmit={handleCreateSsl}
+        isPending={isCreatingSsl}
+        domains={asset.domains}
+        assetId={id}
+      />
+
+      {/* Edit Domain Drawer */}
+      {editingDomain && (
+        <DomainEditForm
+          key={`edit-domain-${editDomainOpen}`}
+          open={editDomainOpen}
+          onOpenChange={setEditDomainOpen}
+          onSubmit={handleUpdateDomain}
+          onDelete={handleDeleteDomain}
+          isPending={isUpdatingDomain}
+          isDeleting={isDeletingDomain}
+          domain={editingDomain}
+          registrars={registrars}
+        />
+      )}
+
+      {/* Edit SSL Drawer */}
+      {editingSsl && (
+        <SslEditForm
+          key={`edit-ssl-${editSslOpen}`}
+          open={editSslOpen}
+          onOpenChange={setEditSslOpen}
+          onSubmit={handleUpdateSsl}
+          onDelete={handleDeleteSsl}
+          isPending={isUpdatingSsl}
+          isDeleting={isDeletingSsl}
+          cert={editingSsl}
+        />
+      )}
 
       {/* Create Provider Dialog */}
       <CreateProviderDialog
