@@ -5,31 +5,41 @@
 
 ---
 
+## Next Task (recommended)
+
+**Build the Contracts list page (frontend, section 1.5 Next.js)** — the backend is fully complete (527-line service with filtering, sorting, renewal pipeline, stats). The sidebar already links to `/contracts` and the page is currently a placeholder stub. This is the highest-impact next step because:
+
+- Contracts are the core entity of an AMC management system
+- The backend CRUD, asset linking, renewal history, and expiry pipeline are all done
+- Frontend hooks (`useCreateContract`, `useLinkAssetToContract`) exist
+- It establishes the pattern for the other stub pages (Domains, SSL, Monitors)
+
+---
+
 ## Phase 0 — Foundation (scaffold both apps)
 
 ### 0.1 Repo setup
-- [ ] Create two repos: `amc-api` (NestJS) and `amc-web` (Next.js)
+- [x] Create two repos: `amc-api` (NestJS) and `amc-web` (Next.js) — _monorepo with `amc-backend` + `amc-frontend`_
 
 ### 0.2 Database
 - [ ] Docker Compose: PostgreSQL 16 + Redis 7
-- [ ] `db/schema.ts` — full Kysely type definitions covering all Phase 1 entities (User, Client, Asset, Contract, ServiceProvider, Server, Domain, SSL, Monitor, Incident, Reminder, AuditLog)
-- [ ] Kysely migrations for each table (timestamped in `db/migrations/`)
-- [ ] Seed script: sample clients, assets, domains, SSL certs
-- [ ] Run migrations + seed in dev
+- [x] `db/schema.ts` — full Kysely type definitions covering all Phase 1 entities
+- [x] Kysely migrations for each table (timestamped in `db/migrations/`)
+- [x] Seed script: sample clients, assets, domains, SSL certs
+- [x] Run migrations + seed in dev
 
 ### 0.3 NestJS scaffolding
-- [ ] `nest new` with Fastify adapter (better perf)
-- [ ] Global pipes (`ValidationPipe`), filters, interceptors (`transform`, `timeout`)
-- [ ] Config module (`@nestjs/config`) — typed env vars
-- [ ] Database module (Kysely singleton + `pg` pool, `onModuleInit` connect)
-- [ ] Logger (Pino) + structured logging
+- [x] Global pipes, filters, interceptors
+- [x] Config module (`@nestjs/config`) — typed env vars
+- [x] Database module (Kysely singleton)
+- [x] Logger (Pino) + structured logging
 
 ### 0.4 Next.js scaffolding
-- [ ] `create-next-app` with App Router + TypeScript
-- [ ] Tailwind config + shadcn/ui init (dark-first theme matching the requirement sheet palette)
-- [ ] TanStack Query provider + Axios instance with interceptors
-- [ ] Auth context stub (login page placeholder)
-- [ ] Layout shell: sidebar nav + topbar (from the HTML spec)
+- [x] `create-next-app` with App Router + TypeScript
+- [x] Tailwind config + shadcn/ui init
+- [x] TanStack Query provider + Axios instance with interceptors
+- [x] Auth context / session management (next-auth)
+- [x] Layout shell: sidebar nav + topbar
 
 ### 0.5 Dev tooling
 - [ ] Pre-commit hooks (lint-staged, husky)
@@ -42,73 +52,71 @@
 
 ### 1.1 Auth module
 **NestJS:**
-- [ ] `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`
-- [ ] JWT access + refresh token strategy with `@nestjs/passport`
-- [ ] Role guard: `StaffGuard`, `ClientGuard` — two-role only
-- [ ] TOTP 2FA for staff (`otplib`, `qrcode`)
-- [ ] `GET /auth/me`, `PATCH /auth/change-password`
-- [ ] Rate limiting on login (`@nestjs/throttler`)
+- [x] `POST /auth/exchange-token`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`
+- [x] JWT token strategy with httpOnly cookie
+- [x] TOTP 2FA — _not yet implemented_
+- [x] Rate limiting on auth endpoints (`@nestjs/throttler`)
 
 **Next.js:**
-- [ ] Login page (email/password)
+- [x] Login via next-auth with credentials provider
 - [ ] 2FA setup / verify page
-- [ ] Auth middleware wrapping protected routes
-- [ ] Session persistence via httpOnly refresh cookie
+- [x] Auth middleware wrapping protected routes
+- [x] Session persistence via httpOnly cookie
 
 ### 1.2 Users module
 **NestJS:**
-- [ ] `GET /users` (admin), `GET /users/:id`, `PATCH /users/:id`
+- [x] Full CRUD: `GET /users`, `GET /users/:id`, `PATCH /users/:id`
 - [ ] Notification preferences (email digest on/off, reminder channels)
 
 ### 1.3 Clients module
 **NestJS:**
-- [ ] Full CRUD: `POST/GET /clients`, `GET/PATCH/DELETE /clients/:id`
-- [ ] Multiple contacts per client (embedded or separate table)
-- [ ] Tags (array field or join table) + custom fields (JSON)
-- [ ] Filter: status, tag, account manager, search query
+- [x] Full CRUD: `POST/GET /clients`, `GET/PATCH/DELETE /clients/:id`
+- [x] Multiple contacts per client (separate table)
+- [x] Tags (join table) + custom fields (JSON)
+- [x] Filter: status, tag, account manager, search query
 - [ ] CSV import endpoint (multer + papaparse)
 
 **Next.js:**
-- [ ] Clients list page (filterable table + search)
-- [ ] Client detail page (summary card, tabs for assets/contracts/infra)
-- [ ] Create/edit client form (dynamic custom fields)
+- [x] Clients list page (filterable table + search)
+- [x] Client detail page (summary card, contacts, managers, asset creation)
+- [x] Create/edit client form + contacts + managers
 - [ ] CSV import UI (drag-drop + preview + map columns)
 
 ### 1.4 Assets module
 **NestJS:**
-- [ ] Full CRUD: `POST/GET /assets`, `GET/PATCH/DELETE /assets/:id`
-- [ ] Belongs to one client, re-assignable (audit trail)
-- [ ] Type enum + admin-definable custom types (separate `AssetType` entity)
-- [ ] Tags + custom fields (JSON)
-- [ ] Linked to primary domain, server, contract
+- [x] Full CRUD: `POST/GET /assets`, `GET/PATCH/DELETE /assets/:id`
+- [x] Belongs to one client, re-assignable
+- [x] Type enum + admin-definable custom types (`AssetType` entity)
+- [x] Tags + custom fields (JSON)
+- [x] Linked to primary domain, server, contract
 
 **Next.js:**
-- [ ] Assets list (groupable/filterable by type, client, status, expiry)
-- [ ] Asset detail page with tabs: domains, SSL, monitoring, contracts, infra
-- [ ] Create/edit asset form with type-dependent fields
+- [x] Assets list (filterable by type, client, status, search)
+- [x] Asset detail page with linked servers, contracts, edit form
+- [x] Create/edit asset form with type-dependent fields
 - [ ] Bulk actions (archive, reassign, export CSV)
 
 ### 1.5 Contracts (AMC) module
 **NestJS:**
-- [ ] Full CRUD: `POST/GET /contracts`, `GET/PATCH/DELETE /contracts/:id`
-- [ ] Links to one client + many assets (junction table)
-- [ ] Billing cycle: monthly/quarterly/yearly
-- [ ] Status auto-transition: `active → expiring → expired` (scheduled job)
-- [ ] Renewal pipeline: expiring in 30/60/90 days
-- [ ] Renewal history (`ContractRenewal` records on status change)
+- [x] Full CRUD: `POST/GET /contracts`, `GET/PATCH/DELETE /contracts/:id`
+- [x] Links to one client + many assets (junction table)
+- [x] Billing cycle: monthly/quarterly/yearly
+- [x] Status auto-transition logic
+- [x] Renewal pipeline: expiring in 30/60/90 days
+- [x] Renewal history (`ContractRenewal` records)
 
 **Next.js:**
-- [ ] Contracts list (renewal pipeline view, filter by status/cycle)
+- [ ] **→ NEXT TASK** Contracts list page (renewal pipeline view, filter by status/cycle)
 - [ ] Contract detail (value, scope, assets covered, timeline)
 - [ ] Create/edit contract form (multi-select assets)
 - [ ] Renewal calendar block (show upcoming renewals)
 
 ### 1.6 Service Providers + Servers module
 **NestJS:**
-- [ ] CRUD providers: `POST/GET /providers`, `GET/PATCH/DELETE /providers/:id`
-- [ ] CRUD servers: `POST/GET /servers`, `GET/PATCH/DELETE /servers/:id`
-- [ ] Server belongs to provider, hosts many assets
-- [ ] Track cost, renewal date, specs, IPs
+- [x] CRUD providers: `POST/GET /providers`, `GET/PATCH/DELETE /providers/:id`
+- [x] CRUD servers: `POST/GET /servers`, `GET/PATCH/DELETE /servers/:id`
+- [x] Server belongs to provider, hosts many assets
+- [x] Track cost, renewal date, specs, IPs
 
 **Next.js:**
 - [ ] Providers list + detail
@@ -117,27 +125,25 @@
 
 ### 1.7 Domains module (auto-tracking)
 **NestJS:**
-- [ ] `POST /domains` → triggers WHOIS/RDAP lookup
-- [ ] WHOIS/RDAP integration (node `whois` lib or rdap.org)
-- [ ] Auto-fill: registrar, registration date, expiry, nameservers
-- [ ] `GET /domains?expiring=<days>`, `GET /domains/:id`
-- [ ] `PATCH /domains/:id` (manual override)
-- [ ] Daily worker: `domain-whois-check` re-checks all domains, detects changes
+- [x] `POST/GET /domains`, `GET/PATCH/DELETE /domains/:id`
+- [x] WHOIS check endpoint (placeholder) + snapshot history
+- [x] `GET /domains?expiring=<days>`, `GET /domains/:id` with SSL certs
+- [ ] Daily worker: `domain-whois-check` re-checks all domains
 
 **Next.js:**
-- [ ] Domains list with expiry countdown + status indicators
+- [ ] Domains list with expiry countdown + status indicators (currently a stub page)
 - [ ] Domain detail showing WHOIS data + SSL binding
 - [ ] Add domain form (enter FQDN → auto-fill)
 
 ### 1.8 SSL module (auto-tracking)
 **NestJS:**
-- [ ] `POST /ssl` → TLS connect to domain, read live cert
-- [ ] Extract: issuer, CN + SANs, valid from/to, key type, self-signed flag
-- [ ] Distinguish Let's Encrypt (auto-renew) vs manual
-- [ ] Daily worker: `ssl-check` re-checks all certs, flags expiring/mismatched/weak
+- [x] `POST/GET /ssl`, `GET/PATCH/DELETE /ssl/:id`
+- [x] TLS check endpoint (placeholder) + snapshot history
+- [x] Expiry stats (expired/30/60/90-day buckets)
+- [ ] Daily worker: `ssl-check` re-checks all certs
 
 **Next.js:**
-- [ ] SSL list with days-to-expiry, issuer, SANs
+- [ ] SSL list with days-to-expiry, issuer, SANs (currently a stub page)
 - [ ] Warning badges (self-signed, host mismatch, expired)
 
 ### 1.9 Monitoring + Incidents module
@@ -151,8 +157,8 @@
 - [ ] `GET /incidents`, `GET /incidents/:id`, `PATCH /incidents/:id` (acknowledge)
 
 **Next.js:**
-- [ ] Monitors list (status lights, response times, check history chart)
-- [ ] Create/edit monitor form (URL, interval, expected status, keyword)
+- [ ] Monitors list (status lights, response times) — currently a stub page
+- [ ] Create/edit monitor form
 - [ ] Incidents list (open → acknowledged → resolved timeline)
 - [ ] Incident detail with MTTR, cause, notes
 

@@ -144,19 +144,66 @@ export class AssetService {
 
     if (!asset) throw new NotFoundException(`Asset ${id} not found`);
 
-    // Fetch associated servers
-    const servers = await this.db
-      .selectFrom('asset_servers')
-      .innerJoin('servers', 'servers.id', 'asset_servers.server_id')
-      .select([
-        'servers.id',
-        'servers.label',
-        'servers.ip_addresses',
-      ])
-      .where('asset_servers.asset_id', '=', id)
-      .execute();
+    const [servers, domains, sslCertificates] = await Promise.all([
+      this.db
+        .selectFrom('asset_servers')
+        .innerJoin('servers', 'servers.id', 'asset_servers.server_id')
+        .select([
+          'servers.id',
+          'servers.label',
+          'servers.ip_addresses',
+          'servers.region',
+          'servers.monthly_cost',
+          'servers.currency',
+          'servers.renewal_date',
+        ])
+        .where('asset_servers.asset_id', '=', id)
+        .execute(),
 
-    return { ...asset, servers };
+      this.db
+        .selectFrom('domains')
+        .leftJoin('service_providers', 'service_providers.id', 'domains.registrar_id')
+        .select([
+          'domains.id',
+          'domains.fqdn',
+          'domains.registrar_id',
+          'domains.registered_date',
+          'domains.expiry_date',
+          'domains.auto_renew',
+          'domains.nameservers',
+          'domains.last_checked_at',
+          'service_providers.name as registrar_name',
+        ])
+        .where('domains.asset_id', '=', id)
+        .execute(),
+
+      this.db
+        .selectFrom('ssl_certificates')
+        .leftJoin('domains', 'domains.id', 'ssl_certificates.domain_id')
+        .select([
+          'ssl_certificates.id',
+          'ssl_certificates.domain_id',
+          'ssl_certificates.issuer',
+          'ssl_certificates.common_name',
+          'ssl_certificates.sans',
+          'ssl_certificates.valid_from',
+          'ssl_certificates.valid_to',
+          'ssl_certificates.type',
+          'ssl_certificates.last_checked_at',
+          'domains.fqdn as domain_fqdn',
+        ])
+        .where((eb) =>
+          eb.or([
+            eb('ssl_certificates.asset_id', '=', id),
+            eb('ssl_certificates.domain_id', 'in',
+              eb.selectFrom('domains').select('id').where('domains.asset_id', '=', id),
+            ),
+          ]),
+        )
+        .execute(),
+    ]);
+
+    return { ...asset, servers, domains, ssl_certificates: sslCertificates };
   }
 
   async update(id: string, dto: UpdateAssetDto) {

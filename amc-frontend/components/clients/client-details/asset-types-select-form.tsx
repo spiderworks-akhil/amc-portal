@@ -1,18 +1,29 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxInput,
   ComboboxContent,
+  ComboboxList,
   ComboboxItem,
   ComboboxEmpty,
-} from "@/components/ui/b-combobox"
+} from "@/components/ui/b-combobox";
 
 export function CreateAssetForm({
   open,
@@ -21,56 +32,80 @@ export function CreateAssetForm({
   isPending,
   types,
 }: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: { name: string; type_id: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; notes?: string }) => void
-  isPending: boolean
-  types: Array<{ id: string; name: string }>
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: {
+    name: string;
+    type_id: string;
+    primary_url?: string;
+    primary_contact_name?: string;
+    primary_contact_email?: string;
+    notes?: string;
+  }) => void;
+  isPending: boolean;
+  types: Array<{ id: string; name: string }>;
 }) {
-  const [name, setName] = useState("")
-  const [typeId, setTypeId] = useState("")
-  const [primaryUrl, setPrimaryUrl] = useState("")
-  const [contactName, setContactName] = useState("")
-  const [contactEmail, setContactEmail] = useState("")
-  const [notes, setNotes] = useState("")
-  const [errors, setErrors] = useState<{ name?: string; type_id?: string }>({})
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const newErrors: { name?: string; type_id?: string } = {}
-    if (!name.trim()) newErrors.name = "Asset name is required"
-    if (!typeId) newErrors.type_id = "Asset type is required"
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
-    }
-    setErrors({})
+  const assetSchema = z.object({
+    name: z.string().min(1, "Asset name is required"),
+    type_id: z.string().min(1, "Asset type is required"),
+    primary_url: z.string().optional(),
+    primary_contact_name: z.string().optional(),
+    primary_contact_email: z.string().optional(),
+    notes: z.string().optional(),
+  });
+  type AssetFormValues = z.infer<typeof assetSchema>;
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<AssetFormValues>({
+    resolver: zodResolver(assetSchema),
+    defaultValues: {
+      name: "",
+      type_id: "",
+      primary_url: "",
+      primary_contact_name: "",
+      primary_contact_email: "",
+      notes: "",
+    },
+  });
+
+  // Reset form whenever drawer opens
+  useEffect(() => {
+    if (open) reset()
+  }, [open, reset])
+
+  const selectedType = types.find((t) => t.id === watch("type_id")) ?? null;
+
+  const onFormSubmit = (data: AssetFormValues) => {
     onSubmit({
-      name: name.trim(),
-      type_id: typeId,
-      primary_url: primaryUrl.trim() || undefined,
-      primary_contact_name: contactName.trim() || undefined,
-      primary_contact_email: contactEmail.trim() || undefined,
-      notes: notes.trim() || undefined,
-    })
-    
-    // Reset form
-    setName("")
-    setTypeId("")
-    setPrimaryUrl("")
-    setContactName("")
-    setContactEmail("")
-    setNotes("")
-  }
+      name: data.name.trim(),
+      type_id: data.type_id,
+      primary_url: data.primary_url?.trim() || undefined,
+      primary_contact_name: data.primary_contact_name?.trim() || undefined,
+      primary_contact_email: data.primary_contact_email?.trim() || undefined,
+      notes: data.notes?.trim() || undefined,
+    });
+  };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Create Asset</SheetTitle>
-          <SheetDescription>Add a new asset for this client.</SheetDescription>
-        </SheetHeader>
-        
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-6">
+    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
+      <DrawerContent className="w-full sm:max-w-md overflow-y-auto">
+        <DrawerHeader>
+          <DrawerTitle>Create Asset</DrawerTitle>
+          <DrawerDescription>
+            Add a new asset for this client.
+          </DrawerDescription>
+        </DrawerHeader>
+
+        <form
+          onSubmit={handleSubmit(onFormSubmit)}
+          className="flex flex-col gap-5 mt-6 px-4 pb-4"
+        >
           {/* Asset Name */}
           <div className="space-y-2">
             <Label htmlFor="asset-name">
@@ -78,42 +113,48 @@ export function CreateAssetForm({
             </Label>
             <Input
               id="asset-name"
-              value={name}
-              onChange={(e) => { 
-                setName(e.target.value)
-                setErrors((prev) => ({ ...prev, name: undefined }))
-              }}
+              {...register("name")}
               placeholder="e.g., Client Website, Mobile App, etc."
               autoFocus
             />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            {errors.name?.message && (
+              <p className="text-xs text-destructive">{errors.name.message}</p>
+            )}
           </div>
 
-          {/* Asset Type with Base UI Combobox */}
+          {/* Asset Type */}
           <div className="space-y-2">
             <Label htmlFor="asset-type">
               Type <span className="text-destructive">*</span>
             </Label>
             <Combobox
-              value={typeId}
-              onValueChange={(value) => {
-                setTypeId(value ?? "")
-                setErrors((prev) => ({ ...prev, type_id: undefined }))
-              }}
+              items={types}
+              itemToStringLabel={(item: { id: string; name: string }) => item.name}
+              itemToStringValue={(item: { id: string; name: string }) => item.id}
+              value={selectedType}
+              onValueChange={(item: { id: string; name: string } | null) =>
+                setValue("type_id", item?.id ?? "", {
+                  shouldValidate: true,
+                })
+              }
             >
-              <ComboboxInput placeholder="Select asset type..." />
+              <ComboboxInput placeholder="Select asset type..." showTrigger />
               <ComboboxContent>
-                <div className="max-h-48 overflow-y-auto p-1">
-                  {types.map((type) => (
-                    <ComboboxItem key={type.id} value={type.id}>
+                <ComboboxList>
+                  {types.map((type, index) => (
+                    <ComboboxItem key={type.id} index={index} value={type}>
                       {type.name}
                     </ComboboxItem>
                   ))}
-                </div>
+                </ComboboxList>
                 <ComboboxEmpty>No type found.</ComboboxEmpty>
               </ComboboxContent>
             </Combobox>
-            {errors.type_id && <p className="text-xs text-destructive">{errors.type_id}</p>}
+            {errors.type_id?.message && (
+              <p className="text-xs text-destructive">
+                {errors.type_id.message}
+              </p>
+            )}
           </div>
 
           {/* Primary URL */}
@@ -122,8 +163,7 @@ export function CreateAssetForm({
             <Input
               id="asset-url"
               type="url"
-              value={primaryUrl}
-              onChange={(e) => setPrimaryUrl(e.target.value)}
+              {...register("primary_url")}
               placeholder="https://example.com"
             />
           </div>
@@ -133,8 +173,7 @@ export function CreateAssetForm({
             <Label htmlFor="asset-contact-name">Contact Name</Label>
             <Input
               id="asset-contact-name"
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
+              {...register("primary_contact_name")}
               placeholder="John Doe"
             />
           </div>
@@ -145,8 +184,7 @@ export function CreateAssetForm({
             <Input
               id="asset-contact-email"
               type="email"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
+              {...register("primary_contact_email")}
               placeholder="john@example.com"
             />
           </div>
@@ -156,18 +194,17 @@ export function CreateAssetForm({
             <Label htmlFor="asset-notes">Notes</Label>
             <textarea
               id="asset-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              {...register("notes")}
               placeholder="Additional notes about this asset..."
               rows={3}
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
-          <SheetFooter className="mt-6">
-            <Button 
-              type="button" 
-              variant="outline" 
+          <DrawerFooter className="mt-6 px-0">
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
             >
               Cancel
@@ -176,9 +213,9 @@ export function CreateAssetForm({
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isPending ? "Creating..." : "Create Asset"}
             </Button>
-          </SheetFooter>
+          </DrawerFooter>
         </form>
-      </SheetContent>
-    </Sheet>
-  )
+      </DrawerContent>
+    </Drawer>
+  );
 }

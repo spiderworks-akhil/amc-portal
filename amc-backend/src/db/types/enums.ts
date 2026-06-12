@@ -10,23 +10,26 @@ export type AssetStatus =
   | "development"
   | "parked";
 
-export type BillingCycle =
-  | "monthly"
-  | "quarterly"
-  | "yearly"
-  | "custom";
+export enum BillingCycle {
+  MONTHLY = "monthly",
+  QUARTERLY = "quarterly",
+  YEARLY = "yearly",
+  CUSTOM = "custom",
+}
 
-export type ContractStatus =
-  | "active"
-  | "expiring"
-  | "expired";
+export enum ContractStatus {
+  ACTIVE = "active",
+  EXPIRING = "expiring",
+  EXPIRED = "expired",
+}
 
-export type ProviderType =
-  | "cloud"
-  | "hosting"
-  | "registrar"
-  | "cdn"
-  | "email";
+export enum ProviderType {
+  CLOUD = "cloud",
+  HOSTING = "hosting",
+  REGISTRAR = "registrar",
+  CDN = "cdn",
+  EMAIL = "email",
+}
 
 export type MonitorType =
   | "http"
@@ -46,11 +49,12 @@ export type Severity =
   | "minor"
   | "info";
 
-export type SslType =
-  | "dv"
-  | "ov"
-  | "ev"
-  | "wildcard";
+export enum SslType {
+  DV = "dv",
+  OV = "ov",
+  EV = "ev",
+  WILDCARD = "wildcard",
+}
 
 export type ReminderChannel =
   | "email"

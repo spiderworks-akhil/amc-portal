@@ -1,5 +1,7 @@
 <!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+Please follow best practices of nextjs 
+Make decsion that enhances my app perfomance
+Always develop neat ui with profeessional touch
+Split code for bigger components
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->

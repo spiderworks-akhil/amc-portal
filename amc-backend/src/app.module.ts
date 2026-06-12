@@ -11,6 +11,11 @@ import { ClientModule } from './modules/client/client.module';
 import { AssetModule } from './modules/asset/asset.module';
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 import { UsersModule } from './modules/users/users.module';
+import { ContractModule } from './modules/contract/contract.module';
+import { DomainModule } from './modules/domain/domain.module';
+import { ProviderModule } from './modules/provider/provider.module';
+import { ServerModule } from './modules/server/server.module';
+import { SslModule } from './modules/ssl/ssl.module';
 
 @Module({
   imports: [
@@ -63,6 +68,11 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     ClientModule,
     AssetModule,
+    ContractModule,
+    DomainModule,
+    ProviderModule,
+    ServerModule,
+    SslModule,
     UsersModule,
   ],
   controllers: [AppController],

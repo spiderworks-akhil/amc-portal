@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronRight,
   Megaphone,
+  Server,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -49,6 +50,7 @@ const navItems = [
   {
     group: "Infrastructure",
     items: [
+      { title: "Servers", icon: Server, href: "/servers" },
       { title: "Domains", icon: Globe, href: "/domains" },
       { title: "SSL Certificates", icon: Shield, href: "/ssl-certificates" },
       { title: "Monitors", icon: Activity, href: "/monitors" },
