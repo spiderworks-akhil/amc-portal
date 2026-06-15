@@ -20,13 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/smooth-select"
 
 const sslSchema = z.object({
   domain_id: z.string().min(1, "Domain is required"),
@@ -268,28 +262,18 @@ export function CreateSslForm({
         <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">
           {/* Domain Selection */}
           <div className="space-y-2">
-            <Label htmlFor="ssl-domain">
+            <Label>
               Domain <span className="text-destructive">*</span>
             </Label>
-            <Select
+            <SmoothSelect
+              options={domains.length === 0 ? [] : domains.map((d) => ({ value: d.id, label: d.fqdn }))}
               value={watch("domain_id")}
-              onValueChange={(value) =>
+              onChange={(value) =>
                 setValue("domain_id", value, { shouldValidate: true })
               }
-            >
-              <SelectTrigger id="ssl-domain" size="sm">
-                <SelectValue placeholder={domains.length === 0 ? "No domains available" : "Select a domain..."} />
-              </SelectTrigger>
-              <SelectContent>
-                {domains.length === 0 ? (
-                  <SelectItem value="" disabled>No domains linked to this asset</SelectItem>
-                ) : (
-                  domains.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>{d.fqdn}</SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+              placeholder={domains.length === 0 ? "No domains available" : "Select a domain..."}
+              className="w-full"
+            />
             {errors.domain_id?.message && <p className="text-xs text-destructive">{errors.domain_id.message}</p>}
             {domains.length === 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -392,23 +376,17 @@ export function CreateSslForm({
 
           {/* SSL Type */}
           <div className="space-y-2">
-            <Label htmlFor="ssl-type">Certificate Type</Label>
-            <Select
+            <Label>Certificate Type</Label>
+            <SmoothSelect
+              options={SSL_TYPES}
               value={watch("type")}
-              onValueChange={(value) => {
+              onChange={(value) => {
                 userModifiedType.current = true
                 setValue("type", value, { shouldValidate: true })
               }}
-            >
-              <SelectTrigger id="ssl-type" size="sm">
-                <SelectValue placeholder="Select type..." />
-              </SelectTrigger>
-              <SelectContent>
-                {SSL_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select type..."
+              className="w-full"
+            />
           </div>
 
           {/* Two-column: Valid From + Valid To */}

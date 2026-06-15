@@ -61,6 +61,21 @@ export function useDetectServerProvider() {
   })
 }
 
+export function useDeleteServer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(`/server/${id}`)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [SERVERS_KEY] })
+      toast.success("Server deleted")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
 export function useLinkAssetToServer() {
   const qc = useQueryClient()
   return useMutation({

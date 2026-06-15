@@ -16,13 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/smooth-select"
 import DatePicker from "@/components/date-picker"
 import type { Provider } from "@/types/api"
 
@@ -144,26 +138,16 @@ export function DomainEditForm({
 
           {/* Registrar */}
           <div className="space-y-2">
-            <Label htmlFor="domain-registrar">Registrar</Label>
-            <Select
+            <Label>Registrar</Label>
+            <SmoothSelect
+              options={registrars.length === 0 ? [] : registrars.map((r) => ({ value: r.id, label: r.name }))}
               value={watch("registrar_id")}
-              onValueChange={(value) =>
+              onChange={(value) =>
                 setValue("registrar_id", value, { shouldValidate: true })
               }
-            >
-              <SelectTrigger id="domain-registrar" size="sm">
-                <SelectValue placeholder="Select registrar..." />
-              </SelectTrigger>
-              <SelectContent>
-                {registrars.length === 0 ? (
-                  <SelectItem value="" disabled>No registrars available</SelectItem>
-                ) : (
-                  registrars.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+              placeholder="Select registrar..."
+              className="w-full"
+            />
           </div>
 
           {/* Two-column: Registered Date + Expiry Date */}

@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { DetailSkeleton } from "@/components/clients/client-details/detail-skeleton"
-import { AssetEditForm } from "@/components/assets/asset-details/asset-edit-form"
 import { CreateServerForm } from "@/components/assets/asset-details/create-server-form"
 import { CreateContractForm } from "@/components/assets/asset-details/create-contract-form"
 import { CreateDomainForm } from "@/components/assets/asset-details/create-domain-form"
@@ -49,6 +48,7 @@ import {
   Cpu,
   Pencil,
 } from "lucide-react"
+import { AssetEditForm } from "@/components/assets/asset-details/asset-edit-form"
 
 const STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
   live: "emerald",

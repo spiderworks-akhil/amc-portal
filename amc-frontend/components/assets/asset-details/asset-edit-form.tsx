@@ -9,21 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
-import {
-  Combobox,
-  ComboboxInput,
-  ComboboxContent,
-  ComboboxList,
-  ComboboxItem,
-  ComboboxEmpty,
-} from "@/components/ui/b-combobox"
+import { SmoothSelect } from "@/components/ui/smooth-select"
+
 import type { Contact as ContactType } from "@/types/api"
 
 const assetSchema = z.object({
@@ -115,66 +102,39 @@ export function AssetEditForm({
             {errors.primary_url?.message && <p className="text-xs text-destructive">{errors.primary_url.message}</p>}
           </div>
           <div className="space-y-2">
-  <Label htmlFor="primary-contact">Primary Contact</Label>
+  <Label>Primary Contact</Label>
 
-  <Controller
-    name="primary_contact_email"
-    control={control}
-    render={({ field }) => (
-      <Select
-        value={field.value || ""}
-        onValueChange={(value) => {
-          const contact = contacts.find((c) => c.id === value)
-
-          setValue("primary_contact_name", contact?.name ?? "")
-          setValue("primary_contact_email", contact?.email ?? "")
-        }}
-      >
-        <SelectTrigger id="primary-contact" size="sm">
-          <SelectValue placeholder="Select a contact..." />
-        </SelectTrigger>
-
-        <SelectContent>
-          {contacts.length === 0 ? (
-            <SelectItem value="__empty" disabled>
-              No contacts available
-            </SelectItem>
-          ) : (
-            contacts.map((contact) => (
-              <SelectItem key={contact.id} value={contact.id}>
-                <div className="flex flex-col">
-                  <span>{contact.name}</span>
-                  {contact.email && (
-                    <span className="text-xs text-muted-foreground">
-                      {contact.email}
-                    </span>
-                  )}
-                </div>
-              </SelectItem>
-            ))
-          )}
-        </SelectContent>
-      </Select>
-    )}
+  <SmoothSelect
+    options={contacts.map(contact => ({
+      value: contact.id,
+      label: contact.email ? `${contact.name} (${contact.email})` : contact.name,
+    }))}
+    value={selectedContact?.id ?? undefined}
+    placeholder="Select a contact..."
+    onChange={(value) => {
+      const contact = contacts.find((c) => c.id === value)
+      setValue("primary_contact_name", contact?.name ?? "")
+      setValue("primary_contact_email", contact?.email ?? "")
+    }}
   />
 </div>
           <div className="space-y-2">
-            <Label htmlFor="asset-status">Status</Label>
+            <Label>Status</Label>
             <Controller
               name="status"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="asset-status" size="sm">
-                    <SelectValue placeholder="Select status..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="live">Live</SelectItem>
-                    <SelectItem value="staging">Staging</SelectItem>
-                    <SelectItem value="development">Development</SelectItem>
-                    <SelectItem value="parked">Parked</SelectItem>
-                  </SelectContent>
-                </Select>
+                <SmoothSelect
+                  options={[
+                    { value: "live", label: "Live" },
+                    { value: "staging", label: "Staging" },
+                    { value: "development", label: "Development" },
+                    { value: "parked", label: "Parked" },
+                  ]}
+                  value={field.value || undefined}
+                  placeholder="Select status..."
+                  onChange={field.onChange}
+                />
               )}
             />
           </div>

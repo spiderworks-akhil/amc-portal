@@ -1,16 +1,10 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { Search, RefreshCw } from "lucide-react"
+import { Search } from "lucide-react"
 import { DomainCard } from "./domain-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/r-select"
 import {
   Pagination,
   PaginationContent,
@@ -64,19 +58,12 @@ export function DomainGrid({
         </div>
 
         <div className="w-full sm:w-44">
-          <Select value={autoRenewFilter} onValueChange={onAutoRenewChange}>
-            <SelectTrigger size="sm" className="min-h-9 h-9">
-              <RefreshCw className="mr-1.5 size-3.5 shrink-0" />
-              <SelectValue placeholder="Renewal" />
-            </SelectTrigger>
-            <SelectContent>
-              {AUTO_RENEW_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SmoothSelect
+            options={AUTO_RENEW_OPTIONS}
+            value={autoRenewFilter}
+            onChange={onAutoRenewChange}
+            className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
+          />
         </div>
       </div>
 

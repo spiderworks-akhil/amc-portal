@@ -9,13 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, Globe } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/smooth-select"
 import type { ClientListItem } from "@/types/api"
 
 const assetSchema = z.object({
@@ -112,21 +106,14 @@ export function AssetCreateDialog({
               <Label htmlFor="asset-client">
                 Client <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={selectedClientId}
-                onValueChange={(value) => setValue("client_id", value)}
-              >
-                <SelectTrigger id="asset-client" size="sm">
-                  <SelectValue placeholder="Select client..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SmoothSelect
+                options={clients.map(client => ({ value: client.id, label: client.name }))}
+                value={selectedClientId || undefined}
+                placeholder="Select client..."
+                onChange={(value) => {
+                  setValue("client_id", value, { shouldValidate: true, shouldDirty: true })
+                }}
+              />
               {errors.client_id?.message && (
                 <p className="text-xs text-destructive">{errors.client_id.message}</p>
               )}
@@ -153,21 +140,14 @@ export function AssetCreateDialog({
               <Label htmlFor="asset-type">
                 Type <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={selectedType}
-                onValueChange={(value) => setValue("type", value)}
-              >
-                <SelectTrigger id="asset-type" size="sm">
-                  <SelectValue placeholder="Select asset type..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {types.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SmoothSelect
+                options={types}
+                value={selectedType || undefined}
+                placeholder="Select asset type..."
+                onChange={(value) => {
+                  setValue("type", value, { shouldValidate: true, shouldDirty: true })
+                }}
+              />
               {errors.type?.message && (
                 <p className="text-xs text-destructive">{errors.type.message}</p>
               )}

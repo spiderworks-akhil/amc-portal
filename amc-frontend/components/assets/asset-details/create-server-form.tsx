@@ -20,13 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/smooth-select"
 import type { Provider } from "@/types/api"
 
 const serverSchema = z.object({
@@ -68,6 +62,14 @@ const CURRENCIES = [
   { value: "GBP", label: "GBP" },
   { value: "INR", label: "INR" },
 ]
+
+function hostnameToLabel(hostname: string): string {
+  return hostname
+    .split(".")
+    .slice(-2, -1)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ") + " Panel"
+}
 
 export function CreateServerForm({
   open,
@@ -270,30 +272,24 @@ export function CreateServerForm({
         <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">
           {/* Provider */}
           <div className="space-y-2">
-            <Label htmlFor="server-provider">
+            <Label>
               Provider <span className="text-destructive">*</span>
             </Label>
             <Controller
               name="provider_id"
               control={control}
               render={({ field }) => (
-                <Select
+                <SmoothSelect
+                  options={providers.map((p) => ({ value: p.id, label: p.name }))}
                   value={field.value}
-                  onValueChange={(value) => {
+                  onChange={(value) => {
                     userModifiedProvider.current = true
                     setDetectedOrg(null)
                     field.onChange(value)
                   }}
-                >
-                  <SelectTrigger id="server-provider" size="sm">
-                    <SelectValue placeholder="Select a provider..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select a provider..."
+                  className="w-full"
+                />
               )}
             />
             {errors.provider_id?.message && <p className="text-xs text-destructive">{errors.provider_id.message}</p>}
@@ -391,21 +387,18 @@ export function CreateServerForm({
               <Input id="server-cost" type="number" step="0.01" min="0" {...register("monthly_cost")} placeholder="0.00" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="server-currency">Currency</Label>
+              <Label>Currency</Label>
               <Controller
                 name="currency"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="server-currency" size="sm">
-                      <SelectValue placeholder="Currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CURRENCIES.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SmoothSelect
+                    options={CURRENCIES}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Currency"
+                    className="w-full"
+                  />
                 )}
               />
             </div>

@@ -16,15 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Combobox,
-  ComboboxInput,
-  ComboboxContent,
-  ComboboxList,
-  ComboboxItem,
-  ComboboxEmpty,
-} from "@/components/ui/b-combobox";
 import type { Contact as ContactType } from "@/types/api";
+import { SmoothSelect } from "@/components/ui/smooth-select";
 
 export function CreateAssetForm({
   open,
@@ -79,13 +72,16 @@ export function CreateAssetForm({
 
   // Reset form whenever drawer opens
   useEffect(() => {
-    if (open) reset()
-  }, [open, reset])
+    if (open) reset();
+  }, [open, reset]);
 
   const selectedType = types.find((t) => t.value === watch("type")) ?? null;
-  const selectedContact = contacts.find(
-    (c) => c.name === watch("primary_contact_name") && c.email === watch("primary_contact_email")
-  ) ?? null;
+  const selectedContact =
+    contacts.find(
+      (c) =>
+        c.name === watch("primary_contact_name") &&
+        c.email === watch("primary_contact_email"),
+    ) ?? null;
 
   const onFormSubmit = (data: AssetFormValues) => {
     onSubmit({
@@ -133,33 +129,21 @@ export function CreateAssetForm({
             <Label htmlFor="asset-type">
               Type <span className="text-destructive">*</span>
             </Label>
-            <Combobox
-              items={types}
-              itemToStringLabel={(item: { value: string; label: string }) => item.label}
-              itemToStringValue={(item: { value: string; label: string }) => item.value}
-              value={selectedType}
-              onValueChange={(item: { value: string; label: string } | null) =>
-                setValue("type", item?.value ?? "", {
+
+            <SmoothSelect
+              options={types}
+              value={selectedType?.value || undefined}
+              placeholder="Select asset type..."
+              onChange={(value) =>
+                setValue("type", value, {
                   shouldValidate: true,
+                  shouldDirty: true,
                 })
               }
-            >
-              <ComboboxInput placeholder="Select asset type..." showTrigger />
-              <ComboboxContent>
-                <ComboboxList>
-                  {types.map((type, index) => (
-                    <ComboboxItem key={type.value} index={index} value={type}>
-                      {type.label}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-                <ComboboxEmpty>No type found.</ComboboxEmpty>
-              </ComboboxContent>
-            </Combobox>
+            />
+
             {errors.type?.message && (
-              <p className="text-xs text-destructive">
-                {errors.type.message}
-              </p>
+              <p className="text-xs text-destructive">{errors.type.message}</p>
             )}
           </div>
 
@@ -175,39 +159,31 @@ export function CreateAssetForm({
           </div>
 
           {/* Primary Contact */}
-          <div className="space-y-2">
-            <Label>Primary Contact</Label>
-            <Combobox
-              items={contacts}
-              itemToStringLabel={(item: ContactType) => item.name}
-              itemToStringValue={(item: ContactType) => item.id}
-              value={selectedContact}
-              onValueChange={(item: ContactType | null) => {
-                setValue("primary_contact_name", item?.name ?? "")
-                setValue("primary_contact_email", item?.email ?? "")
-              }}
-            >
-              <ComboboxInput placeholder="Select a contact..." showTrigger />
-              <ComboboxContent>
-                <ComboboxList>
-                  {contacts.length === 0 ? (
-                    <ComboboxEmpty>No contacts available.</ComboboxEmpty>
-                  ) : (
-                    contacts.map((contact, index) => (
-                      <ComboboxItem key={contact.id} index={index} value={contact}>
-                        <div className="flex flex-col">
-                          <span>{contact.name}</span>
-                          {contact.email && (
-                            <span className="text-xs text-muted-foreground">{contact.email}</span>
-                          )}
-                        </div>
-                      </ComboboxItem>
-                    ))
-                  )}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
+     <div className="space-y-2">
+  <Label>Primary Contact</Label>
+
+  <SmoothSelect
+    placeholder="Select a contact..."
+    value={selectedContact?.id ?? ""}
+    options={contacts.map((contact) => ({
+      value: contact.id,
+      label: contact.email
+        ? `${contact.name} (${contact.email})`
+        : contact.name,
+    }))}
+    onChange={(value) => {
+      const contact = contacts.find((c) => c.id === value)
+
+      setValue("primary_contact_name", contact?.name ?? "", {
+        shouldDirty: true,
+      })
+
+      setValue("primary_contact_email", contact?.email ?? "", {
+        shouldDirty: true,
+      })
+    }}
+  />
+</div>
 
           {/* Notes */}
           <div className="space-y-2">

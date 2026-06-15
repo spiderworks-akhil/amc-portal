@@ -5,17 +5,10 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { AssetTable } from "./asset-table"
-import { AssetCreateDialog } from "./asset-create-dialog"
 import { useAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-assets"
 import { useClients } from "@/hooks/use-clients"
 import { useDebounce } from "@/hooks/use-debounce"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/smooth-select"
 import {
   Pagination,
   PaginationContent,
@@ -25,9 +18,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Search, Plus, Filter } from "lucide-react"
+import { Search, Plus } from "lucide-react"
 import type { AssetListItem } from "@/types/api"
 import type { SortField } from "./asset-table"
+import { CreateAssetForm } from "../clients/client-details/asset-types-select-form"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
@@ -191,40 +185,20 @@ export function AssetsPageContent() {
           </div>
           <div className="flex gap-3">
             <div className="w-40">
-              <Select
+              <SmoothSelect
+                options={STATUS_OPTIONS}
                 value={statusFilter}
-                onValueChange={(value) => updateParams({ status: value === "all" ? undefined : value })}
-              >
-                <SelectTrigger size="sm" className="min-h-9 h-9">
-                  <Filter className="size-3.5 mr-1.5 shrink-0" />
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => updateParams({ status: value === "all" ? undefined : value })}
+                className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
+              />
             </div>
             <div className="w-44">
-              <Select
+              <SmoothSelect
+                options={[{ value: "all", label: "All Types" }, ...ASSET_TYPES]}
                 value={typeFilter}
-                onValueChange={(value) => updateParams({ type: value === "all" ? undefined : value })}
-              >
-                <SelectTrigger size="sm" className="min-h-9 h-9">
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {ASSET_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => updateParams({ type: value === "all" ? undefined : value })}
+                className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
+              />
             </div>
           </div>
         </div>
@@ -312,14 +286,12 @@ export function AssetsPageContent() {
       </div>
 
       {/* Create Dialog */}
-      <AssetCreateDialog
+      {/* <CreateAssetForm
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSubmit={handleCreateSubmit}
         isPending={isCreating}
         types={ASSET_TYPES}
-        clients={clientsData?.data ?? []}
-      />
+      /> */}
     </div>
   )
 }

@@ -10,13 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/smooth-select"
 import DatePicker from "@/components/date-picker"
 
 const contractSchema = z.object({
@@ -117,26 +111,18 @@ export function CreateContractForm({
         <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">
           {/* Billing Cycle */}
           <div className="space-y-2">
-            <Label htmlFor="contract-billing">
+            <Label>
               Billing Cycle <span className="text-destructive">*</span>
             </Label>
-            <Select
+            <SmoothSelect
+              options={BILLING_CYCLES}
               value={watch("billing_cycle")}
-              onValueChange={(value) =>
+              onChange={(value) =>
                 setValue("billing_cycle", value, { shouldValidate: true })
               }
-            >
-              <SelectTrigger id="contract-billing" size="sm" className="w-full p-2">
-                <SelectValue placeholder="Select billing cycle..." />
-              </SelectTrigger>
-              <SelectContent>
-                {BILLING_CYCLES.map((bc) => (
-                  <SelectItem key={bc.value} value={bc.value} className="p-3">
-                    {bc.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select billing cycle..."
+              className="w-full"
+            />
             {errors.billing_cycle?.message && <p className="text-xs text-destructive">{errors.billing_cycle.message}</p>}
           </div>
 
@@ -193,24 +179,16 @@ export function CreateContractForm({
               {errors.amount?.message && <p className="text-xs text-destructive">{errors.amount.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contract-currency">Currency</Label>
-              <Select
+              <Label>Currency</Label>
+              <SmoothSelect
+                options={CURRENCIES.map((c) => ({ value: c, label: c }))}
                 value={watch("currency")}
-                onValueChange={(value) =>
+                onChange={(value) =>
                   setValue("currency", value, { shouldValidate: true })
                 }
-              >
-                <SelectTrigger id="contract-currency" size="sm">
-                  <SelectValue placeholder="Currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CURRENCIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Currency"
+                className="w-full"
+              />
             </div>
           </div>
 

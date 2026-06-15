@@ -6,13 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, Building2 } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/smooth-select"
 
 const PROVIDER_TYPES = [
   { value: "cloud", label: "Cloud" },
@@ -105,21 +99,16 @@ export function CreateProviderDialog({
               {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="provider-type">
+              <Label>
                 Type <span className="text-destructive">*</span>
               </Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger id="provider-type" size="sm">
-                  <SelectValue placeholder="Select type..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVIDER_TYPES.map((pt) => (
-                    <SelectItem key={pt.value} value={pt.value}>
-                      {pt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SmoothSelect
+                options={PROVIDER_TYPES}
+                value={type}
+                onChange={setType}
+                placeholder="Select type..."
+                className="w-full"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="provider-website">Website</Label>

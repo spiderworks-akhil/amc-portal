@@ -1,16 +1,10 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { Search, Filter } from "lucide-react"
+import { Search } from "lucide-react"
 import { ServerCard } from "./server-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/r-select"
 import {
   Pagination,
   PaginationContent,
@@ -65,20 +59,12 @@ export function ServerGrid({
         </div>
 
         <div className="w-full sm:w-48">
-          <Select value={providerFilter} onValueChange={onProviderChange}>
-            <SelectTrigger size="sm" className="min-h-9 h-9">
-              <Filter className="mr-1.5 size-3.5 shrink-0" />
-              <SelectValue placeholder="All Providers" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Providers</SelectItem>
-              {providers.map((provider) => (
-                <SelectItem key={provider.id} value={provider.id}>
-                  {provider.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SmoothSelect
+            options={[{ value: "all", label: "All Providers" }, ...providers.map((p) => ({ value: p.id, label: p.name }))]}
+            value={providerFilter}
+            onChange={onProviderChange}
+            className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
+          />
         </div>
       </div>
 

@@ -1,16 +1,10 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { Search, Filter } from "lucide-react"
+import { Search } from "lucide-react"
 import { ContractCard } from "./contract-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/r-select"
 import {
   Pagination,
   PaginationContent,
@@ -64,19 +58,12 @@ export function ContractGrid({
         </div>
 
         <div className="w-full sm:w-44">
-          <Select value={statusFilter} onValueChange={onStatusChange}>
-            <SelectTrigger size="sm" className="min-h-9 h-9">
-              <Filter className="mr-1.5 size-3.5 shrink-0" />
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SmoothSelect
+            options={STATUS_OPTIONS}
+            value={statusFilter}
+            onChange={onStatusChange}
+            className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
+          />
         </div>
       </div>
 

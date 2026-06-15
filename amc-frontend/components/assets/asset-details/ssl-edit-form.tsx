@@ -16,13 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
+import { SmoothSelect } from "@/components/ui/smooth-select"
 import DatePicker from "@/components/date-picker"
 
 const sslSchema = z.object({
@@ -149,22 +143,16 @@ export function SslEditForm({
 
           {/* SSL Type */}
           <div className="space-y-2">
-            <Label htmlFor="ssl-type">Certificate Type</Label>
-            <Select
+            <Label>Certificate Type</Label>
+            <SmoothSelect
+              options={SSL_TYPES}
               value={watch("type")}
-              onValueChange={(value) =>
+              onChange={(value) =>
                 setValue("type", value, { shouldValidate: true })
               }
-            >
-              <SelectTrigger id="ssl-type" size="sm">
-                <SelectValue placeholder="Select type..." />
-              </SelectTrigger>
-              <SelectContent>
-                {SSL_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select type..."
+              className="w-full"
+            />
           </div>
 
           {/* Two-column: Valid From + Valid To */}
