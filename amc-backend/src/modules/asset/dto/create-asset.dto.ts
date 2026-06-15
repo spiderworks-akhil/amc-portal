@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsIn,
   IsNotEmpty,
   IsOptional,
@@ -8,6 +9,7 @@ import {
   IsUUID,
   MaxLength,
 } from 'class-validator';
+import { AssetType } from 'src/db/types/enums';
 
 const ASSET_STATUSES = ['live', 'staging', 'development', 'parked'] as const;
 
@@ -21,9 +23,9 @@ export class CreateAssetDto {
   @IsNotEmpty()
   client_id: string;
 
-  @IsUUID()
+  @IsEnum(AssetType)
   @IsNotEmpty()
-  type_id: string;
+  type: AssetType;
 
   @IsString()
   @IsOptional()

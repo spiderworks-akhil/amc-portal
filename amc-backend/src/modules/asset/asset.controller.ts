@@ -9,7 +9,6 @@ import {
   CreateAssetDto,
   UpdateAssetDto,
   ListAssetsDto,
-  CreateAssetTypeDto,
 } from './dto';
 
 @Controller('asset')
@@ -27,19 +26,6 @@ export class AssetController {
   @HttpCode(HttpStatus.OK)
   async list(@Query() dto: ListAssetsDto) {
     return this.assetService.list(dto);
-  }
-
-  @Get('types')
-  @HttpCode(HttpStatus.OK)
-  async listTypes() {
-    return this.assetService.listTypes();
-  }
-
-  @Post('types')
-  @HttpCode(HttpStatus.CREATED)
-  @ResponseMessage('Asset type created successfully')
-  async createType(@Body() dto: CreateAssetTypeDto) {
-    return this.assetService.createType(dto);
   }
 
   @Get('stats/:clientId')

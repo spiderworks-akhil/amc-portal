@@ -7,7 +7,7 @@ import {
   IsUUID,
   MaxLength,
 } from 'class-validator';
-import { SslType } from '../../../db/types/enums';
+import { SslType } from 'src/db/types/enums';
 
 export class UpdateSslDto {
   @IsUUID()

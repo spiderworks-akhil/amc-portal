@@ -546,15 +546,14 @@ function ComboboxItem({
         const isHovered = Object.is(activeValue, value);
 
         return (
-          <motion.div
+          <div
             {...resolvedItemProps}
-            animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "relative flex cursor-pointer select-none items-start gap-2 rounded-lg px-2.5 py-2 text-foreground text-sm transition-colors",
+              "relative flex cursor-pointer select-none items-start gap-2 rounded-lg px-2.5 py-2 text-foreground text-sm transition-colors hover:bg-accent/60",
               itemClassName,
-              resolveStateClassName(className, itemState)
+              resolveStateClassName(className, itemState),
+              isHovered && "bg-accent"
             )}
-            initial={{ opacity: 0, y: 2 }}
             onMouseEnter={composeEventHandlers(
               resolvedItemProps.onMouseEnter,
               () => {
@@ -571,23 +570,7 @@ function ComboboxItem({
               setRef(itemRef, node);
             }}
             style={itemStyle}
-            transition={{
-              duration: 0.12,
-              ease: "easeOut",
-            }}
           >
-            {isHovered ? (
-              <motion.div
-                className="absolute inset-0 rounded-lg bg-accent"
-                layoutId={activeHighlightId}
-                transition={{
-                  type: "spring",
-                  stiffness: 600,
-                  damping: 38,
-                }}
-              />
-            ) : null}
-
             <span className="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
               <AnimatePresence>
                 {itemState.selected ? (
@@ -616,7 +599,7 @@ function ComboboxItem({
                 </span>
               ) : null}
             </span>
-          </motion.div>
+          </div>
         );
       }}
     />

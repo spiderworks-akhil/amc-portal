@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { AssetTable } from "./asset-table"
 import { AssetCreateDialog } from "./asset-create-dialog"
-import { useAssets, useCreateAsset, useDeleteAsset, useAssetTypes } from "@/hooks/use-assets"
+import { useAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-assets"
 import { useClients } from "@/hooks/use-clients"
 import { useDebounce } from "@/hooks/use-debounce"
 import {
@@ -37,6 +37,12 @@ const STATUS_OPTIONS = [
   { value: "parked", label: "Parked" },
 ]
 
+const ASSET_TYPES = [
+  { value: "website", label: "Website" },
+  { value: "landing_page", label: "Landing Page" },
+  { value: "mobile_application", label: "Mobile Application" },
+]
+
 export function AssetsPageContent() {
   const router = useRouter()
   const pathname = usePathname()
@@ -45,7 +51,7 @@ export function AssetsPageContent() {
   const page = Number(searchParams.get("page")) || 1
   const search = searchParams.get("search") || ""
   const statusFilter = searchParams.get("status") || "all"
-  const typeFilter = searchParams.get("type_id") || "all"
+  const typeFilter = searchParams.get("type") || "all"
   const sortField = (searchParams.get("sort_by") || "name") as SortField
   const sortOrder = (searchParams.get("sort_order") || "asc") as "asc" | "desc"
   const limit = 50
@@ -79,13 +85,12 @@ export function AssetsPageContent() {
     page,
     search,
     status: statusFilter !== "all" ? statusFilter : undefined,
-    type_id: typeFilter !== "all" ? typeFilter : undefined,
+    type: typeFilter !== "all" ? typeFilter : undefined,
     limit,
     sort_by: sortField,
     sort_order: sortOrder,
   })
 
-  const { data: assetTypes } = useAssetTypes()
   const { data: clientsData } = useClients({ limit: 200, sort_by: "name", sort_order: "asc" })
   const { mutate: createAsset, isPending: isCreating } = useCreateAsset()
   const { mutate: deleteAsset } = useDeleteAsset()
@@ -124,7 +129,7 @@ export function AssetsPageContent() {
   )
 
   const handleCreateSubmit = useCallback(
-    (formData: { client_id: string; name: string; type_id: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; notes?: string }) => {
+    (formData: { client_id: string; name: string; type: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; notes?: string }) => {
       createAsset(formData, {
         onSuccess: () => setCreateOpen(false),
       })
@@ -206,16 +211,16 @@ export function AssetsPageContent() {
             <div className="w-44">
               <Select
                 value={typeFilter}
-                onValueChange={(value) => updateParams({ type_id: value === "all" ? undefined : value })}
+                onValueChange={(value) => updateParams({ type: value === "all" ? undefined : value })}
               >
                 <SelectTrigger size="sm" className="min-h-9 h-9">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {(assetTypes ?? []).map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
+                  {ASSET_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -312,7 +317,7 @@ export function AssetsPageContent() {
         onOpenChange={setCreateOpen}
         onSubmit={handleCreateSubmit}
         isPending={isCreating}
-        types={assetTypes ?? []}
+        types={ASSET_TYPES}
         clients={clientsData?.data ?? []}
       />
     </div>

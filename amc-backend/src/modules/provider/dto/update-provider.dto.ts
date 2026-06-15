@@ -4,7 +4,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { ProviderType } from '../../../db/types/enums';
+import { ProviderType } from 'src/db/types/enums';
 
 export class UpdateProviderDto {
   @IsString()

@@ -1,6 +1,6 @@
 import { IsEnum, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ProviderType } from '../../../db/types/enums';
+import { ProviderType } from 'src/db/types/enums';
 
 export enum ProviderSortBy {
   NAME = 'name',

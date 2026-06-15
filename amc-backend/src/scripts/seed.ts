@@ -15,23 +15,6 @@ async function main() {
     }),
   });
 
-  const predefinedTypes = [
-    "website",
-    "landing page",
-    "web app",
-    "e-commerce",
-    "API",
-    "microsite",
-    "blog",
-  ];
-
-  for (const name of predefinedTypes) {
-    await db
-      .insertInto("asset_types")
-      .values({ name })
-      .execute();
-  }
-
   await db
     .insertInto("service_providers")
     .values([

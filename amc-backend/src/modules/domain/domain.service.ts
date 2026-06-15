@@ -5,11 +5,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { SslService } from '../ssl/ssl.service';
 import { ProviderType } from '../../db/types/enums';
 import * as rdap from 'node-rdap';
 import * as whoiser from 'whoiser';
 import { InjectKysely } from 'nestjs-kysely';
-import { Kysely, sql } from 'kysely';
+import { Kysely, sql, Transaction } from 'kysely';
 import { DB } from '../../db/types.generated';
 import {
   CreateDomainDto,
@@ -25,30 +26,67 @@ export class DomainService {
 
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
+    private readonly sslService: SslService,
   ) {}
 
   async create(dto: CreateDomainDto) {
     await this.verifyDomainExists(dto.fqdn);
 
-    const domain = await this.db
-      .insertInto('domains')
-      .values({
-        asset_id: dto.asset_id,
-        fqdn: dto.fqdn,
-        registrar_id: dto.registrar_id ?? null,
-        registered_date: dto.registered_date ? new Date(dto.registered_date) : null,
-        expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
-        auto_renew: dto.auto_renew ?? false,
-        nameservers: JSON.stringify(dto.nameservers ?? []),
-        notes: dto.notes ?? null,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+    const result = await this.db.transaction().execute(async (trx) => {
+      const domain = await trx
+        .insertInto('domains')
+        .values({
+          asset_id: dto.asset_id,
+          fqdn: dto.fqdn,
+          registrar_id: dto.registrar_id ?? null,
+          registered_date: dto.registered_date ? new Date(dto.registered_date) : null,
+          expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
+          auto_renew: dto.auto_renew ?? false,
+          nameservers: JSON.stringify(dto.nameservers ?? []),
+          notes: dto.notes ?? null,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
 
-    // Create an initial snapshot
-    await this.createSnapshot(domain.id);
+      await this.createSnapshot(domain.id, trx);
 
-    return domain;
+      const ssl = await trx
+        .insertInto('ssl_certificates')
+        .values({
+          domain_id: domain.id,
+          asset_id: dto.asset_id,
+          common_name: domain.fqdn,
+          issuer: null,
+          sans: JSON.stringify([]),
+          valid_from: null,
+          valid_to: null,
+          type: null,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+     this.logger.log("SSl ",ssl)
+      return { domain, ssl };
+    });
+
+    this.logger.log("Transaction completed",result.ssl);
+
+    // Fire-and-forget background TLS lookup to enrich the SSL certificate
+    this.sslService.triggerCheck(result.ssl.id).catch((err) => {
+      this.logger.error(
+        `Background SSL TLS lookup failed for certificate ${result.ssl.id} (${result.domain.fqdn}): ${err instanceof Error ? err.message : err}`,
+      );
+    });
+
+    // Fire-and-forget background registrar enrichment if not provided
+    if (!dto.registrar_id) {
+      this.detectAndLinkRegistrar(result.domain.id, result.domain.fqdn).catch((err) => {
+        this.logger.error(
+          `Background registrar lookup failed for domain ${result.domain.id} (${result.domain.fqdn}): ${err instanceof Error ? err.message : err}`,
+        );
+      });
+    }
+
+    return result.domain;
   }
 
   async list(dto: ListDomainsDto) {
@@ -654,8 +692,10 @@ export class DomainService {
     }
   }
 
-  private async createSnapshot(domainId: string) {
-    const domainRow = await this.db
+  private async createSnapshot(domainId: string, trx?: Transaction<DB>) {
+    const db = trx ?? this.db;
+
+    const domainRow = await db
       .selectFrom('domains')
       .select(['fqdn', 'expiry_date', 'registrar_id', 'nameservers'])
       .where('id', '=', domainId)
@@ -666,7 +706,7 @@ export class DomainService {
     // Get registrar name if linked
     let registrarName: string | null = null;
     if (domainRow.registrar_id) {
-      const provider = await this.db
+      const provider = await db
         .selectFrom('service_providers')
         .select('name')
         .where('id', '=', domainRow.registrar_id)
@@ -674,18 +714,50 @@ export class DomainService {
       registrarName = provider?.name ?? null;
     }
 
-    const snapshot = await this.db
+    const snapshot = await db
       .insertInto('domain_snapshots')
       .values({
         domain_id: domainId,
         registrar: registrarName,
         expiry_date: domainRow.expiry_date,
-        nameservers: JSON.stringify(domainRow.nameservers),
+        nameservers: JSON.stringify(domainRow.nameservers ?? []),
       })
       .returningAll()
       .executeTakeFirst();
 
     return snapshot;
+  }
+
+  /** Try RDAP → WHOIS to detect a domain's registrar and link it */
+  private async detectAndLinkRegistrar(domainId: string, fqdn: string) {
+    let registrarName: string | undefined;
+
+    // 1. Try RDAP
+    try {
+      const rdapResult = await this.lookupRdap(fqdn);
+      registrarName = rdapResult.registrar;
+    } catch {
+      // 2. Fallback to WHOIS
+      try {
+        const whoisResult = await this.lookupWhois(fqdn);
+        registrarName = whoisResult.registrar;
+      } catch {
+        // Both failed — nothing to enrich
+      }
+    }
+
+    if (!registrarName) return;
+
+    const registrarId = await this.matchRegistrarToProvider(registrarName);
+    if (!registrarId) return;
+
+    await this.db
+      .updateTable('domains')
+      .set({ registrar_id: registrarId, updated_at: new Date() })
+      .where('id', '=', domainId)
+      .execute();
+
+    this.logger.log(`Background registrar enrichment for ${fqdn}: matched to provider ${registrarId}`);
   }
 
   private async checkExists(id: string) {

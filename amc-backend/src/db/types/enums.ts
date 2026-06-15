@@ -4,6 +4,12 @@ export type UserStatus =
   | "active"
   | "inactive";
 
+export enum AssetType {
+  WEBSITE = "website",
+  LANDING_PAGE = "landing_page",
+  MOBILE_APPLICATION = "mobile_application",
+}
+
 export type AssetStatus =
   | "live"
   | "staging"

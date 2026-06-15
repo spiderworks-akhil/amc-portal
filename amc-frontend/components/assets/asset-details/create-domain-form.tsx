@@ -19,18 +19,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/r-select"
-import type { Provider } from "@/types/api"
 
 const domainSchema = z.object({
   fqdn: z.string().min(1, "Domain name is required").max(255),
-  registrar_id: z.string().optional(),
   registered_date: z.string().optional(),
   expiry_date: z.string().optional(),
   auto_renew: z.boolean().optional(),
@@ -45,7 +36,6 @@ interface CreateDomainFormProps {
   onSubmit: (data: {
     asset_id: string
     fqdn: string
-    registrar_id?: string
     registered_date?: string
     expiry_date?: string
     auto_renew?: boolean
@@ -54,7 +44,6 @@ interface CreateDomainFormProps {
   }) => void
   isPending: boolean
   assetId: string
-  registrars: Provider[]
 }
 
 export function CreateDomainForm({
@@ -63,13 +52,11 @@ export function CreateDomainForm({
   onSubmit,
   isPending,
   assetId,
-  registrars,
 }: CreateDomainFormProps) {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<DomainFormValues>({
     resolver: zodResolver(domainSchema),
     defaultValues: {
       fqdn: "",
-      registrar_id: "",
       registered_date: "",
       expiry_date: "",
       auto_renew: true,
@@ -90,9 +77,7 @@ export function CreateDomainForm({
   const [dnsError, setDnsError] = useState<string | null>(null)
   const [rdapLoading, setRdapLoading] = useState(false)
   const [enriched, setEnriched] = useState(false)
-  const [detectedRegistrar, setDetectedRegistrar] = useState<string | null>(null)
   const userModifiedNs = useRef(false)
-  const userModifiedRegistrar = useRef(false)
   const userModifiedRegisteredDate = useRef(false)
   const userModifiedExpiryDate = useRef(false)
 
@@ -109,7 +94,6 @@ export function CreateDomainForm({
     setDnsStatus("verifying")
     setDnsError(null)
     setEnriched(false)
-    setDetectedRegistrar(null)
     setRdapLoading(true)
 
     lookupDomainDetails(debouncedFqdn).then((details) => {
@@ -131,14 +115,7 @@ export function CreateDomainForm({
       // Expiry date
       if (!userModifiedExpiryDate.current && details.expiry_date) {
         setValue("expiry_date", details.expiry_date, { shouldValidate: true })
-      }          // Registrar — use the backend-matched provider ID
-          if (!userModifiedRegistrar.current && details.registrar_id) {
-            setValue("registrar_id", details.registrar_id, { shouldValidate: true })
-            setDetectedRegistrar(details.registrar ?? null)
-          } else if (!userModifiedRegistrar.current && details.registrar) {
-            // Registrar detected but no provider matched — show the name for reference
-            setDetectedRegistrar(details.registrar)
-          }
+      }
 
       setEnriched(true)
     }).catch((err: unknown) => {
@@ -167,9 +144,7 @@ export function CreateDomainForm({
       setDnsError(null)
       setRdapLoading(false)
       setEnriched(false)
-      setDetectedRegistrar(null)
       userModifiedNs.current = false
-      userModifiedRegistrar.current = false
       userModifiedRegisteredDate.current = false
       userModifiedExpiryDate.current = false
     }
@@ -184,7 +159,6 @@ export function CreateDomainForm({
     onSubmit({
       asset_id: assetId,
       fqdn: data.fqdn.trim().toLowerCase(),
-      registrar_id: data.registrar_id || undefined,
       registered_date: data.registered_date || undefined,
       expiry_date: data.expiry_date || undefined,
       auto_renew: data.auto_renew ?? true,
@@ -246,41 +220,6 @@ export function CreateDomainForm({
               <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                 <CheckCircle2 className="size-3" />
                 Domain resolves
-              </p>
-            )}
-          </div>
-
-          {/* Registrar */}
-          <div className="space-y-2">
-            <Label htmlFor="domain-registrar">
-              Registrar
-              {rdapLoading && <Loader2 className="size-3 animate-spin text-muted-foreground inline ml-1.5" />}
-            </Label>
-            <Select
-              value={watch("registrar_id")}
-              onValueChange={(value) => {
-                userModifiedRegistrar.current = true
-                setDetectedRegistrar(null)
-                setValue("registrar_id", value, { shouldValidate: true })
-              }}
-            >
-              <SelectTrigger id="domain-registrar" size="sm">
-                <SelectValue placeholder="Select registrar..." />
-              </SelectTrigger>
-              <SelectContent>
-                {registrars.length === 0 ? (
-                  <SelectItem value="" disabled>No registrars available</SelectItem>
-                ) : (
-                  registrars.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {detectedRegistrar && !userModifiedRegistrar.current && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <CheckCircle2 className="size-3 text-emerald-500" />
-                Detected: {detectedRegistrar}
               </p>
             )}
           </div>

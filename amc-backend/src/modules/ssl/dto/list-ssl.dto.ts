@@ -7,7 +7,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SslType } from '../../../db/types/enums';
+import { SslType } from 'src/db/types/enums';
 
 export enum SslSortBy {
   COMMON_NAME = 'common_name',

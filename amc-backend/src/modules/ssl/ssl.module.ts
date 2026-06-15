@@ -7,5 +7,6 @@ import { SslService } from './ssl.service';
   imports: [DatabaseModule],
   controllers: [SslController],
   providers: [SslService],
+  exports: [SslService],
 })
 export class SslModule {}

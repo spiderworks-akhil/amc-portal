@@ -6,11 +6,9 @@ import apiClient from "@/lib/api-client"
 import type {
   AssetListItem,
   AssetDetail,
-  AssetType,
   PaginatedResponse,
   ApiResponse,
   CreateAssetPayload,
-  CreateAssetTypePayload,
   UpdateAssetPayload,
   ListAssetsParams,
   ContractListItem,
@@ -94,31 +92,6 @@ export function useDeleteAsset() {
     onSuccess: (res) => {
       toast.success(res.message)
       qc.invalidateQueries({ queryKey: [ASSETS_KEY] })
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-}
-
-export function useAssetTypes() {
-  return useQuery({
-    queryKey: [ASSETS_KEY, "types"],
-    queryFn: async () => {
-      const { data } = await apiClient.get<AssetType[]>("/asset/types")
-      return data
-    },
-    staleTime: 300_000,
-  })
-}
-
-export function useCreateAssetType() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (payload: CreateAssetTypePayload) => {
-      const { data } = await apiClient.post<ApiResponse<AssetType>>("/asset/types", payload)
-      return data
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [ASSETS_KEY, "types"] })
     },
     onError: (err: Error) => toast.error(err.message),
   })

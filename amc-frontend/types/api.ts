@@ -110,7 +110,7 @@ export interface AssetListItem {
   name: string
   primary_url?: string | null
   status: string
-  type_id: string
+  type: string
   client_id: string
   monitoring_enabled: boolean
   primary_contact_name?: string | null
@@ -121,17 +121,10 @@ export interface AssetListItem {
   client_name: string
 }
 
-export interface AssetType {
-  id: string
-  name: string
-  description?: string | null
-  created_at: string
-}
-
 export interface CreateAssetPayload {
   name: string
   client_id: string
-  type_id: string
+  type: string
   primary_url?: string
   status?: string
   primary_contact_name?: string
@@ -140,11 +133,6 @@ export interface CreateAssetPayload {
   tech_stack?: string[]
   tags?: string[]
   notes?: string
-}
-
-export interface CreateAssetTypePayload {
-  name: string
-  description?: string
 }
 
 export interface ListClientsParams {
@@ -160,7 +148,7 @@ export interface ListAssetsParams {
   limit?: number
   search?: string
   client_id?: string
-  type_id?: string
+  type?: string
   status?: string
   sort_by?: string
   sort_order?: "asc" | "desc"

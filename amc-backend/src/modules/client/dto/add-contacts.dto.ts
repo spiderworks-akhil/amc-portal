@@ -64,6 +64,11 @@ export class CreateContactDto {
   @IsBoolean()
   @IsOptional()
   is_primary?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  should_send_notification?: boolean;
+
 }
 
 export class AddContactsDto {

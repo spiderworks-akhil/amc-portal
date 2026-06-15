@@ -8,7 +8,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import { ContractStatus } from '../../../db/types/enums';
+import { ContractStatus } from 'src/db/types/enums';
 
 export enum ContractSortBy {
   CONTRACT_NUMBER = 'contract_number',

@@ -7,7 +7,6 @@ import {
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
-import { ProviderType } from '../../db/types/enums';
 import {
   CreateProviderDto,
   UpdateProviderDto,
@@ -15,6 +14,7 @@ import {
   ProviderSortBy,
   SortOrder,
 } from './dto';
+import { ProviderType } from 'src/db/types/enums';
 
 @Injectable()
 export class ProviderService {

@@ -232,13 +232,12 @@ export class ContractService {
     const assets = await this.db
       .selectFrom('contract_assets')
       .innerJoin('assets', 'assets.id', 'contract_assets.asset_id')
-      .innerJoin('asset_types', 'asset_types.id', 'assets.type_id')
       .select([
         'assets.id',
         'assets.name',
         'assets.primary_url',
         'assets.status',
-        'asset_types.name as type_name',
+        'assets.type as type_name',
       ])
       .where('contract_assets.contract_id', '=', id)
       .where('assets.deleted_at', 'is', null)
@@ -336,7 +335,6 @@ export class ContractService {
     return this.db
       .selectFrom('contract_assets')
       .innerJoin('assets', 'assets.id', 'contract_assets.asset_id')
-      .innerJoin('asset_types', 'asset_types.id', 'assets.type_id')
       .select([
         'assets.id',
         'assets.name',
@@ -344,7 +342,7 @@ export class ContractService {
         'assets.status',
         'assets.primary_contact_name',
         'assets.primary_contact_email',
-        'asset_types.name as type_name',
+        'assets.type as type_name',
       ])
       .where('contract_assets.contract_id', '=', contractId)
       .where('assets.deleted_at', 'is', null)

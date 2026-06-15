@@ -16,12 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/r-select"
-import type { AssetType, ClientListItem } from "@/types/api"
+import type { ClientListItem } from "@/types/api"
 
 const assetSchema = z.object({
   client_id: z.string().min(1, "Client is required"),
   name: z.string().min(1, "Asset name is required").max(255),
-  type_id: z.string().min(1, "Asset type is required"),
+  type: z.string().min(1, "Asset type is required"),
   primary_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
   primary_contact_name: z.string().max(255).optional(),
   primary_contact_email: z.string().email("Must be a valid email").or(z.literal("")).optional(),
@@ -35,7 +35,7 @@ interface AssetCreateDialogProps {
   onOpenChange: (open: boolean) => void
   onSubmit: (data: AssetFormValues) => void
   isPending: boolean
-  types: AssetType[]
+  types: Array<{ value: string; label: string }>
   clients: ClientListItem[]
 }
 
@@ -59,7 +59,7 @@ export function AssetCreateDialog({
     defaultValues: {
       client_id: "",
       name: "",
-      type_id: "",
+      type: "",
       primary_url: "",
       primary_contact_name: "",
       primary_contact_email: "",
@@ -67,7 +67,7 @@ export function AssetCreateDialog({
     },
   })
 
-  const selectedTypeId = watch("type_id")
+  const selectedType = watch("type")
   const selectedClientId = watch("client_id")
 
   // Reset form whenever dialog opens
@@ -81,7 +81,7 @@ export function AssetCreateDialog({
     onSubmit({
       client_id: data.client_id,
       name: data.name,
-      type_id: data.type_id,
+      type: data.type,
       primary_url: data.primary_url || undefined,
       primary_contact_name: data.primary_contact_name || undefined,
       primary_contact_email: data.primary_contact_email || undefined,
@@ -154,22 +154,22 @@ export function AssetCreateDialog({
                 Type <span className="text-destructive">*</span>
               </Label>
               <Select
-                value={selectedTypeId}
-                onValueChange={(value) => setValue("type_id", value)}
+                value={selectedType}
+                onValueChange={(value) => setValue("type", value)}
               >
                 <SelectTrigger id="asset-type" size="sm">
                   <SelectValue placeholder="Select asset type..." />
                 </SelectTrigger>
                 <SelectContent>
                   {types.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.type_id?.message && (
-                <p className="text-xs text-destructive">{errors.type_id.message}</p>
+              {errors.type?.message && (
+                <p className="text-xs text-destructive">{errors.type.message}</p>
               )}
             </div>
 

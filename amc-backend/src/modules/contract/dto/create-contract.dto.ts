@@ -10,7 +10,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { BillingCycle } from '../../../db/types/enums';
+import { BillingCycle } from 'src/db/types/enums';
 
 export class CreateContractDto {
   @IsUUID()

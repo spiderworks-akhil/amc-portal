@@ -9,7 +9,6 @@ import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import * as rdap from 'node-rdap';
 import { DB } from '../../db/types.generated';
-import { ProviderType } from '../../db/types/enums';
 import {
   CreateServerDto,
   UpdateServerDto,
@@ -18,6 +17,7 @@ import {
   SortOrder,
   AssetIdsDto,
 } from './dto';
+import { ProviderType } from 'src/db/types/enums';
 
 @Injectable()
 export class ServerService {
@@ -184,13 +184,12 @@ export class ServerService {
     const assets = await this.db
       .selectFrom('asset_servers')
       .innerJoin('assets', 'assets.id', 'asset_servers.asset_id')
-      .innerJoin('asset_types', 'asset_types.id', 'assets.type_id')
       .select([
         'assets.id',
         'assets.name',
         'assets.primary_url',
         'assets.status',
-        'asset_types.name as type_name',
+        'assets.type as type_name',
       ])
       .where('asset_servers.server_id', '=', id)
       .where('assets.deleted_at', 'is', null)
@@ -283,7 +282,6 @@ export class ServerService {
     return this.db
       .selectFrom('asset_servers')
       .innerJoin('assets', 'assets.id', 'asset_servers.asset_id')
-      .innerJoin('asset_types', 'asset_types.id', 'assets.type_id')
       .select([
         'assets.id',
         'assets.name',
@@ -291,7 +289,7 @@ export class ServerService {
         'assets.status',
         'assets.primary_contact_name',
         'assets.primary_contact_email',
-        'asset_types.name as type_name',
+        'assets.type as type_name',
       ])
       .where('asset_servers.server_id', '=', serverId)
       .where('assets.deleted_at', 'is', null)
@@ -499,7 +497,7 @@ export class ServerService {
   private async resolveHostname(hostname: string): Promise<string | null> {
     try {
       const addresses = await dns.resolve4(hostname);
-      return addresses[0] ?? null;
+      return addresses[0] ?? null;  
     } catch {
       return null;
     }

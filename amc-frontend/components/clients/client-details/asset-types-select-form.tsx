@@ -24,6 +24,7 @@ import {
   ComboboxItem,
   ComboboxEmpty,
 } from "@/components/ui/b-combobox";
+import type { Contact as ContactType } from "@/types/api";
 
 export function CreateAssetForm({
   open,
@@ -31,23 +32,25 @@ export function CreateAssetForm({
   onSubmit,
   isPending,
   types,
+  contacts,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: {
     name: string;
-    type_id: string;
+    type: string;
     primary_url?: string;
     primary_contact_name?: string;
     primary_contact_email?: string;
     notes?: string;
   }) => void;
   isPending: boolean;
-  types: Array<{ id: string; name: string }>;
+  types: Array<{ value: string; label: string }>;
+  contacts: ContactType[];
 }) {
   const assetSchema = z.object({
     name: z.string().min(1, "Asset name is required"),
-    type_id: z.string().min(1, "Asset type is required"),
+    type: z.string().min(1, "Asset type is required"),
     primary_url: z.string().optional(),
     primary_contact_name: z.string().optional(),
     primary_contact_email: z.string().optional(),
@@ -66,7 +69,7 @@ export function CreateAssetForm({
     resolver: zodResolver(assetSchema),
     defaultValues: {
       name: "",
-      type_id: "",
+      type: "",
       primary_url: "",
       primary_contact_name: "",
       primary_contact_email: "",
@@ -79,12 +82,15 @@ export function CreateAssetForm({
     if (open) reset()
   }, [open, reset])
 
-  const selectedType = types.find((t) => t.id === watch("type_id")) ?? null;
+  const selectedType = types.find((t) => t.value === watch("type")) ?? null;
+  const selectedContact = contacts.find(
+    (c) => c.name === watch("primary_contact_name") && c.email === watch("primary_contact_email")
+  ) ?? null;
 
   const onFormSubmit = (data: AssetFormValues) => {
     onSubmit({
       name: data.name.trim(),
-      type_id: data.type_id,
+      type: data.type,
       primary_url: data.primary_url?.trim() || undefined,
       primary_contact_name: data.primary_contact_name?.trim() || undefined,
       primary_contact_email: data.primary_contact_email?.trim() || undefined,
@@ -129,11 +135,11 @@ export function CreateAssetForm({
             </Label>
             <Combobox
               items={types}
-              itemToStringLabel={(item: { id: string; name: string }) => item.name}
-              itemToStringValue={(item: { id: string; name: string }) => item.id}
+              itemToStringLabel={(item: { value: string; label: string }) => item.label}
+              itemToStringValue={(item: { value: string; label: string }) => item.value}
               value={selectedType}
-              onValueChange={(item: { id: string; name: string } | null) =>
-                setValue("type_id", item?.id ?? "", {
+              onValueChange={(item: { value: string; label: string } | null) =>
+                setValue("type", item?.value ?? "", {
                   shouldValidate: true,
                 })
               }
@@ -142,17 +148,17 @@ export function CreateAssetForm({
               <ComboboxContent>
                 <ComboboxList>
                   {types.map((type, index) => (
-                    <ComboboxItem key={type.id} index={index} value={type}>
-                      {type.name}
+                    <ComboboxItem key={type.value} index={index} value={type}>
+                      {type.label}
                     </ComboboxItem>
                   ))}
                 </ComboboxList>
                 <ComboboxEmpty>No type found.</ComboboxEmpty>
               </ComboboxContent>
             </Combobox>
-            {errors.type_id?.message && (
+            {errors.type?.message && (
               <p className="text-xs text-destructive">
-                {errors.type_id.message}
+                {errors.type.message}
               </p>
             )}
           </div>
@@ -168,25 +174,39 @@ export function CreateAssetForm({
             />
           </div>
 
-          {/* Contact Name */}
+          {/* Primary Contact */}
           <div className="space-y-2">
-            <Label htmlFor="asset-contact-name">Contact Name</Label>
-            <Input
-              id="asset-contact-name"
-              {...register("primary_contact_name")}
-              placeholder="John Doe"
-            />
-          </div>
-
-          {/* Contact Email */}
-          <div className="space-y-2">
-            <Label htmlFor="asset-contact-email">Contact Email</Label>
-            <Input
-              id="asset-contact-email"
-              type="email"
-              {...register("primary_contact_email")}
-              placeholder="john@example.com"
-            />
+            <Label>Primary Contact</Label>
+            <Combobox
+              items={contacts}
+              itemToStringLabel={(item: ContactType) => item.name}
+              itemToStringValue={(item: ContactType) => item.id}
+              value={selectedContact}
+              onValueChange={(item: ContactType | null) => {
+                setValue("primary_contact_name", item?.name ?? "")
+                setValue("primary_contact_email", item?.email ?? "")
+              }}
+            >
+              <ComboboxInput placeholder="Select a contact..." showTrigger />
+              <ComboboxContent>
+                <ComboboxList>
+                  {contacts.length === 0 ? (
+                    <ComboboxEmpty>No contacts available.</ComboboxEmpty>
+                  ) : (
+                    contacts.map((contact, index) => (
+                      <ComboboxItem key={contact.id} index={index} value={contact}>
+                        <div className="flex flex-col">
+                          <span>{contact.name}</span>
+                          {contact.email && (
+                            <span className="text-xs text-muted-foreground">{contact.email}</span>
+                          )}
+                        </div>
+                      </ComboboxItem>
+                    ))
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </div>
 
           {/* Notes */}

@@ -1,12 +1,12 @@
 import { UUID, Timestamp, Json } from "./common.types";
-import { AssetStatus } from "./enums";
+import { AssetStatus, AssetType } from "./enums";
 
 export interface Assets {
   id: UUID;
 
   client_id: string;
 
-  type_id: string;
+  type: AssetType;
 
   name: string;
 

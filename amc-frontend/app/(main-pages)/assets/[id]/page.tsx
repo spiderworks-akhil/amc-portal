@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useAsset, useUpdateAsset, useAssetContracts } from "@/hooks/use-assets"
+import { useClient } from "@/hooks/use-clients"
 import { useProviders } from "@/hooks/use-providers"
 import { useCreateProvider } from "@/hooks/use-create-provider"
 import { useCreateServer, useLinkAssetToServer } from "@/hooks/use-servers"
@@ -77,6 +78,7 @@ export default function AssetDetailPage() {
   const id = params.id as string
 
   const { data: asset, isLoading, isError } = useAsset(id)
+  const { data: assetClient } = useClient(asset?.client_id ?? null)
   const { data: contractsData, isLoading: contractsLoading } = useAssetContracts(id)
   const { data: providersData, refetch: refetchProviders } = useProviders()
   const updateAsset = useUpdateAsset()
@@ -886,6 +888,7 @@ export default function AssetDetailPage() {
         onSubmit={handleUpdateAsset}
         isPending={updateAsset.isPending}
         asset={asset}
+        contacts={assetClient?.contacts ?? []}
       />
 
       {/* Create Server Drawer */}
@@ -916,7 +919,6 @@ export default function AssetDetailPage() {
         onSubmit={handleCreateDomain}
         isPending={isCreatingDomain}
         assetId={id}
-        registrars={registrars}
       />
 
       {/* Create SSL Drawer */}

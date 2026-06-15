@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
 import type { Contact as ContactType } from "@/types/api"
+import { Checkbox } from "@/components/ui/r-checkbox"
 
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -97,10 +98,9 @@ export function ShowContactForm({
             <Input id="contact-phone" {...register("phone")} placeholder="+1 (555) 123-4567" />
           </div>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               {...register("is_primary")}
-              className="size-4 rounded border-input accent-primary"
+              // className="size-4 rounded border-input accent-primary"
             />
             <span>Primary contact</span>
           </label>

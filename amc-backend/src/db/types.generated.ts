@@ -43,7 +43,7 @@ export interface Assets {
   status: Generated<string>;
   tags: Generated<Json>;
   tech_stack: Json | null;
-  type_id: string;
+  type: Generated<string>;
   updated_at: Generated<Timestamp>;
   updated_by_id: string | null;
 }
@@ -51,14 +51,6 @@ export interface Assets {
 export interface AssetServers {
   asset_id: string;
   server_id: string;
-}
-
-export interface AssetTypes {
-  created_at: Generated<Timestamp>;
-  description: string | null;
-  id: Generated<string>;
-  is_active: Generated<boolean>;
-  name: string;
 }
 
 export interface AuditLogs {
@@ -94,6 +86,7 @@ export interface ClientContacts {
   is_primary: Generated<boolean>;
   name: string;
   phone: string | null;
+  should_send_notification: Generated<boolean | null>;
   updated_by: string | null;
 }
 
@@ -347,7 +340,6 @@ export interface Users {
 
 export interface DB {
   asset_servers: AssetServers;
-  asset_types: AssetTypes;
   assets: Assets;
   audit_logs: AuditLogs;
   client_account_managers: ClientAccountManagers;

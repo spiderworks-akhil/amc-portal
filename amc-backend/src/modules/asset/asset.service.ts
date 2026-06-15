@@ -6,7 +6,6 @@ import {
   CreateAssetDto,
   UpdateAssetDto,
   ListAssetsDto,
-  CreateAssetTypeDto,
   AssetSortBy,
   SortOrder,
 } from './dto';
@@ -25,7 +24,7 @@ export class AssetService {
       .values({
         name: dto.name,
         client_id: dto.client_id,
-        type_id: dto.type_id,
+        type: dto.type,
         primary_url: dto.primary_url ?? null,
         status: dto.status ?? 'live',
         primary_contact_name: dto.primary_contact_name ?? null,
@@ -48,7 +47,7 @@ export class AssetService {
       limit = 50,
       search,
       client_id,
-      type_id,
+      type,
       status,
       sort_by = AssetSortBy.NAME,
       sort_order = SortOrder.ASC,
@@ -57,7 +56,6 @@ export class AssetService {
 
     let query = this.db
       .selectFrom('assets')
-      .innerJoin('asset_types', 'asset_types.id', 'assets.type_id')
       .innerJoin('clients', 'clients.id', 'assets.client_id')
       .where('assets.deleted_at', 'is', null);
 
@@ -68,7 +66,7 @@ export class AssetService {
         eb('assets.primary_url', 'ilike', pattern),
         eb('assets.primary_contact_name', 'ilike', pattern),
         eb('assets.primary_contact_email', 'ilike', pattern),
-        eb('asset_types.name', 'ilike', pattern),
+        eb('assets.type', 'ilike', pattern),
       ]));
     }
 
@@ -76,8 +74,8 @@ export class AssetService {
       query = query.where('assets.client_id', '=', client_id);
     }
 
-    if (type_id) {
-      query = query.where('assets.type_id', '=', type_id);
+    if (type) {
+      query = query.where('assets.type', '=', type);
     }
 
     if (status) {
@@ -106,14 +104,14 @@ export class AssetService {
           'assets.name',
           'assets.primary_url',
           'assets.status',
-          'assets.type_id',
+          'assets.type',
           'assets.client_id',
           'assets.monitoring_enabled',
           'assets.primary_contact_name',
           'assets.primary_contact_email',
           'assets.created_at',
           'assets.updated_at',
-          'asset_types.name as type_name',
+          'assets.type as type_name',
           'clients.name as client_name',
         ])
         .orderBy(sql`${sql.raw(sortColumn)}`, order)
@@ -131,11 +129,10 @@ export class AssetService {
   async getById(id: string) {
     const asset = await this.db
       .selectFrom('assets')
-      .innerJoin('asset_types', 'asset_types.id', 'assets.type_id')
       .innerJoin('clients', 'clients.id', 'assets.client_id')
       .selectAll('assets')
       .select([
-        'asset_types.name as type_name',
+        'assets.type as type_name',
         'clients.name as client_name',
       ])
       .where('assets.id', '=', id)
@@ -242,27 +239,6 @@ export class AssetService {
       .execute();
 
     return { message: 'Asset deleted successfully' };
-  }
-
-  async listTypes() {
-    return this.db
-      .selectFrom('asset_types')
-      .selectAll()
-      .orderBy('name', 'asc')
-      .execute();
-  }
-
-  async createType(dto: CreateAssetTypeDto) {
-    const type = await this.db
-      .insertInto('asset_types')
-      .values({
-        name: dto.name,
-        description: dto.description ?? null,
-      })
-      .returningAll()
-      .executeTakeFirst();
-
-    return type;
   }
 
   async getStatsByClient(clientId: string) {

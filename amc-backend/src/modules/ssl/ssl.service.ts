@@ -436,7 +436,7 @@ export class SslService {
           port: 443,
           servername: hostname,
           rejectUnauthorized: false,
-          timeout: 10000,
+          timeout: 15000,
         },
         () => {
           try {

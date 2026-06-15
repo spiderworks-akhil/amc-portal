@@ -16,6 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/r-select"
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@/components/ui/b-combobox"
+import type { Contact as ContactType } from "@/types/api"
 
 const assetSchema = z.object({
   name: z.string().min(1, "Asset name is required"),
@@ -34,14 +43,16 @@ export function AssetEditForm({
   onSubmit,
   isPending,
   asset,
+  contacts,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: { name: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; status?: string; monitoring_enabled?: boolean; notes?: string }) => void
   isPending: boolean
   asset: { name: string; primary_url?: string | null; primary_contact_name?: string | null; primary_contact_email?: string | null; status?: string | null; monitoring_enabled?: boolean | null; notes?: string | null }
+  contacts: ContactType[]
 }) {
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<AssetFormValues>({
+  const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
     defaultValues: {
       name: asset.name ?? "",
@@ -53,6 +64,10 @@ export function AssetEditForm({
       notes: asset.notes ?? "",
     },
   })
+
+  const selectedContact = contacts.find(
+    (c) => c.name === watch("primary_contact_name") && c.email === watch("primary_contact_email")
+  ) ?? null
 
   // Sync form when asset prop changes or drawer opens
   useEffect(() => {
@@ -100,14 +115,49 @@ export function AssetEditForm({
             {errors.primary_url?.message && <p className="text-xs text-destructive">{errors.primary_url.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="asset-contact-name">Contact Name</Label>
-            <Input id="asset-contact-name" {...register("primary_contact_name")} placeholder="John Doe" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="asset-contact-email">Contact Email</Label>
-            <Input id="asset-contact-email" type="email" {...register("primary_contact_email")} placeholder="john@example.com" />
-            {errors.primary_contact_email?.message && <p className="text-xs text-destructive">{errors.primary_contact_email.message}</p>}
-          </div>
+  <Label htmlFor="primary-contact">Primary Contact</Label>
+
+  <Controller
+    name="primary_contact_email"
+    control={control}
+    render={({ field }) => (
+      <Select
+        value={field.value || ""}
+        onValueChange={(value) => {
+          const contact = contacts.find((c) => c.id === value)
+
+          setValue("primary_contact_name", contact?.name ?? "")
+          setValue("primary_contact_email", contact?.email ?? "")
+        }}
+      >
+        <SelectTrigger id="primary-contact" size="sm">
+          <SelectValue placeholder="Select a contact..." />
+        </SelectTrigger>
+
+        <SelectContent>
+          {contacts.length === 0 ? (
+            <SelectItem value="__empty" disabled>
+              No contacts available
+            </SelectItem>
+          ) : (
+            contacts.map((contact) => (
+              <SelectItem key={contact.id} value={contact.id}>
+                <div className="flex flex-col">
+                  <span>{contact.name}</span>
+                  {contact.email && (
+                    <span className="text-xs text-muted-foreground">
+                      {contact.email}
+                    </span>
+                  )}
+                </div>
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+    )}
+  />
+</div>
           <div className="space-y-2">
             <Label htmlFor="asset-status">Status</Label>
             <Controller

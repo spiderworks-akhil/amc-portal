@@ -1,5 +1,6 @@
 import { IsEnum, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { AssetType } from 'src/db/types/enums';
 
 export enum AssetSortBy {
   NAME = 'name',
@@ -32,9 +33,9 @@ export class ListAssetsDto {
   @IsOptional()
   client_id?: string;
 
-  @IsUUID()
+  @IsEnum(AssetType)
   @IsOptional()
-  type_id?: string;
+  type?: AssetType;
 
   @IsString()
   @IsOptional()
