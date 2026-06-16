@@ -21,7 +21,7 @@ import {
 import { Search, Plus } from "lucide-react"
 import type { AssetListItem } from "@/types/api"
 import type { SortField } from "./asset-table"
-import { CreateAssetForm } from "../clients/client-details/asset-types-select-form"
+import { AssetCreateDialog } from "./asset-create-dialog"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
@@ -85,7 +85,7 @@ export function AssetsPageContent() {
     sort_order: sortOrder,
   })
 
-  const { data: clientsData } = useClients({ limit: 200, sort_by: "name", sort_order: "asc" })
+  const { data: clientsData } = useClients({ limit: 100, sort_by: "name", sort_order: "asc" })
   const { mutate: createAsset, isPending: isCreating } = useCreateAsset()
   const { mutate: deleteAsset } = useDeleteAsset()
 
@@ -285,13 +285,14 @@ export function AssetsPageContent() {
         )}
       </div>
 
-      {/* Create Dialog */}
-      {/* <CreateAssetForm
+      <AssetCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
+        onSubmit={handleCreateSubmit}
         isPending={isCreating}
         types={ASSET_TYPES}
-      /> */}
+        clients={clientsData?.data ?? []}
+      />
     </div>
   )
 }

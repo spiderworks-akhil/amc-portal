@@ -4,12 +4,19 @@ import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, Globe } from "lucide-react"
-import { SmoothSelect } from "@/components/ui/smooth-select"
+import { Loader2 } from "lucide-react"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import type { ClientListItem } from "@/types/api"
 
 const assetSchema = z.object({
@@ -44,9 +51,9 @@ export function AssetCreateDialog({
   const {
     register,
     handleSubmit,
-    watch,
     setValue,
     reset,
+    watch,
     formState: { errors },
   } = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -61,15 +68,24 @@ export function AssetCreateDialog({
     },
   })
 
-  const selectedType = watch("type")
   const selectedClientId = watch("client_id")
+  const selectedType = watch("type")
 
-  // Reset form whenever dialog opens
   useEffect(() => {
     if (open) {
       reset()
     }
   }, [open, reset])
+
+  const clientOptions = clients.map((client) => ({
+    value: client.id,
+    label: client.company ? `${client.name} (${client.company})` : client.name,
+  }))
+
+  const typeOptions = types.map((t) => ({
+    value: t.value,
+    label: t.label,
+  }))
 
   const onFormSubmit = (data: AssetFormValues) => {
     onSubmit({
@@ -81,128 +97,180 @@ export function AssetCreateDialog({
       primary_contact_email: data.primary_contact_email || undefined,
       notes: data.notes || undefined,
     })
-    reset()
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg" showCloseButton>
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Globe className="size-5" />
-            </div>
-            <div>
-              <DialogTitle>Create Asset</DialogTitle>
-              <DialogDescription>Add a new asset to the system.</DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
+      <DrawerContent className="w-full max-h-screen overflow-y-auto sm:max-w-md">
+        <DrawerHeader>
+          <DrawerTitle>Create Asset</DrawerTitle>
+          <DrawerDescription>
+            Add a new asset to the system.
+          </DrawerDescription>
+        </DrawerHeader>
 
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5 pt-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Client */}
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="asset-client">
-                Client <span className="text-destructive">*</span>
-              </Label>
-              <SmoothSelect
-                options={clients.map(client => ({ value: client.id, label: client.name }))}
-                value={selectedClientId || undefined}
-                placeholder="Select client..."
-                onChange={(value) => {
-                  setValue("client_id", value, { shouldValidate: true, shouldDirty: true })
-                }}
-              />
-              {errors.client_id?.message && (
-                <p className="text-xs text-destructive">{errors.client_id.message}</p>
-              )}
-            </div>
+        <form
+          onSubmit={handleSubmit(onFormSubmit)}
+          className="flex flex-1 flex-col gap-5 p-4 pt-6"
+        >
+          {/* Client */}
+          <div className="space-y-2">
+            <Label htmlFor="client-select">
+              Client <span className="text-destructive">*</span>
+            </Label>
 
-            {/* Asset Name */}
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="asset-name">
-                Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="asset-name"
-                {...register("name")}
-                placeholder="e.g., Client Website, Mobile App"
-                autoFocus
-              />
-              {errors.name?.message && (
-                <p className="text-xs text-destructive">{errors.name.message}</p>
-              )}
-            </div>
+            <SearchableSelect
+              id="client-select"
+              options={clientOptions}
+              value={selectedClientId}
+              onChange={(value) =>
+                setValue("client_id", value, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }
+              placeholder="Select client..."
+              searchPlaceholder="Search clients..."
+              emptyText="No clients found."
+            />
 
-            {/* Asset Type */}
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="asset-type">
-                Type <span className="text-destructive">*</span>
-              </Label>
-              <SmoothSelect
-                options={types}
-                value={selectedType || undefined}
-                placeholder="Select asset type..."
-                onChange={(value) => {
-                  setValue("type", value, { shouldValidate: true, shouldDirty: true })
-                }}
-              />
-              {errors.type?.message && (
-                <p className="text-xs text-destructive">{errors.type.message}</p>
-              )}
-            </div>
-
-            {/* Primary URL */}
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="asset-url">Primary URL</Label>
-              <Input
-                id="asset-url"
-                type="url"
-                {...register("primary_url")}
-                placeholder="https://example.com"
-              />
-              {errors.primary_url?.message && (
-                <p className="text-xs text-destructive">{errors.primary_url.message}</p>
-              )}
-            </div>
-
-            {/* Contact Name */}
-            <div className="space-y-2">
-              <Label htmlFor="asset-contact-name">Contact Name</Label>
-              <Input
-                id="asset-contact-name"
-                {...register("primary_contact_name")}
-                placeholder="John Doe"
-              />
-            </div>
-
-            {/* Contact Email */}
-            <div className="space-y-2">
-              <Label htmlFor="asset-contact-email">Contact Email</Label>
-              <Input
-                id="asset-contact-email"
-                type="email"
-                {...register("primary_contact_email")}
-                placeholder="john@example.com"
-              />
-              {errors.primary_contact_email?.message && (
-                <p className="text-xs text-destructive">{errors.primary_contact_email.message}</p>
-              )}
-            </div>
+            {errors.client_id?.message && (
+              <p className="text-xs text-destructive">
+                {errors.client_id.message}
+              </p>
+            )}
           </div>
 
-          <DialogFooter showCloseButton={false}>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          {/* Asset Name */}
+          <div className="space-y-2">
+            <Label htmlFor="asset-name">
+              Name <span className="text-destructive">*</span>
+            </Label>
+
+            <Input
+              id="asset-name"
+              {...register("name")}
+              placeholder="e.g., Client Website, Mobile App"
+              autoFocus
+            />
+
+            {errors.name?.message && (
+              <p className="text-xs text-destructive">
+                {errors.name.message}
+              </p>
+            )}
+          </div>
+
+          {/* Asset Type */}
+          <div className="space-y-2">
+            <Label htmlFor="type-select">
+              Type <span className="text-destructive">*</span>
+            </Label>
+
+            <SearchableSelect
+              id="type-select"
+              options={typeOptions}
+              value={selectedType}
+              onChange={(value) =>
+                setValue("type", value, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }
+              placeholder="Select asset type..."
+              searchPlaceholder="Search types..."
+              emptyText="No types found."
+            />
+
+            {errors.type?.message && (
+              <p className="text-xs text-destructive">
+                {errors.type.message}
+              </p>
+            )}
+          </div>
+
+          {/* Primary URL */}
+          <div className="space-y-2">
+            <Label htmlFor="asset-url">Primary URL</Label>
+
+            <Input
+              id="asset-url"
+              type="url"
+              {...register("primary_url")}
+              placeholder="https://example.com"
+            />
+
+            {errors.primary_url?.message && (
+              <p className="text-xs text-destructive">
+                {errors.primary_url.message}
+              </p>
+            )}
+          </div>
+
+          {/* Contact Name */}
+          <div className="space-y-2">
+            <Label htmlFor="asset-contact-name">Contact Name</Label>
+
+            <Input
+              id="asset-contact-name"
+              {...register("primary_contact_name")}
+              placeholder="John Doe"
+            />
+          </div>
+
+          {/* Contact Email */}
+          <div className="space-y-2">
+            <Label htmlFor="asset-contact-email">Contact Email</Label>
+
+            <Input
+              id="asset-contact-email"
+              type="email"
+              {...register("primary_contact_email")}
+              placeholder="john@example.com"
+            />
+
+            {errors.primary_contact_email?.message && (
+              <p className="text-xs text-destructive">
+                {errors.primary_contact_email.message}
+              </p>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="asset-notes">Notes</Label>
+
+            <textarea
+              id="asset-notes"
+              {...register("notes")}
+              placeholder="Additional notes about this asset..."
+              rows={3}
+              className="h-auto w-full min-w-0 resize-none rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+            />
+
+            {errors.notes?.message && (
+              <p className="text-xs text-destructive">
+                {errors.notes.message}
+              </p>
+            )}
+          </div>
+
+          <DrawerFooter className="mt-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
+
             <Button type="submit" disabled={isPending}>
-              {isPending && <Loader2 className="size-4 animate-spin" />}
+              {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
               {isPending ? "Creating..." : "Create Asset"}
             </Button>
-          </DialogFooter>
+          </DrawerFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   )
 }

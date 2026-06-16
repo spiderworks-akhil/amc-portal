@@ -49,6 +49,7 @@ import {
   Pencil,
 } from "lucide-react"
 import { AssetEditForm } from "@/components/assets/asset-details/asset-edit-form"
+import Link from "next/link"
 
 const STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
   live: "emerald",
@@ -545,12 +546,12 @@ export default function AssetDetailPage() {
                       >
                         <Globe2 className="size-4 text-muted-foreground" />
                       </div>
-                      <div
+                      <Link
                         className="min-w-0 flex-1 cursor-pointer"
-                        onClick={() => router.push("/domains")}
+                        href={`/domains/${domain.id}`}
                         role="button"
                         tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/domains") }}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/domains/${domain.id}`) }}
                       >
                         <p className="text-sm font-medium truncate">{domain.fqdn}</p>
                         {domain.registrar_name && (
@@ -558,7 +559,7 @@ export default function AssetDetailPage() {
                             {domain.registrar_name}
                           </p>
                         )}
-                      </div>
+                      </Link>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setEditingDomain(domain); setEditDomainOpen(true) }}
@@ -647,18 +648,18 @@ export default function AssetDetailPage() {
                       >
                         <ShieldCheck className="size-4 text-muted-foreground" />
                       </div>
-                      <div
+                      <Link
                         className="min-w-0 flex-1 cursor-pointer"
-                        onClick={() => router.push("/ssl-certificates")}
+                        href={`/ssl-certificates/${cert.id}`}
                         role="button"
                         tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/ssl-certificates") }}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/ssl-certificates/${cert.id}`) }}
                       >
                         <p className="text-sm font-medium truncate">{cert.common_name || cert.domain_fqdn || "SSL Certificate"}</p>
                         {cert.issuer && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5">{cert.issuer}</p>
                         )}
-                      </div>
+                      </Link>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setEditingSsl(cert); setEditSslOpen(true) }}
