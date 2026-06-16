@@ -28,22 +28,20 @@ export function SmoothSelect({
   onChange,
   className,
 }: SmoothSelectProps) {
-  const selectedOption = options.find((opt) => opt.value === value)
-  console.log("options" ,options);
   
   return (
     <Select
       value={value}
       onValueChange={onChange}
     >
-      <SelectTrigger className={`w-full  ${className}`}>
+      <SelectTrigger className={`w-full capitalize ${className}`}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
 
-      <SelectContent className=''>
+      <SelectContent className='capitalize'>
         {options.map((option) => {
           console.log(option)
-          return <SelectItem   className="text-black dark:text-white" key={option.value} value={option.value}>{option.label}</SelectItem>
+          return <SelectItem   className="text-black dark:text-white capitalize p-2 cursor-pointer" key={option.value} value={option.value}>{option.label}</SelectItem>
         })}
       </SelectContent>
     </Select>

@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { DomainCard } from "./domain-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SmoothSelect } from "@/components/ui/r-select"
 import {
   Pagination,
   PaginationContent,
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/pagination"
 import type { DomainListItem } from "@/types/api"
 import { AUTO_RENEW_OPTIONS } from "./constants"
+import { SmoothSelect } from "../ui/smooth-select"
 
 interface DomainGridProps {
   data: DomainListItem[]
@@ -59,7 +59,7 @@ export function DomainGrid({
 
         <div className="w-full sm:w-44">
           <SmoothSelect
-            options={AUTO_RENEW_OPTIONS}
+            options={AUTO_RENEW_OPTIONS.map((option) => ({ ...option, label: option.value }))}
             value={autoRenewFilter}
             onChange={onAutoRenewChange}
             className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"

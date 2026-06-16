@@ -36,6 +36,10 @@ export class ContactDto {
   @IsOptional()
   is_primary?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  should_send_notification?: boolean;
+
   @IsUUID()
   @IsOptional()
   client_id?: string;
@@ -103,4 +107,8 @@ export class UpdateContactDto {
   @IsBoolean()
   @IsOptional()
   is_primary?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  should_send_notification?: boolean;
 }

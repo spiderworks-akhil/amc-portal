@@ -16,6 +16,7 @@ import { DomainModule } from './modules/domain/domain.module';
 import { ProviderModule } from './modules/provider/provider.module';
 import { ServerModule } from './modules/server/server.module';
 import { SslModule } from './modules/ssl/ssl.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { SslModule } from './modules/ssl/ssl.module';
     ProviderModule,
     ServerModule,
     SslModule,
+    DashboardModule,
     UsersModule,
   ],
   controllers: [AppController],

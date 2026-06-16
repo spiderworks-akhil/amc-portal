@@ -65,6 +65,8 @@ import {
   Globe,
   Archive,
   ExternalLink,
+  Bell,
+  BellOff,
 } from "lucide-react";
 
 import type { Contact as ContactType } from "@/types/api";
@@ -128,6 +130,7 @@ export default function ClientDetailPage() {
       email: string;
       phone: string;
       is_primary: boolean;
+      should_send_notification: boolean;
     }) => {
       addContact.mutate(data, {
         onSuccess: () => setAddContactOpen(false),
@@ -147,6 +150,7 @@ export default function ClientDetailPage() {
       email: string;
       phone: string;
       is_primary: boolean;
+      should_send_notification: boolean;
     }) => {
       if (!editingContact) return;
       updateContact.mutate(
@@ -465,6 +469,12 @@ export default function ClientDetailPage() {
                             <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary shrink-0">
                               <Check className="size-2.5" />
                               Primary
+                            </span>
+                          )}
+                          {contact.should_send_notification && (
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 shrink-0">
+                              <Bell className="size-2.5" />
+                              Notifications
                             </span>
                           )}
                         </div>

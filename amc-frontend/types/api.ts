@@ -53,6 +53,7 @@ export interface Contact {
   email?: string | null
   phone?: string | null
   is_primary: boolean
+  should_send_notification: boolean
   created_at: string
 }
 
@@ -82,6 +83,7 @@ export interface CreateContactPayload {
   email?: string
   phone?: string
   is_primary?: boolean
+  should_send_notification?: boolean
 }
 
 export interface UpdateContactPayload {
@@ -90,6 +92,7 @@ export interface UpdateContactPayload {
   email?: string
   phone?: string
   is_primary?: boolean
+  should_send_notification?: boolean
 }
 
 export interface ApiResponse<T> {

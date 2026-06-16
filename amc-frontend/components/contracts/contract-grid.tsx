@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { ContractCard } from "./contract-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SmoothSelect } from "@/components/ui/r-select"
 import {
   Pagination,
   PaginationContent,
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/pagination"
 import type { ContractListItem } from "@/types/api"
 import { STATUS_OPTIONS } from "./constants"
+import { SmoothSelect } from "../ui/smooth-select"
 
 interface ContractGridProps {
   data: ContractListItem[]
@@ -59,7 +59,7 @@ export function ContractGrid({
 
         <div className="w-full sm:w-44">
           <SmoothSelect
-            options={STATUS_OPTIONS}
+            options={STATUS_OPTIONS?.map((option) => ({ ...option, label: option.value }))}
             value={statusFilter}
             onChange={onStatusChange}
             className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"

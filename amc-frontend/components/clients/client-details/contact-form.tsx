@@ -19,6 +19,7 @@ const contactSchema = z.object({
   email: z.string().optional(),
   phone: z.string().optional(),
   is_primary: z.boolean().optional(),
+  should_send_notification: z.boolean().optional(),
 })
 type ContactFormValues = z.infer<typeof contactSchema>
 
@@ -31,7 +32,7 @@ export function ShowContactForm({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: { name: string; designation: string; email: string; phone: string; is_primary: boolean }) => void
+  onSubmit: (data: { name: string; designation: string; email: string; phone: string; is_primary: boolean; should_send_notification: boolean }) => void
   isPending: boolean
   contact?: ContactType | null
 }) {
@@ -43,6 +44,7 @@ export function ShowContactForm({
       email: contact?.email ?? "",
       phone: contact?.phone ?? "",
       is_primary: contact?.is_primary ?? false,
+      should_send_notification: contact?.should_send_notification ?? true,
     },
   })
 
@@ -53,6 +55,7 @@ export function ShowContactForm({
       email: contact?.email ?? "",
       phone: contact?.phone ?? "",
       is_primary: contact?.is_primary ?? false,
+      should_send_notification: contact?.should_send_notification ?? true,
     })
   }, [contact, reset])
 
@@ -63,6 +66,7 @@ export function ShowContactForm({
       email: data.email?.trim() ?? "",
       phone: data.phone?.trim() ?? "",
       is_primary: data.is_primary ?? false,
+      should_send_notification: data.should_send_notification ?? true,
     })
   }
 
@@ -100,9 +104,14 @@ export function ShowContactForm({
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox
               {...register("is_primary")}
-              // className="size-4 rounded border-input accent-primary"
             />
             <span>Primary contact</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox
+              {...register("should_send_notification")}
+            />
+            <span>Receive email notifications</span>
           </label>
           <DrawerFooter className="mt-auto">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
