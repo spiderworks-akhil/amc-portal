@@ -9,6 +9,8 @@ export function getExpiryBadge(
 ): { label: string; color: "red" | "amber" | "emerald" | "gray" } | null {
   if (daysToExpiry === null) return null
   if (daysToExpiry <= 0) return { label: "Expired", color: "red" }
+  if (daysToExpiry <= 7) return { label: `${daysToExpiry}d left`, color: "red" }
   if (daysToExpiry <= 30) return { label: `${daysToExpiry}d left`, color: "amber" }
+  if (daysToExpiry <= 60) return { label: `${daysToExpiry}d left`, color: "gray" }
   return { label: "Active", color: "emerald" }
 }

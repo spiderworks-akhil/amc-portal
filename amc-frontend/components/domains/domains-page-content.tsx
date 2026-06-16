@@ -3,7 +3,7 @@
 import { useCallback, useState, useEffect } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { DomainGrid } from "@/components/domains/domain-grid"
-import { useDomains } from "@/hooks/use-domains"
+import { useDomains, useDeleteDomain } from "@/hooks/use-domains"
 import { useDebounce } from "@/hooks/use-debounce"
 
 export function DomainsPageContent() {
@@ -49,6 +49,8 @@ export function DomainsPageContent() {
     sort_order: "asc",
   })
 
+  const deleteMutation = useDeleteDomain()
+
   const updateParams = useCallback(
     (updates: Record<string, string | undefined>) => {
       const params = new URLSearchParams(searchParams.toString())
@@ -89,6 +91,13 @@ export function DomainsPageContent() {
     [router]
   )
 
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteMutation.mutate(id)
+    },
+    [deleteMutation]
+  )
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-4">
       <div className="space-y-4">
@@ -108,10 +117,12 @@ export function DomainsPageContent() {
           isLoading={isLoading}
           search={inputValue}
           autoRenewFilter={autoRenewFilter}
+          isDeleting={deleteMutation.isPending}
           onSearchChange={handleSearchChange}
           onAutoRenewChange={handleAutoRenewChange}
           onPageChange={handlePageChange}
           onDomainClick={handleDomainClick}
+          onDelete={handleDelete}
         />
       </div>
     </div>

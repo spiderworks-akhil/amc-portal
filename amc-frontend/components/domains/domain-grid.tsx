@@ -2,8 +2,6 @@
 
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
-import { DomainCard } from "./domain-card"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Pagination,
   PaginationContent,
@@ -16,6 +14,7 @@ import {
 import type { DomainListItem } from "@/types/api"
 import { AUTO_RENEW_OPTIONS } from "./constants"
 import { SmoothSelect } from "../ui/smooth-select"
+import { DomainTable } from "./domain-table"
 
 interface DomainGridProps {
   data: DomainListItem[]
@@ -24,10 +23,12 @@ interface DomainGridProps {
   isLoading: boolean
   search: string
   autoRenewFilter: string
+  isDeleting?: boolean
   onSearchChange: (value: string) => void
   onAutoRenewChange: (value: string) => void
   onPageChange: (page: number) => void
   onDomainClick: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 export function DomainGrid({
@@ -37,10 +38,12 @@ export function DomainGrid({
   isLoading,
   search,
   autoRenewFilter,
+  isDeleting,
   onSearchChange,
   onAutoRenewChange,
   onPageChange,
   onDomainClick,
+  onDelete,
 }: DomainGridProps) {
   return (
     <div className="space-y-6">
@@ -58,38 +61,17 @@ export function DomainGrid({
         </div>
 
         <div className="w-full sm:w-44">
-          <SmoothSelect
-            options={AUTO_RENEW_OPTIONS.map((option) => ({ ...option, label: option.value }))}
-            value={autoRenewFilter}
-            onChange={onAutoRenewChange}
-            className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
-          />
+       
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-        {isLoading ? (
-          Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          ))
-        ) : data.length === 0 ? (
-          <div className="col-span-full py-12 text-center">
-            <p className="text-muted-foreground">No domains found</p>
-          </div>
-        ) : (
-          data.map((domain) => (
-            <DomainCard
-              key={domain.id}
-              domain={domain}
-              onClick={onDomainClick}
-            />
-          ))
-        )}
-      </div>
+      <DomainTable
+        data={data}
+        isLoading={isLoading}
+        isDeleting={isDeleting}
+        onDelete={onDelete}
+        onView={onDomainClick}
+      />
 
       {totalPages > 1 && (
         <Pagination>
