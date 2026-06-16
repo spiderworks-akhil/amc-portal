@@ -21,8 +21,30 @@ import type { ClientListItem, Contact as ContactType } from "@/types/api"
 import { SmoothSelect } from "../ui/smooth-select"
 import { useClient } from "@/hooks/use-clients"
 
+interface AssetCreateDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (data: {
+    name: string
+    type: string
+    primary_url?: string
+    primary_contact_name?: string
+    primary_contact_email?: string
+    notes?: string
+    client_id?: string
+  }) => void
+  isPending: boolean
+  types: Array<{ value: string; label: string }>
+  /** Pre-selected client ID (used on client detail page). When provided, hides client selector. */
+  clientId?: string
+  /** Client list for the dropdown (only needed when clientId is not provided). */
+  clients?: ClientListItem[]
+  /** Pre-loaded contacts (used on client detail page). When provided, skips fetching. */
+  contacts?: ContactType[]
+}
+
 const assetSchema = z.object({
-  client_id: z.string().min(1, "Client is required"),
+  client_id: z.string().optional(),
   name: z.string().min(1, "Asset name is required").max(255),
   type: z.string().min(1, "Asset type is required"),
   primary_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
@@ -33,23 +55,18 @@ const assetSchema = z.object({
 
 type AssetFormValues = z.infer<typeof assetSchema>
 
-interface AssetCreateDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: AssetFormValues) => void
-  isPending: boolean
-  types: Array<{ value: string; label: string }>
-  clients: ClientListItem[]
-}
-
 export function AssetCreateDialog({
   open,
   onOpenChange,
   onSubmit,
   isPending,
   types,
-  clients,
+  clientId,
+  clients = [],
+  contacts: contactsProp,
 }: AssetCreateDialogProps) {
+  const hasClientSelector = !clientId
+
   const {
     register,
     handleSubmit,
@@ -58,9 +75,13 @@ export function AssetCreateDialog({
     watch,
     formState: { errors },
   } = useForm<AssetFormValues>({
-    resolver: zodResolver(assetSchema),
+    resolver: zodResolver(
+      hasClientSelector
+        ? assetSchema.extend({ client_id: z.string().min(1, "Client is required") })
+        : assetSchema
+    ),
     defaultValues: {
-      client_id: "",
+      client_id: clientId ?? "",
       name: "",
       type: "",
       primary_url: "",
@@ -73,29 +94,41 @@ export function AssetCreateDialog({
   const selectedClientId = watch("client_id")
   const selectedType = watch("type")
 
-  const { data: clientDetail } = useClient(selectedClientId || null)
-  const contacts: ContactType[] = clientDetail?.contacts ?? []
+  // Fetch contacts from API only when no pre-loaded contacts and we have a client ID
+  const effectiveClientId = clientId || selectedClientId || null
+  const { data: clientDetail } = useClient(
+    contactsProp ? null : effectiveClientId
+  )
+  const contacts: ContactType[] = contactsProp ?? clientDetail?.contacts ?? []
 
   const selectedContact =
     contacts.find(
       (c) =>
         c.name === watch("primary_contact_name") &&
-        (c.email || "") === (watch("primary_contact_email") || ""),
+        (c.email || "") === (watch("primary_contact_email") || "")
     ) ?? null
 
   useEffect(() => {
     if (open) {
-      reset()
+      reset({
+        client_id: clientId ?? "",
+        name: "",
+        type: "",
+        primary_url: "",
+        primary_contact_name: "",
+        primary_contact_email: "",
+        notes: "",
+      })
     }
-  }, [open, reset])
+  }, [open, reset, clientId])
 
-  // Clear contact when client changes
+  // Clear contact when client changes (only for the client selector mode)
   useEffect(() => {
-    if (open) {
+    if (hasClientSelector && open) {
       setValue("primary_contact_name", "")
       setValue("primary_contact_email", "")
     }
-  }, [selectedClientId, open, setValue])
+  }, [selectedClientId, open, setValue, hasClientSelector])
 
   const clientOptions = clients.map((client) => ({
     value: client.id,
@@ -109,7 +142,7 @@ export function AssetCreateDialog({
 
   const onFormSubmit = (data: AssetFormValues) => {
     onSubmit({
-      client_id: data.client_id,
+      client_id: clientId ?? (data.client_id || undefined),
       name: data.name,
       type: data.type,
       primary_url: data.primary_url || undefined,
@@ -125,7 +158,9 @@ export function AssetCreateDialog({
         <DrawerHeader>
           <DrawerTitle>Create Asset</DrawerTitle>
           <DrawerDescription>
-            Add a new asset to the system.
+            {clientId
+              ? "Add a new asset for this client."
+              : "Add a new asset to the system."}
           </DrawerDescription>
         </DrawerHeader>
 
@@ -133,33 +168,35 @@ export function AssetCreateDialog({
           onSubmit={handleSubmit(onFormSubmit)}
           className="flex flex-1 flex-col gap-5 p-4 pt-6"
         >
-          {/* Client */}
-          <div className="space-y-2">
-            <Label htmlFor="client-select">
-              Client <span className="text-destructive">*</span>
-            </Label>
+          {/* Client Selector (only when no pre-selected client) */}
+          {hasClientSelector && (
+            <div className="space-y-2">
+              <Label htmlFor="client-select">
+                Client <span className="text-destructive">*</span>
+              </Label>
 
-            <SearchableSelect
-              id="client-select"
-              options={clientOptions}
-              value={selectedClientId}
-              onChange={(value) =>
-                setValue("client_id", value, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-              placeholder="Select client..."
-              searchPlaceholder="Search clients..."
-              emptyText="No clients found."
-            />
+              <SearchableSelect
+                id="client-select"
+                options={clientOptions}
+                value={selectedClientId}
+                onChange={(value) =>
+                  setValue("client_id", value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
+                placeholder="Select client..."
+                searchPlaceholder="Search clients..."
+                emptyText="No clients found."
+              />
 
-            {errors.client_id?.message && (
-              <p className="text-xs text-destructive">
-                {errors.client_id.message}
-              </p>
-            )}
-          </div>
+              {errors.client_id?.message && (
+                <p className="text-xs text-destructive">
+                  {errors.client_id.message}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Asset Name */}
           <div className="space-y-2">

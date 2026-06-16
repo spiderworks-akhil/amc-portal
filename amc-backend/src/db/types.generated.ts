@@ -140,6 +140,7 @@ export interface Contracts {
   deleted_at: Timestamp | null;
   end_date: Timestamp;
   id: Generated<string>;
+  notes: string | null;
   renewal_date: Timestamp;
   scope: string | null;
   start_date: Timestamp;
@@ -153,16 +154,22 @@ export interface Domains {
   auto_renew: Generated<boolean>;
   created_at: Generated<Timestamp>;
   created_by_id: string | null;
+  dns_status: Generated<string>;
   expiry_date: Timestamp | null;
   fqdn: string;
+  health_reason: string | null;
+  health_status: Generated<string>;
   id: Generated<string>;
   last_checked_at: Timestamp | null;
+  last_health_check_at: Timestamp | null;
   nameservers: Generated<Json>;
   notes: string | null;
   registered_date: Timestamp | null;
   registrar_id: string | null;
+  ssl_status: Generated<string>;
   updated_at: Generated<Timestamp>;
   updated_by_id: string | null;
+  website_status: Generated<string>;
 }
 
 export interface DomainSnapshots {
@@ -296,7 +303,10 @@ export interface SslCertificates {
   common_name: string | null;
   created_at: Generated<Timestamp>;
   created_by_id: string | null;
+  days_until_expiry: number | null;
   domain_id: string;
+  health_reason: string | null;
+  health_status: Generated<string>;
   id: Generated<string>;
   issuer: string | null;
   last_checked_at: Timestamp | null;

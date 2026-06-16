@@ -75,7 +75,7 @@ import { DetailSkeleton } from "@/components/clients/client-details/detail-skele
 import { ShowContactForm } from "@/components/clients/client-details/contact-form";
 import { ClientEditForm } from "@/components/clients/client-details/client-edit-form";
 import { AddManagerSheet } from "@/components/clients/client-details/add-manager-sheet";
-import { CreateAssetForm } from "@/components/clients/client-details/asset-types-select-form";
+import { AssetCreateDialog } from "@/components/assets/asset-create-dialog";
 
 const ASSET_TYPES = [
   { value: "website", label: "Website" },
@@ -718,13 +718,14 @@ export default function ClientDetailPage() {
       />
 
       {/* Create Asset Sheet */}
-      <CreateAssetForm
+      <AssetCreateDialog
         key={`create-asset-${createAssetOpen}`}
         open={createAssetOpen}
         onOpenChange={setCreateAssetOpen}
         onSubmit={handleCreateAsset}
         isPending={createAsset.isPending}
         types={ASSET_TYPES}
+        clientId={id}
         contacts={client.contacts}
       />
     </div>
