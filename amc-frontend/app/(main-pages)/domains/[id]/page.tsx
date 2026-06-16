@@ -1,13 +1,37 @@
-"use client"
+"use client";
 
-import { useParams, useRouter } from "next/navigation"
-import { useDomain } from "@/hooks/use-domains"
-import { formatDate } from "@/lib/format-utils"
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  useDomain,
+  useUpdateDomain,
+  useDeleteDomain,
+} from "@/hooks/use-domains";
+import { useProviders } from "@/hooks/use-providers";
+import { formatDate } from "@/lib/format-utils";
+import { DomainEditForm } from "@/components/assets/asset-details/domain-edit-form";
 
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { DetailSkeleton } from "@/components/clients/client-details/detail-skeleton"
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { DetailSkeleton } from "@/components/clients/client-details/detail-skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/r-alert-dialog";
+import { DetailRow, EmptyState } from "@/components/common/detail-row";
 import {
   ArrowLeft,
   Globe,
@@ -19,16 +43,30 @@ import {
   Clock,
   History,
   Server,
-} from "lucide-react"
+  Pencil,
+  Trash2,
+  ExternalLink,
+  Copy,
+  Check,
+  AlertTriangle,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export default function DomainDetailPage() {
-  const params = useParams()
-  const router = useRouter()
-  const id = params.id as string
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
 
-  const { data: domain, isLoading, isError } = useDomain(id)
+  const { data: domain, isLoading, isError } = useDomain(id);
+  const { data: providers } = useProviders();
+  const updateMutation = useUpdateDomain();
+  const deleteMutation = useDeleteDomain();
 
-  if (isLoading) return <DetailSkeleton />
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  if (isLoading) return <DetailSkeleton />;
 
   if (isError || !domain) {
     return (
@@ -39,7 +77,8 @@ export default function DomainDetailPage() {
           </div>
           <h2 className="text-xl font-semibold">Domain not found</h2>
           <p className="text-muted-foreground max-w-sm">
-            The domain you&apos;re looking for doesn&apos;t exist or may have been removed.
+            The domain you&apos;re looking for doesn&apos;t exist or may have
+            been removed.
           </p>
           <Button variant="outline" onClick={() => router.push("/domains")}>
             <ArrowLeft className="size-4 mr-2" />
@@ -47,30 +86,89 @@ export default function DomainDetailPage() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
-  const isExpired = domain.days_to_expiry !== null && domain.days_to_expiry <= 0
-  const isExpiringSoon = domain.days_to_expiry !== null && domain.days_to_expiry > 0 && domain.days_to_expiry <= 30
+  const isExpired =
+    domain.days_to_expiry !== null && domain.days_to_expiry <= 0;
+  const isExpiringSoon =
+    domain.days_to_expiry !== null &&
+    domain.days_to_expiry > 0 &&
+    domain.days_to_expiry <= 30;
+  const registrars = providers?.data ?? [];
+
+  const handleEdit = (data: {
+    fqdn: string;
+    registrar_id?: string;
+    registered_date?: string;
+    expiry_date?: string;
+    auto_renew?: boolean;
+    nameservers?: string[];
+    notes?: string;
+  }) => {
+    updateMutation.mutate(
+      { id, ...data },
+      {
+        onSuccess: () => {
+          toast.success("Domain updated successfully");
+          setEditOpen(false);
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
+  };
+
+  const handleDelete = () => {
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success("Domain deleted");
+        router.push("/domains");
+      },
+    });
+  };
+
+  const handleCopyFqdn = () => {
+    navigator.clipboard.writeText(domain.fqdn);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-6">
-        <Button variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground" onClick={() => router.push("/domains")}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-2 -ml-2 text-muted-foreground"
+          onClick={() => router.push("/domains")}
+        >
           <ArrowLeft className="size-4 mr-1" />
           Back to Domains
         </Button>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight truncate">{domain.fqdn}</h1>
-              {isExpired && (
-                <Badge variant="dot" size="sm" color="red">Expired</Badge>
-              )}
-              {isExpiringSoon && !isExpired && (
-                <Badge variant="dot" size="sm" color="amber">{domain.days_to_expiry}d left</Badge>
-              )}
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold tracking-tight truncate">
+                {domain.fqdn}
+              </h1>
+              <div className="flex items-center gap-1.5">
+                {isExpired && (
+                  <Badge variant="dot" size="sm" color="red">
+                    Expired
+                  </Badge>
+                )}
+                {isExpiringSoon && !isExpired && (
+                  <Badge variant="dot" size="sm" color="amber">
+                    {domain.days_to_expiry}d left
+                  </Badge>
+                )}
+                {!isExpired && !isExpiringSoon && domain.expiry_date && (
+                  <Badge variant="dot" size="sm" color="emerald">
+                    Active
+                  </Badge>
+                )}
+              </div>
             </div>
             <p className="text-muted-foreground flex items-center gap-1.5 mt-0.5">
               <Building2 className="size-4 shrink-0" />
@@ -83,7 +181,61 @@ export default function DomainDetailPage() {
               </button>
             </p>
           </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="size-3.5 mr-1.5" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteOpen(true)}
+              className="text-destructive hover:text-destructive hover:border-destructive/50"
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
         </div>
+      </div>
+
+      {/* Quick Info Bar */}
+      <div className="mb-6 flex items-center gap-3 flex-wrap">
+        <button
+          onClick={handleCopyFqdn}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs font-mono text-muted-foreground hover:bg-accent/50 transition-colors"
+        >
+          {copied ? (
+            <Check className="size-3 text-emerald-500" />
+          ) : (
+            <Copy className="size-3" />
+          )}
+          {domain.fqdn}
+        </button>
+        <a
+          href={`https://${domain.fqdn}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent/50 transition-colors"
+        >
+          <ExternalLink className="size-3" />
+          Visit
+        </a>
+        {domain.registrar_name && (
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs text-muted-foreground">
+            <Building2 className="size-3" />
+            {domain.registrar_name}
+          </span>
+        )}
+        {domain.auto_renew && (
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 text-xs text-emerald-700 dark:text-emerald-400">
+            <RefreshCw className="size-3" />
+            Auto-renew
+          </span>
+        )}
       </div>
 
       {/* Two-column layout */}
@@ -94,87 +246,82 @@ export default function DomainDetailPage() {
             <CardHeader>
               <CardTitle>Domain Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Globe className="size-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">FQDN</p>
-                  <p className="text-sm font-mono">{domain.fqdn}</p>
-                </div>
-              </div>                    {domain.registrar_name && (
-                <div className="flex items-start gap-3">
-                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Building2 className="size-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Registrar</p>
-                    <p className="text-sm">{domain.registrar_name}</p>
-                  </div>
-                </div>
+            <CardContent className="space-y-0">
+              <DetailRow
+                icon={<Globe className="size-4 text-primary" />}
+                iconBg="bg-primary/10"
+                label="FQDN"
+                value={domain.fqdn}
+                mono
+              />
+              {domain.registrar_name && (
+                <DetailRow
+                  icon={<Building2 className="size-4 text-primary" />}
+                  iconBg="bg-primary/10"
+                  label="Registrar"
+                  value={domain.registrar_name}
+                />
               )}
-
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Building2 className="size-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Linked Asset</p>
+              <DetailRow
+                icon={<Building2 className="size-4 text-primary" />}
+                iconBg="bg-primary/10"
+                label="Linked Asset"
+                value={
                   <button
                     type="button"
                     onClick={() => router.push(`/assets/${domain.asset_id}`)}
-                    className="text-sm text-primary hover:underline text-left"
+                    className="text-primary hover:underline text-left"
                   >
                     {domain.asset_name}
                   </button>
-                </div>
-              </div>
-
+                }
+              />
               {domain.registered_date && (
-                <div className="flex items-start gap-3">
-                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <CalendarClock className="size-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Registered</p>
-                    <p className="text-sm">{formatDate(domain.registered_date)}</p>
-                  </div>
-                </div>
+                <DetailRow
+                  icon={<CalendarClock className="size-4 text-primary" />}
+                  iconBg="bg-primary/10"
+                  label="Registered"
+                  value={formatDate(domain.registered_date)}
+                />
               )}
-
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <CalendarClock className="size-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Created</p>
-                  <p className="text-sm">{formatDate(domain.created_at)}</p>
-                </div>
-              </div>
+              <DetailRow
+                icon={<CalendarClock className="size-4 text-primary" />}
+                iconBg="bg-primary/10"
+                label="Created"
+                value={formatDate(domain.created_at)}
+              />
             </CardContent>
           </Card>
 
           {/* Nameservers Card */}
-          {domain.nameservers && domain.nameservers.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Server className="size-4" />
-                  Nameservers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Server className="size-4" />
+                Nameservers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {domain.nameservers && domain.nameservers.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {domain.nameservers.map((ns, i) => (
-                    <span key={i} className="inline-flex items-center rounded-md border border-border/60 bg-accent/50 px-2.5 py-1 text-xs font-mono">
+                    <span
+                      key={i}
+                      className="inline-flex items-center rounded-md border border-border/60 bg-accent/50 px-2.5 py-1 text-xs font-mono"
+                    >
                       {ns}
                     </span>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <EmptyState
+                  icon={<Server className="size-8" />}
+                  title="No nameservers"
+                  description="Nameservers will appear here once configured."
+                />
+              )}
+            </CardContent>
+          </Card>
 
           {/* Notes Card */}
           {domain.notes && (
@@ -186,62 +333,122 @@ export default function DomainDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{domain.notes}</p>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">
+                  {domain.notes}
+                </p>
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Right: Expiry & Auto-renew */}
+        {/* Right: Expiry & Status */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
+          <Card
+            className={
+              isExpired
+                ? "border-destructive/30 dark:border-destructive/20"
+                : isExpiringSoon
+                  ? "border-amber-300/50 dark:border-amber-700/30"
+                  : ""
+            }
+          >
             <CardHeader>
-              <CardTitle>Expiry & Renewal</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                {isExpired ? (
+                  <AlertTriangle className="size-4 text-destructive" />
+                ) : isExpiringSoon ? (
+                  <Clock className="size-4 text-amber-500" />
+                ) : (
+                  <CalendarClock className="size-4" />
+                )}
+                Expiry & Renewal
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Expiry Date</span>
-                <div className="text-right">
-                  <span className={`text-sm font-medium ${isExpired ? "text-destructive" : isExpiringSoon ? "text-amber-600 dark:text-amber-400" : ""}`}>
-                    {domain.expiry_date ? formatDate(domain.expiry_date) : "—"}
+            <CardContent className="space-y-0">
+              {/* Expiry Date - prominent */}
+              <div className="rounded-xl bg-muted/30 p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Expiry Date
                   </span>
-                  {domain.days_to_expiry !== null && (
-                    <p className={`text-xs ${isExpired ? "text-destructive" : "text-muted-foreground"} mt-0.5`}>
-                      {isExpired
-                        ? `Expired ${Math.abs(domain.days_to_expiry)} days ago`
-                        : `${domain.days_to_expiry} days remaining`}
-                    </p>
-                  )}
+                  <div className="text-right">
+                    <span
+                      className={`text-sm font-semibold ${isExpired ? "text-destructive" : isExpiringSoon ? "text-amber-600 dark:text-amber-400" : ""}`}
+                    >
+                      {domain.expiry_date
+                        ? formatDate(domain.expiry_date)
+                        : "—"}
+                    </span>
+                    {domain.days_to_expiry !== null && (
+                      <p
+                        className={`text-xs mt-0.5 ${isExpired ? "text-destructive" : isExpiringSoon ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}
+                      >
+                        {isExpired
+                          ? `Expired ${Math.abs(domain.days_to_expiry)} days ago`
+                          : `${domain.days_to_expiry} days remaining`}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Auto-renew</span>
-                {domain.auto_renew ? (
-                  <span className="flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
-                    <RefreshCw className="size-4" />
-                    Enabled
+              <DetailRow
+                icon={
+                  <RefreshCw
+                    className={`size-4 ${domain.auto_renew ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
+                  />
+                }
+                iconBg={
+                  domain.auto_renew
+                    ? "bg-emerald-100 dark:bg-emerald-950/50"
+                    : "bg-muted"
+                }
+                label="Auto-renew"
+                value={
+                  domain.auto_renew ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                      Enabled
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Disabled</span>
+                  )
+                }
+              />
+              <DetailRow
+                icon={<Clock className="size-4 text-muted-foreground" />}
+                iconBg="bg-muted"
+                label="Last Checked"
+                value={
+                  domain.last_checked_at
+                    ? formatDate(domain.last_checked_at)
+                    : "Never"
+                }
+              />
+              <DetailRow
+                icon={<ShieldCheck className="size-4 text-muted-foreground" />}
+                iconBg="bg-muted"
+                label="SSL Certificates"
+                value={
+                  <span>
+                    {domain.ssl_count || domain.sslCertificates?.length || 0}
+                    <button
+                      onClick={() => {
+                        const el = document.getElementById("ssl-section");
+                        el?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="ml-1.5 text-xs text-primary hover:underline"
+                    >
+                      View
+                    </button>
                   </span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Disabled</span>
-                )}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Last Checked</span>
-                <span className="text-sm font-medium">
-                  {domain.last_checked_at ? formatDate(domain.last_checked_at) : "—"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">SSL Certificates</span>
-                <span className="text-sm font-medium">{domain.ssl_count || domain.sslCertificates?.length || 0}</span>
-              </div>
+                }
+              />
             </CardContent>
           </Card>
         </div>
       </div>
 
       {/* SSL Certificates Section */}
-      <Card className="mb-6">
+      <Card className="mb-6" id="ssl-section">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="size-4" />
@@ -250,27 +457,33 @@ export default function DomainDetailPage() {
           <CardDescription>
             {!domain.sslCertificates?.length
               ? "No SSL certificates found for this domain"
-              : `${domain.sslCertificates.length} certificate${domain.sslCertificates.length > 1 ? "s" : ""}`
-            }
+              : `${domain.sslCertificates.length} certificate${domain.sslCertificates.length > 1 ? "s" : ""}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!domain.sslCertificates?.length ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <ShieldCheck className="size-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">No SSL certificates</p>
-              <p className="text-xs mt-1">SSL data will appear here when certificates are linked.</p>
-            </div>
+            <EmptyState
+              icon={<ShieldCheck className="size-8" />}
+              title="No SSL certificates"
+              description="SSL data will appear here when certificates are linked."
+            />
           ) : (
             <div className="space-y-3">
               {domain.sslCertificates.map((cert) => {
-                const validTo = cert.valid_to ? new Date(cert.valid_to) : null
-                const now = new Date()
+                const validTo = cert.valid_to ? new Date(cert.valid_to) : null;
+                const now = new Date();
                 const daysToExpiry = validTo
-                  ? Math.ceil((validTo.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-                  : null
-                const isCertExpired = daysToExpiry !== null && daysToExpiry <= 0
-                const isCertExpiring = daysToExpiry !== null && daysToExpiry > 0 && daysToExpiry <= 30
+                  ? Math.ceil(
+                      (validTo.getTime() - now.getTime()) /
+                        (1000 * 60 * 60 * 24),
+                    )
+                  : null;
+                const isCertExpired =
+                  daysToExpiry !== null && daysToExpiry <= 0;
+                const isCertExpiring =
+                  daysToExpiry !== null &&
+                  daysToExpiry > 0 &&
+                  daysToExpiry <= 30;
 
                 return (
                   <div
@@ -281,33 +494,63 @@ export default function DomainDetailPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <ShieldCheck className="size-4 text-muted-foreground shrink-0" />
-                          <p className="text-sm font-medium truncate">{cert.common_name || cert.issuer || "SSL Certificate"}</p>
+                          <p className="text-sm font-medium truncate">
+                            {cert.common_name ||
+                              cert.issuer ||
+                              "SSL Certificate"}
+                          </p>
                           {cert.type && (
                             <span className="inline-flex items-center rounded-md border border-border/50 bg-accent/50 px-1.5 py-0 text-[10px] font-medium text-muted-foreground capitalize shrink-0">
                               {cert.type}
                             </span>
                           )}
+                          {isCertExpired && (
+                            <Badge variant="dot" size="sm" color="red">
+                              Expired
+                            </Badge>
+                          )}
+                          {isCertExpiring && !isCertExpired && (
+                            <Badge variant="dot" size="sm" color="amber">
+                              {daysToExpiry}d left
+                            </Badge>
+                          )}
                         </div>
                         {cert.issuer && (
-                          <p className="text-xs text-muted-foreground mt-1">Issued by {cert.issuer}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Issued by {cert.issuer}
+                          </p>
                         )}
                       </div>
                     </div>
                     <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-muted-foreground">
                       {cert.valid_from && (
                         <div>
-                          <span className="block text-[10px] uppercase tracking-wider mb-0.5">Valid From</span>
+                          <span className="block text-[10px] uppercase tracking-wider mb-0.5">
+                            Valid From
+                          </span>
                           <span>{formatDate(cert.valid_from)}</span>
                         </div>
                       )}
                       {cert.valid_to && (
                         <div>
-                          <span className="block text-[10px] uppercase tracking-wider mb-0.5">Valid To</span>
-                          <span className={isCertExpired ? "text-destructive font-medium" : isCertExpiring ? "text-amber-600 dark:text-amber-400 font-medium" : ""}>
+                          <span className="block text-[10px] uppercase tracking-wider mb-0.5">
+                            Valid To
+                          </span>
+                          <span
+                            className={
+                              isCertExpired
+                                ? "text-destructive font-medium"
+                                : isCertExpiring
+                                  ? "text-amber-600 dark:text-amber-400 font-medium"
+                                  : ""
+                            }
+                          >
                             {formatDate(cert.valid_to)}
                             {daysToExpiry !== null && (
                               <span className="ml-1">
-                                {isCertExpired ? "(Expired)" : `(${daysToExpiry}d)`}
+                                {isCertExpired
+                                  ? "(Expired)"
+                                  : `(${daysToExpiry}d)`}
                               </span>
                             )}
                           </span>
@@ -315,15 +558,23 @@ export default function DomainDetailPage() {
                       )}
                       {cert.last_checked_at && (
                         <div>
-                          <span className="block text-[10px] uppercase tracking-wider mb-0.5">Last Checked</span>
+                          <span className="block text-[10px] uppercase tracking-wider mb-0.5">
+                            Last Checked
+                          </span>
                           <span>{formatDate(cert.last_checked_at)}</span>
                         </div>
                       )}
                       {cert.sans && cert.sans.length > 0 && (
                         <div>
-                          <span className="block text-[10px] uppercase tracking-wider mb-0.5">SANs</span>
-                          <span className="truncate block" title={cert.sans.join(", ")}>
-                            {cert.sans.length} subject{cert.sans.length > 1 ? "s" : ""}
+                          <span className="block text-[10px] uppercase tracking-wider mb-0.5">
+                            SANs
+                          </span>
+                          <span
+                            className="truncate block"
+                            title={cert.sans.join(", ")}
+                          >
+                            {cert.sans.length} subject
+                            {cert.sans.length > 1 ? "s" : ""}
                           </span>
                         </div>
                       )}
@@ -335,7 +586,10 @@ export default function DomainDetailPage() {
                         </summary>
                         <div className="mt-1.5 flex flex-wrap gap-1">
                           {cert.sans.map((san, i) => (
-                            <span key={i} className="inline-flex items-center rounded-md border border-border/50 bg-accent/30 px-1.5 py-0.5 text-[10px] font-mono">
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded-md border border-border/50 bg-accent/30 px-1.5 py-0.5 text-[10px] font-mono"
+                            >
                               {san}
                             </span>
                           ))}
@@ -343,7 +597,7 @@ export default function DomainDetailPage() {
                       </details>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
           )}
@@ -360,17 +614,16 @@ export default function DomainDetailPage() {
           <CardDescription>
             {!domain.snapshots?.length
               ? "No WHOIS checks recorded yet"
-              : `${domain.snapshots.length} snapshot${domain.snapshots.length > 1 ? "s" : ""} — most recent first`
-            }
+              : `${domain.snapshots.length} snapshot${domain.snapshots.length > 1 ? "s" : ""} — most recent first`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!domain.snapshots?.length ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <History className="size-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">No checks yet</p>
-              <p className="text-xs mt-1">WHOIS snapshots will be recorded when a domain check is triggered.</p>
-            </div>
+            <EmptyState
+              icon={<History className="size-8" />}
+              title="No checks yet"
+              description="WHOIS snapshots will be recorded when a domain check is triggered."
+            />
           ) : (
             <div className="space-y-3">
               {domain.snapshots.map((snapshot) => (
@@ -389,22 +642,32 @@ export default function DomainDetailPage() {
                       <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
                         {snapshot.registrar && (
                           <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">Registrar</span>
+                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">
+                              Registrar
+                            </span>
                             <span>{snapshot.registrar}</span>
                           </div>
                         )}
                         {snapshot.expiry_date && (
                           <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">Expiry</span>
+                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">
+                              Expiry
+                            </span>
                             <span>{formatDate(snapshot.expiry_date)}</span>
                           </div>
                         )}
-                        {snapshot.nameservers && snapshot.nameservers.length > 0 && (
-                          <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">Nameservers</span>
-                            <span>{snapshot.nameservers.length} server{snapshot.nameservers.length > 1 ? "s" : ""}</span>
-                          </div>
-                        )}
+                        {snapshot.nameservers &&
+                          snapshot.nameservers.length > 0 && (
+                            <div>
+                              <span className="block text-[10px] uppercase tracking-wider mb-0.5">
+                                Nameservers
+                              </span>
+                              <span>
+                                {snapshot.nameservers.length} server
+                                {snapshot.nameservers.length > 1 ? "s" : ""}
+                              </span>
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -414,6 +677,47 @@ export default function DomainDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Drawer */}
+      <DomainEditForm
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSubmit={handleEdit}
+        onDelete={() => {
+          setEditOpen(false);
+          setDeleteOpen(true);
+        }}
+        isPending={updateMutation.isPending}
+        isDeleting={deleteMutation.isPending}
+        domain={domain}
+        registrars={registrars}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Domain</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{domain.fqdn}</strong>?
+              This will also remove all associated snapshots. This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive hover:bg-destructive/80"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-  )
+  );
 }
+
+

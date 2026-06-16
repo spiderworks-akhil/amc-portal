@@ -30,29 +30,58 @@ export function StatCardSkeleton() {
   )
 }
 
-export function ExpiryBar({ expired, expiring30, expiring60, healthy, total }: {
+export function ExpiryBar({
+  expired = 0,
+  expiring30 = 0,
+  expiring60 = 0,
+  healthy = 0,
+  total,
+}: {
   expired: number
   expiring30: number
   expiring60: number
   healthy: number
   total: number
 }) {
-  if (total === 0) return null
-  const pct = (n: number) => (n / total) * 100
+  if (!total || total <= 0) return null
+
+  const percentages = [
+    (expired / total) * 100,
+    (expiring30 / total) * 100,
+    (expiring60 / total) * 100,
+  ]
+
+  const used = percentages.reduce((sum, p) => sum + p, 0)
+  const healthyPct = Math.max(0, 100 - used)
 
   return (
     <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted/50">
       {expired > 0 && (
-        <div className="bg-red-500 transition-all" style={{ width: `${pct(expired)}%` }} />
+        <div
+          className="bg-red-500"
+          style={{ width: `${percentages[0]}%` }}
+        />
       )}
+
       {expiring30 > 0 && (
-        <div className="bg-amber-500 transition-all" style={{ width: `${pct(expiring30)}%` }} />
+        <div
+          className="bg-amber-500"
+          style={{ width: `${percentages[1]}%` }}
+        />
       )}
+
       {expiring60 > 0 && (
-        <div className="bg-blue-500 transition-all" style={{ width: `${pct(expiring60)}%` }} />
+        <div
+          className="bg-blue-500"
+          style={{ width: `${percentages[2]}%` }}
+        />
       )}
+
       {healthy > 0 && (
-        <div className="bg-emerald-500 transition-all" style={{ width: `${pct(healthy)}%` }} />
+        <div
+          className="bg-emerald-500"
+          style={{ width: `${healthyPct}%` }}
+        />
       )}
     </div>
   )

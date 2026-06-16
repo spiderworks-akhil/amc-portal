@@ -372,12 +372,12 @@ export class DomainService {
 
   // ── Expiry tracking ──
 
-  async getExpiringDomains(days: number = 30) {
+  async getExpiringDomains(days: number = 30, managerId?: string) {
     const now = new Date();
     const threshold = new Date();
     threshold.setDate(threshold.getDate() + days);
 
-    return this.db
+    let query = this.db
       .selectFrom('domains')
       .innerJoin('assets', 'assets.id', 'domains.asset_id')
       .innerJoin('clients', 'clients.id', 'assets.client_id')
@@ -388,11 +388,32 @@ export class DomainService {
         'domains.auto_renew',
         'domains.last_checked_at',
         'assets.name as asset_name',
+        'assets.client_id as client_id',
         'clients.name as client_name',
         'clients.email as client_email',
       ])
       .where('domains.expiry_date', 'is not', null)
-      .where('domains.expiry_date', '<=', threshold)
+      .where('domains.expiry_date', '<=', threshold);
+
+    // If manager_id provided, filter to only clients assigned to this manager
+    if (managerId) {
+      const managedClientIds = await this.db
+        .selectFrom('client_account_managers')
+        .select('client_id')
+        .where('manager_id', '=', managerId)
+        .where('deleted_at', 'is', null)
+        .execute()
+        .then((rows) => rows.map((r) => r.client_id));
+
+      if (managedClientIds.length > 0) {
+        query = query.where('assets.client_id', 'in', managedClientIds);
+      } else {
+        // Manager has no assigned clients — return empty
+        return [];
+      }
+    }
+
+    return query
       .orderBy('domains.expiry_date', 'asc')
       .execute();
   }

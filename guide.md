@@ -5,14 +5,72 @@
 
 ---
 
-## Next Task (recommended)
+## Immediate Next Tasks (priority order)
 
-**Build the Contracts list page (frontend, section 1.5 Next.js)** — the backend is fully complete (527-line service with filtering, sorting, renewal pipeline, stats). The sidebar already links to `/contracts` and the page is currently a placeholder stub. This is the highest-impact next step because:
+### 1. Build Providers List + Detail Pages (Frontend)
+**Status:** Backend CRUD is 100% complete. Sidebar links to `/providers` but no page exists. Only a `create-provider-dialog.tsx` component exists. This is the **highest-impact** feature to build next because:
+- Backend is done — just needs list page, detail page, create/edit form
+- Unblocks server-provider context (servers reference providers)
+- Use the same patterns as Clients/Contracts/Servers pages
+- **Files to create:** `app/(main-pages)/providers/page.tsx`, `components/providers/providers-page-content.tsx`, `components/providers/providers-grid.tsx`, `components/providers/provider-card.tsx`, `components/providers/provider-detail.tsx`
 
-- Contracts are the core entity of an AMC management system
-- The backend CRUD, asset linking, renewal history, and expiry pipeline are all done
-- Frontend hooks (`useCreateContract`, `useLinkAssetToContract`) exist
-- It establishes the pattern for the other stub pages (Domains, SSL, Monitors)
+### 2. Add Create/Edit Contract Form
+**Status:** Backend CRUD is done. Contracts list + detail pages exist. But there's no create/edit form — users can't create or update contracts from the UI. The contract detail page needs an edit button + drawer (similar to the domain/SSL/server detail page pattern).
+
+### 3. Build Monitors List Page (Frontend)
+**Status:** Backend module doesn't exist yet. The frontend is just a placeholder stub. Before building the frontend, the backend `monitoring` module needs to be scaffolded with:
+- `Monitors` entity (HTTP/HTTPS/TCP/ping/keyword check types)
+- `MonitorChecks` entity (status, response time, status code per check)
+- `Incidents` entity (auto-created after N consecutive failures)
+- CRUD endpoints + BullMQ worker for running checks
+- Then build the frontend list + detail pages
+
+### 4. Add Domain Create Form
+**Status:** Backend `POST /domain` exists. The domain list page exists. But there's no "Add Domain" button/form. Users can only add domains through the asset detail page's create-domain-form component. Need a standalone domain creation flow (enter FQDN → auto-fill via the existing `/domain/verify-fqdn` endpoint).
+
+### 5. Add SSL Warning Badges
+**Status:** SSL list/detail pages exist but don't show warning badges for self-signed certificates, hostname mismatches, or expired certs. The backend `days_to_expiry` computation exists — just need frontend badge rendering.
+
+### 6. Apply RBAC Filtering to All Dashboard Sections
+**Status:** The `CriticalAlertsBanner` now filters by `manager_id` (server-side), but `useDomainExpiryStats`, `useExpiringContracts`, and `useExpiringSsl` still return global data. For consistent RBAC, these need the same `manager_id` filter treatment.
+
+---
+
+## Quick Wins (can be done in parallel with above)
+
+- **Clean up `console.log` in `components/ui/smooth-select.tsx`** line 43
+- **Fix pre-existing `calendar.tsx` TS error** (line 181: `'caption' does not exist in type 'Partial<ClassNames>'`)
+- **Add date range filter to SSL list page** (domains page already has one)
+- **Add auto-renew toggle to SSL list filter** (like domains page has)
+- **Extract EXPIRING_SOON_DAYS constant** (currently hardcoded to 30 in both backend status filter and frontend)
+
+---
+
+## What's Done ✅
+
+| Module | Backend | Frontend |
+|---|---|---|
+| Auth | ✅ Exchange/refresh/me/logout | ✅ Login via next-auth |
+| Users | ✅ CRUD | ✅ List page |
+| Clients | ✅ CRUD + contacts + managers | ✅ List + detail + edit |
+| Assets | ✅ CRUD + types + tags | ✅ List + detail + edit |
+| Contracts | ✅ CRUD + renewals + status | ✅ List + detail (no create/edit form) |
+| Domains | ✅ CRUD + WHOIS + status filter + manager_id filter | ✅ List + detail + edit + status filter + RBAC banner |
+| SSL | ✅ CRUD + TLS check + expiry | ✅ List + detail + edit |
+| Servers | ✅ CRUD + providers + update | ✅ List + detail + edit |
+| Providers | ✅ CRUD | ⚠️ Only create dialog — **no list/detail pages** |
+| Dashboard | ✅ Summary + expiring endpoints with RBAC | ✅ Component-based (10 files) + RBAC critical alerts |
+| Monitoring | ❌ Not started | ❌ Placeholder stub |
+| Reminders | ❌ Not started | ❌ Not started |
+| Audit Log | ❌ Not started | ❌ Not started |
+| Reports | ❌ Not started | ❌ Not started |
+| Client Portal | ❌ Not started | ❌ Not started |
+| CSV Import | ❌ Not started | ❌ Not started |
+
+### Shared Components
+- `components/common/detail-row.tsx` — `DetailRow` + `EmptyState` (used by domain, SSL, server detail pages)
+- `components/common/loader.tsx` — Loading spinner
+- `components/common/session-refresher.tsx` — JWT refresh logic
 
 ---
 
@@ -22,9 +80,9 @@
 - [x] Create two repos: `amc-api` (NestJS) and `amc-web` (Next.js) — _monorepo with `amc-backend` + `amc-frontend`_
 
 ### 0.2 Database
-- [ ] Docker Compose: PostgreSQL 16 + Redis 7
-- [x] `db/schema.ts` — full Kysely type definitions covering all Phase 1 entities
-- [x] Kysely migrations for each table (timestamped in `db/migrations/`)
+- [ ] Docker Compose: PostgreSQL 16 + Redis 7 _(only Redis present in docker-compose; PG runs externally)_
+- [x] `db/types.generated.ts` — full Kysely type definitions covering all Phase 1 entities
+- [x] Kysely migrations for each table (8 timestamped migrations)
 - [x] Seed script: sample clients, assets, domains, SSL certs
 - [x] Run migrations + seed in dev
 
@@ -42,8 +100,8 @@
 - [x] Layout shell: sidebar nav + topbar
 
 ### 0.5 Dev tooling
-- [ ] Pre-commit hooks (lint-staged, husky)
-- [ ] CI: lint → typecheck → test → build per PR
+- [ ] Pre-commit hooks (husky, lint-staged)
+- [ ] CI: lint → typecheck → test → build per PR (`.github/` missing)
 - [ ] GitHub issue/PR templates
 
 ---
@@ -54,12 +112,10 @@
 **NestJS:**
 - [x] `POST /auth/exchange-token`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`
 - [x] JWT token strategy with httpOnly cookie
-- [x] TOTP 2FA — _not yet implemented_
 - [x] Rate limiting on auth endpoints (`@nestjs/throttler`)
 
 **Next.js:**
 - [x] Login via next-auth with credentials provider
-- [ ] 2FA setup / verify page
 - [x] Auth middleware wrapping protected routes
 - [x] Session persistence via httpOnly cookie
 
@@ -106,44 +162,48 @@
 - [x] Renewal history (`ContractRenewal` records)
 
 **Next.js:**
-- [ ] **→ NEXT TASK** Contracts list page (renewal pipeline view, filter by status/cycle)
-- [ ] Contract detail (value, scope, assets covered, timeline)
+- [x] Contracts list page (renewal pipeline view, filter by status/cycle) — _implemented_
+- [x] Contract detail (value, scope, assets covered, timeline) — _implemented_
 - [ ] Create/edit contract form (multi-select assets)
 - [ ] Renewal calendar block (show upcoming renewals)
 
 ### 1.6 Service Providers + Servers module
 **NestJS:**
 - [x] CRUD providers: `POST/GET /providers`, `GET/PATCH/DELETE /providers/:id`
-- [x] CRUD servers: `POST/GET /servers`, `GET/PATCH/DELETE /servers/:id`
+- [x] CRUD servers: `POST/GET /servers`, `GET/PATCH/DELETE /servers/:id` + `PUT /servers/:id`
 - [x] Server belongs to provider, hosts many assets
 - [x] Track cost, renewal date, specs, IPs
 
 **Next.js:**
-- [ ] Providers list + detail
-- [ ] Servers list (groupable by provider)
-- [ ] Server detail with linked assets
+- [ ] **→ NEXT TASK** Providers list + detail
+- [x] Servers list (groupable by provider) — _implemented_
+- [x] Server detail with edit/delete/quick-info-bar + linked assets — _implemented_
+- [x] `ServerEditForm` drawer component — _implemented_
+- [x] `useUpdateServer` hook — _implemented_
 
 ### 1.7 Domains module (auto-tracking)
 **NestJS:**
-- [x] `POST/GET /domains`, `GET/PATCH/DELETE /domains/:id`
-- [x] WHOIS check endpoint (placeholder) + snapshot history
-- [x] `GET /domains?expiring=<days>`, `GET /domains/:id` with SSL certs
-- [ ] Daily worker: `domain-whois-check` re-checks all domains
+- [x] `POST/GET /domains/list`, `GET/PATCH/DELETE /domains/:id` + `status` filter (expired/expiring_soon/active)
+- [x] WHOIS check endpoint (`POST /domains/:id/check`) + snapshot history
+- [x] `GET /domains/expiring?days=&manager_id=` — now supports RBAC filtering via `manager_id`
+- [x] `GET /domains/stats`, `GET /domains/:id` with SSL certs
+- [ ] Daily worker: `domain-whois-check` re-checks all domains (no BullMQ workers exist)
 
 **Next.js:**
-- [ ] Domains list with expiry countdown + status indicators (currently a stub page)
-- [ ] Domain detail showing WHOIS data + SSL binding
+- [x] Domains list with expiry countdown + status indicators + status filter dropdown — _implemented_
+- [x] Domain detail with edit/delete/quick-info-bar + WHOIS history — _implemented_
 - [ ] Add domain form (enter FQDN → auto-fill)
 
 ### 1.8 SSL module (auto-tracking)
 **NestJS:**
-- [x] `POST/GET /ssl`, `GET/PATCH/DELETE /ssl/:id`
-- [x] TLS check endpoint (placeholder) + snapshot history
-- [x] Expiry stats (expired/30/60/90-day buckets)
-- [ ] Daily worker: `ssl-check` re-checks all certs
+- [x] `POST/GET /ssl/list`, `GET/PATCH/DELETE /ssl/:id`
+- [x] TLS check endpoint (`POST /ssl/:id/check`) + snapshot history
+- [x] Expiry stats (`GET /ssl/stats`, `GET /ssl/expiring?days=`)
+- [ ] Daily worker: `ssl-check` re-checks all certs (no BullMQ workers exist)
 
 **Next.js:**
-- [ ] SSL list with days-to-expiry, issuer, SANs (currently a stub page)
+- [x] SSL list with days-to-expiry, issuer, SANs — _implemented_
+- [x] SSL detail with edit/delete/quick-info-bar + check history — _implemented_
 - [ ] Warning badges (self-signed, host mismatch, expired)
 
 ### 1.9 Monitoring + Incidents module
@@ -177,13 +237,17 @@
 
 ### 1.11 Dashboard + Reports module
 **NestJS:**
-- [ ] `GET /dashboard/stats` — aggregated KPI response (total assets, up/down, expiring, incidents, AMC value)
+- [x] `GET /dashboard/summary` — aggregated KPI response
+- [x] `GET /domain/expiring?days=&manager_id=` — RBAC-aware expiring domains
 - [ ] `GET /reports/uptime/:assetId?month=&year=` — uptime % per period
 - [ ] BullMQ worker: `monthly-report` generates PDF + email on 1st of month
 - [ ] `GET /reports/renewal-pipeline` — upcoming renewals grouped
 
 **Next.js:**
-- [ ] Overview dashboard (4 KPI cards matching spec: Assets, Up now, Expiring 30d, Open incidents)
+- [x] Overview dashboard — component-based architecture (10 files in `components/dashboard/`)
+- [x] `CriticalAlertsBanner` with RBAC filtering (server-side `manager_id`)
+- [x] Stat cards, domain health, expiring domains/contracts/SSL, client health, quick actions
+- [x] Expired domains + expired SSL sections with red urgency cards
 - [ ] Expiry calendar (combined view: domains, SSL, contracts, servers)
 - [ ] Monthly uptime report page per client/asset
 - [ ] Renewal pipeline view

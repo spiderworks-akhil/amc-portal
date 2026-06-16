@@ -41,8 +41,9 @@ export class DomainController {
   @HttpCode(HttpStatus.OK)
   async getExpiring(
     @Query('days', new ParseIntPipe({ optional: true })) days?: number,
+    @Query('manager_id') managerId?: string,
   ) {
-    return this.domainService.getExpiringDomains(days ?? 30);
+    return this.domainService.getExpiringDomains(days ?? 30, managerId);
   }
 
   @Get('stats')

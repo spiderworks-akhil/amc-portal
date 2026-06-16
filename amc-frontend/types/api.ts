@@ -446,3 +446,16 @@ export interface UpdateAssetPayload {
   tags?: string[]
   notes?: string
 }
+
+export interface UpdateServerPayload {
+  provider_id?: string
+  label?: string
+  ip_addresses?: string[]
+  region?: string
+  operating_system?: string
+  panel_url?: string
+  monthly_cost?: number
+  currency?: string
+  renewal_date?: string
+  notes?: string
+}

@@ -85,12 +85,14 @@ export interface ClientDomainHealth {
   healthy: number
 }
 
-function useExpiringDomains(days: number = 30) {
+function useExpiringDomains(days: number = 30, managerId?: string) {
   return useQuery({
-    queryKey: ["dashboard", "expiring-domains", days],
+    queryKey: ["dashboard", "expiring-domains", days, managerId],
     queryFn: async () => {
+      const params: Record<string, unknown> = { days }
+      if (managerId) params.manager_id = managerId
       const { data } = await apiClient.get<ExpiringDomain[]>("/domain/expiring", {
-        params: { days },
+        params,
       })
       const now = new Date()
       return data.map((d) => ({

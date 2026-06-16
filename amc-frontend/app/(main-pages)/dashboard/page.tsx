@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "next-auth/react"
 import {
   useExpiringDomains,
   useDomainExpiryStats,
@@ -16,15 +17,19 @@ import { ExpiringSsl } from "@/components/dashboard/expiring-ssl"
 import { QuickActions } from "@/components/dashboard/quick-actions"
 
 export default function DashboardPage() {
+  const { data: session } = useSession()
+  const userId = session?.user?.id
+
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
   const { data: expiringDomains, isLoading: domainsLoading } = useExpiringDomains(90)
+  const { data: managerExpiringDomains } = useExpiringDomains(7, userId)
   const { data: expiryStats, isLoading: statsLoading } = useDomainExpiryStats()
   const { data: expiringContracts, isLoading: contractsLoading } = useExpiringContracts()
   const { data: expiringSsl, isLoading: sslLoading } = useExpiringSsl()
 
 
-  // Critical alerts: expiring within 7 days (not already expired)
-  const criticalDomains = (expiringDomains || []).filter(
+  // Critical alerts: filtered to manager's clients only, expiring within 7 days
+  const criticalDomains = (managerExpiringDomains || []).filter(
     (d) => d.days_to_expiry !== null && d.days_to_expiry > 0 && d.days_to_expiry <= 7
   )
 

@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import apiClient from "@/lib/api-client"
-import type { ApiResponse, CreateServerPayload, ServerListItem, ServerDetail, PaginatedResponse } from "@/types/api"
+import type { ApiResponse, CreateServerPayload, ServerListItem, ServerDetail, PaginatedResponse, UpdateServerPayload } from "@/types/api"
 
 const SERVERS_KEY = "servers"
 
@@ -58,6 +58,20 @@ export function useDetectServerProvider() {
       const { data } = await apiClient.get<DetectProviderResult>("/server/detect-provider", { params: { ip } })
       return data
     },
+  })
+}
+
+export function useUpdateServer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateServerPayload & { id: string }) => {
+      const { data } = await apiClient.put<ApiResponse<ServerListItem>>(`/server/${id}`, payload)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [SERVERS_KEY] })
+    },
+    onError: (err: Error) => toast.error(err.message),
   })
 }
 
