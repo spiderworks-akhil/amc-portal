@@ -24,6 +24,13 @@ export enum SortOrder {
   DESC = 'desc',
 }
 
+export enum DomainStatusFilter {
+  ALL = 'all',
+  ACTIVE = 'active',
+  EXPIRING_SOON = 'expiring_soon',
+  EXPIRED = 'expired',
+}
+
 export class ListDomainsDto {
   @Type(() => Number)
   @Min(1)
@@ -74,4 +81,8 @@ export class ListDomainsDto {
   @IsEnum(SortOrder)
   @IsOptional()
   sort_order?: SortOrder = SortOrder.ASC;
+
+  @IsEnum(DomainStatusFilter)
+  @IsOptional()
+  status?: DomainStatusFilter = DomainStatusFilter.ALL;
 }

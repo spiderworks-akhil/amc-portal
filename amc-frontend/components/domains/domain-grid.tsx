@@ -12,9 +12,10 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import type { DomainListItem } from "@/types/api"
-import { AUTO_RENEW_OPTIONS } from "./constants"
+import { AUTO_RENEW_OPTIONS, STATUS_OPTIONS } from "./constants"
 import { SmoothSelect } from "../ui/smooth-select"
 import { DomainTable } from "./domain-table"
+import { ExpiryDateRangeFilter } from "./expiry-date-range-filter"
 
 interface DomainGridProps {
   data: DomainListItem[]
@@ -23,9 +24,14 @@ interface DomainGridProps {
   isLoading: boolean
   search: string
   autoRenewFilter: string
+  statusFilter: string
+  expiryDateFrom?: string
+  expiryDateTo?: string
   isDeleting?: boolean
   onSearchChange: (value: string) => void
   onAutoRenewChange: (value: string) => void
+  onStatusChange: (value: string) => void
+  onExpiryDateRangeChange: (range: { from?: string; to?: string }) => void
   onPageChange: (page: number) => void
   onDomainClick: (id: string) => void
   onDelete: (id: string) => void
@@ -38,9 +44,14 @@ export function DomainGrid({
   isLoading,
   search,
   autoRenewFilter,
+  statusFilter,
+  expiryDateFrom,
+  expiryDateTo,
   isDeleting,
   onSearchChange,
   onAutoRenewChange,
+  onStatusChange,
+  onExpiryDateRangeChange,
   onPageChange,
   onDomainClick,
   onDelete,
@@ -60,8 +71,18 @@ export function DomainGrid({
           </div>
         </div>
 
-        <div className="w-full sm:w-44">
-       
+        <div className="flex items-center gap-2">
+          <SmoothSelect
+            options={STATUS_OPTIONS.map((o) => ({ ...o, label: o.value === "all" ? "All Status" : o.value === "expiring_soon" ? "Expiring Soon" : o.label }))}
+            value={statusFilter}
+            onChange={onStatusChange}
+            className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs w-36"
+          />
+          <ExpiryDateRangeFilter
+            from={expiryDateFrom}
+            to={expiryDateTo}
+            onChange={onExpiryDateRangeChange}
+          />
         </div>
       </div>
 

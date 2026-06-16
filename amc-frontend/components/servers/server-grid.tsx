@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { ServerCard } from "./server-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SmoothSelect } from "@/components/ui/r-select"
 import {
   Pagination,
   PaginationContent,
@@ -15,6 +14,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import type { Provider, ServerListItem } from "@/types/api"
+import { SmoothSelect } from "../ui/smooth-select"
 
 interface ServerGridProps {
   data: ServerListItem[]

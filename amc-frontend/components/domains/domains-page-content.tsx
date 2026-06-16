@@ -14,6 +14,9 @@ export function DomainsPageContent() {
   const page = Number(searchParams.get("page")) || 1
   const search = searchParams.get("search") || ""
   const autoRenewFilter = searchParams.get("auto_renew") || "all"
+  const statusFilter = searchParams.get("status") || "all"
+  const expiryDateFrom = searchParams.get("expiry_from") || undefined
+  const expiryDateTo = searchParams.get("expiry_to") || undefined
   const limit = 30
 
   const [inputValue, setInputValue] = useState(search)
@@ -44,9 +47,12 @@ export function DomainsPageContent() {
     search,
     auto_renew:
       autoRenewFilter !== "all" ? autoRenewFilter === "true" : undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
     limit,
     sort_by: "expiry_date",
     sort_order: "asc",
+    expiry_date_from: expiryDateFrom,
+    expiry_date_to: expiryDateTo,
   })
 
   const deleteMutation = useDeleteDomain()
@@ -77,6 +83,16 @@ export function DomainsPageContent() {
     [updateParams]
   )
 
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      updateParams({
+        status: value === "all" ? undefined : value,
+        page: "1",
+      })
+    },
+    [updateParams]
+  )
+
   const handlePageChange = useCallback(
     (newPage: number) => {
       updateParams({ page: String(newPage) })
@@ -98,6 +114,17 @@ export function DomainsPageContent() {
     [deleteMutation]
   )
 
+  const handleExpiryDateRangeChange = useCallback(
+    (range: { from?: string; to?: string }) => {
+      updateParams({
+        expiry_from: range.from,
+        expiry_to: range.to,
+        page: "1",
+      })
+    },
+    [updateParams]
+  )
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-4">
       <div className="space-y-4">
@@ -117,9 +144,14 @@ export function DomainsPageContent() {
           isLoading={isLoading}
           search={inputValue}
           autoRenewFilter={autoRenewFilter}
+          statusFilter={statusFilter}
+          expiryDateFrom={expiryDateFrom}
+          expiryDateTo={expiryDateTo}
           isDeleting={deleteMutation.isPending}
           onSearchChange={handleSearchChange}
           onAutoRenewChange={handleAutoRenewChange}
+          onStatusChange={handleStatusChange}
+          onExpiryDateRangeChange={handleExpiryDateRangeChange}
           onPageChange={handlePageChange}
           onDomainClick={handleDomainClick}
           onDelete={handleDelete}

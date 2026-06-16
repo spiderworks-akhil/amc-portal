@@ -4,6 +4,13 @@ export const AUTO_RENEW_OPTIONS = [
   { value: "false", label: "Manual renew" },
 ] as const
 
+export const STATUS_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "expired", label: "Expired" },
+  { value: "expiring_soon", label: "Expiring Soon" },
+  { value: "active", label: "Active" },
+] as const
+
 export function getExpiryBadge(
   daysToExpiry: number | null
 ): { label: string; color: "red" | "amber" | "emerald" | "gray" } | null {

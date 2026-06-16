@@ -18,6 +18,7 @@ import {
   ListDomainsDto,
   DomainSortBy,
   SortOrder,
+  DomainStatusFilter,
 } from './dto';
 
 @Injectable()
@@ -102,6 +103,7 @@ export class DomainService {
       auto_renew,
       sort_by = DomainSortBy.EXPIRY_DATE,
       sort_order = SortOrder.ASC,
+      status,
     } = dto;
     const offset = (page - 1) * limit;
 
@@ -142,6 +144,23 @@ export class DomainService {
 
     if (auto_renew !== undefined) {
       query = query.where('domains.auto_renew', '=', auto_renew);
+    }
+
+    // Status filter
+    if (status && status !== DomainStatusFilter.ALL) {
+      const now = new Date();
+      if (status === DomainStatusFilter.EXPIRED) {
+        query = query.where('domains.expiry_date', '<', now);
+      } else if (status === DomainStatusFilter.EXPIRING_SOON) {
+        const threshold = new Date();
+        threshold.setDate(threshold.getDate() + 30);
+        query = query.where('domains.expiry_date', '>', now)
+          .where('domains.expiry_date', '<=', threshold);
+      } else if (status === DomainStatusFilter.ACTIVE) {
+        const threshold = new Date();
+        threshold.setDate(threshold.getDate() + 30);
+        query = query.where('domains.expiry_date', '>', threshold);
+      }
     }
 
     // Sorting
@@ -372,7 +391,7 @@ export class DomainService {
         'clients.name as client_name',
         'clients.email as client_email',
       ])
-      .where('domains.expiry_date', '>=', now)
+      .where('domains.expiry_date', 'is not', null)
       .where('domains.expiry_date', '<=', threshold)
       .orderBy('domains.expiry_date', 'asc')
       .execute();

@@ -16,8 +16,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { SmoothSelect } from "@/components/ui/r-select"
 import { Search } from "lucide-react"
+import { SmoothSelect } from "../ui/smooth-select"
 
 export function ServersPageContent() {
   const router = useRouter()

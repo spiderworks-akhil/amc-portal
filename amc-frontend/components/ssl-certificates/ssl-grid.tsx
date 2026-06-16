@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { SslCard } from "./ssl-card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SmoothSelect } from "@/components/ui/r-select"
 import {
   Pagination,
   PaginationContent,
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/pagination"
 import type { SslListItem } from "@/types/api"
 import { SSL_TYPE_OPTIONS } from "./constants"
+import { SmoothSelect } from "../ui/smooth-select"
 
 interface SslGridProps {
   data: SslListItem[]
@@ -59,7 +59,7 @@ export function SslGrid({
 
         <div className="w-full sm:w-44">
           <SmoothSelect
-            options={SSL_TYPE_OPTIONS}
+            options={SSL_TYPE_OPTIONS.map((option) => ({ ...option, label: option.value }))}
             value={typeFilter}
             onChange={onTypeChange}
             className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
