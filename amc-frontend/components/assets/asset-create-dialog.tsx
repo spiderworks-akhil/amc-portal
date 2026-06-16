@@ -17,7 +17,9 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { SearchableSelect } from "@/components/ui/searchable-select"
-import type { ClientListItem } from "@/types/api"
+import type { ClientListItem, Contact as ContactType } from "@/types/api"
+import { SmoothSelect } from "../ui/smooth-select"
+import { useClient } from "@/hooks/use-clients"
 
 const assetSchema = z.object({
   client_id: z.string().min(1, "Client is required"),
@@ -71,11 +73,29 @@ export function AssetCreateDialog({
   const selectedClientId = watch("client_id")
   const selectedType = watch("type")
 
+  const { data: clientDetail } = useClient(selectedClientId || null)
+  const contacts: ContactType[] = clientDetail?.contacts ?? []
+
+  const selectedContact =
+    contacts.find(
+      (c) =>
+        c.name === watch("primary_contact_name") &&
+        (c.email || "") === (watch("primary_contact_email") || ""),
+    ) ?? null
+
   useEffect(() => {
     if (open) {
       reset()
     }
   }, [open, reset])
+
+  // Clear contact when client changes
+  useEffect(() => {
+    if (open) {
+      setValue("primary_contact_name", "")
+      setValue("primary_contact_email", "")
+    }
+  }, [selectedClientId, open, setValue])
 
   const clientOptions = clients.map((client) => ({
     value: client.id,
@@ -167,10 +187,9 @@ export function AssetCreateDialog({
               Type <span className="text-destructive">*</span>
             </Label>
 
-            <SearchableSelect
-              id="type-select"
+            <SmoothSelect
               options={typeOptions}
-              value={selectedType}
+              value={selectedType || undefined}
               onChange={(value) =>
                 setValue("type", value, {
                   shouldValidate: true,
@@ -178,8 +197,6 @@ export function AssetCreateDialog({
                 })
               }
               placeholder="Select asset type..."
-              searchPlaceholder="Search types..."
-              emptyText="No types found."
             />
 
             {errors.type?.message && (
@@ -207,31 +224,35 @@ export function AssetCreateDialog({
             )}
           </div>
 
-          {/* Contact Name */}
+          {/* Primary Contact */}
           <div className="space-y-2">
-            <Label htmlFor="asset-contact-name">Contact Name</Label>
+            <Label>Primary Contact</Label>
 
-            <Input
-              id="asset-contact-name"
-              {...register("primary_contact_name")}
-              placeholder="John Doe"
+            <SmoothSelect
+              placeholder="Select a contact..."
+              value={selectedContact?.id}
+              options={contacts.map((contact) => ({
+                value: contact.id,
+                label: contact.email
+                  ? `${contact.name} (${contact.email})`
+                  : contact.name,
+              }))}
+              onChange={(value) => {
+                const contact = contacts.find((c) => c.id === value)
+
+                setValue("primary_contact_name", contact?.name ?? "", {
+                  shouldDirty: true,
+                })
+
+                setValue("primary_contact_email", contact?.email ?? "", {
+                  shouldDirty: true,
+                })
+              }}
             />
-          </div>
 
-          {/* Contact Email */}
-          <div className="space-y-2">
-            <Label htmlFor="asset-contact-email">Contact Email</Label>
-
-            <Input
-              id="asset-contact-email"
-              type="email"
-              {...register("primary_contact_email")}
-              placeholder="john@example.com"
-            />
-
-            {errors.primary_contact_email?.message && (
+            {errors.primary_contact_name?.message && (
               <p className="text-xs text-destructive">
-                {errors.primary_contact_email.message}
+                {errors.primary_contact_name.message}
               </p>
             )}
           </div>

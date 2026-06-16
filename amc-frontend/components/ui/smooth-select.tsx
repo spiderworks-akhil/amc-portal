@@ -39,10 +39,9 @@ export function SmoothSelect({
       </SelectTrigger>
 
       <SelectContent className='capitalize'>
-        {options.map((option) => {
-          console.log(option)
-          return <SelectItem   className="text-black dark:text-white capitalize p-2 cursor-pointer" key={option.value} value={option.value}>{option.label}</SelectItem>
-        })}
+        {options.map((option) => (
+          <SelectItem className="text-black dark:text-white bg-none capitalize p-2 cursor-pointer" key={option.value} value={option.value}>{option.label}</SelectItem>
+        ))}
       </SelectContent>
     </Select>
   )

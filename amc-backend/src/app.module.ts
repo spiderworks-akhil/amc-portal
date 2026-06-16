@@ -17,6 +17,11 @@ import { ProviderModule } from './modules/provider/provider.module';
 import { ServerModule } from './modules/server/server.module';
 import { SslModule } from './modules/ssl/ssl.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { IncidentModule } from './modules/incident/incident.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { ReminderModule } from './modules/reminder/reminder.module';
+import { QueueModule } from './queue/queue.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -76,6 +81,11 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     SslModule,
     DashboardModule,
     UsersModule,
+    IncidentModule,
+    AuditLogModule,
+    ReminderModule,
+    QueueModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [

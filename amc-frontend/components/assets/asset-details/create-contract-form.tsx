@@ -1,17 +1,24 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { format } from "date-fns"
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
-import { SmoothSelect } from "@/components/ui/smooth-select"
-import DatePicker from "@/components/date-picker"
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format } from "date-fns";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import { SmoothSelect } from "@/components/ui/smooth-select";
+import DatePicker from "@/components/date-picker";
 
 const contractSchema = z.object({
   client_id: z.string().min(1),
@@ -24,36 +31,49 @@ const contractSchema = z.object({
   auto_renew: z.boolean().optional(),
   scope: z.string().optional(),
   status: z.string().optional(),
-})
-type ContractFormValues = z.infer<typeof contractSchema>
+});
+type ContractFormValues = z.infer<typeof contractSchema>;
 
-const CURRENCIES = ["USD", "EUR", "GBP", "INR", "CAD", "AUD", "JPY", "CNY", "CHF", "SGD", "AED", "SAR"] as const
+const CURRENCIES = [
+  "USD",
+  "EUR",
+  "GBP",
+  "INR",
+  "CAD",
+  "AUD",
+  "JPY",
+  "CNY",
+  "CHF",
+  "SGD",
+  "AED",
+  "SAR",
+] as const;
 
 const BILLING_CYCLES = [
   { value: "monthly", label: "Monthly" },
   { value: "quarterly", label: "Quarterly" },
   { value: "annual", label: "Annual" },
   { value: "one_time", label: "One-Time" },
-]
+];
 
 interface CreateContractFormProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSubmit: (data: {
-    client_id: string
-    contract_number?: string
-    billing_cycle: string
-    start_date: string
-    end_date: string
-    renewal_date: string
-    amount: number
-    currency?: string
-    auto_renew?: boolean
-    scope?: string
-    status?: string
-  }) => void
-  isPending: boolean
-  clientId: string
+    client_id: string;
+    contract_number?: string;
+    billing_cycle: string;
+    start_date: string;
+    end_date: string;
+    renewal_date: string;
+    amount: number;
+    currency?: string;
+    auto_renew?: boolean;
+    scope?: string;
+    status?: string;
+  }) => void;
+  isPending: boolean;
+  clientId: string;
 }
 
 export function CreateContractForm({
@@ -63,7 +83,14 @@ export function CreateContractForm({
   isPending,
   clientId,
 }: CreateContractFormProps) {
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ContractFormValues>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<ContractFormValues>({
     resolver: zodResolver(contractSchema),
     defaultValues: {
       client_id: clientId,
@@ -77,12 +104,12 @@ export function CreateContractForm({
       scope: "",
       status: "active",
     },
-  })
+  });
 
   // Reset form whenever drawer opens
   useEffect(() => {
-    if (open) reset()
-  }, [open, reset])
+    if (open) reset();
+  }, [open, reset]);
 
   const onFormSubmit = (data: ContractFormValues) => {
     onSubmit({
@@ -96,19 +123,24 @@ export function CreateContractForm({
       auto_renew: data.auto_renew ?? true,
       scope: data.scope?.trim() || undefined,
       status: data.status || "active",
-    })
+    });
 
-    reset()
-  }
+    reset();
+  };
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
       <DrawerContent className="w-full sm:max-w-md overflow-y-auto max-h-screen">
         <DrawerHeader>
           <DrawerTitle>Create Contract</DrawerTitle>
-          <DrawerDescription>Add a new contract and link it to this asset.</DrawerDescription>
+          <DrawerDescription>
+            Add a new contract and link it to this asset.
+          </DrawerDescription>
         </DrawerHeader>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">
+        <form
+          onSubmit={handleSubmit(onFormSubmit)}
+          className="flex flex-1 flex-col gap-5 p-4 pt-6"
+        >
           {/* Billing Cycle */}
           <div className="space-y-2">
             <Label>
@@ -123,23 +155,35 @@ export function CreateContractForm({
               placeholder="Select billing cycle..."
               className="w-full"
             />
-            {errors.billing_cycle?.message && <p className="text-xs text-destructive">{errors.billing_cycle.message}</p>}
+            {errors.billing_cycle?.message && (
+              <p className="text-xs text-destructive">
+                {errors.billing_cycle.message}
+              </p>
+            )}
           </div>
 
           {/* Three columns: Start, End, Renewal */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contract-start">
                 Start <span className="text-destructive">*</span>
               </Label>
               <DatePicker
-                value={watch("start_date") ? new Date(watch("start_date")) : null}
+                value={
+                  watch("start_date") ? new Date(watch("start_date")) : null
+                }
                 onChange={(date) =>
-                  setValue("start_date", format(date, "yyyy-MM-dd"), { shouldValidate: true })
+                  setValue("start_date", format(date, "yyyy-MM-dd"), {
+                    shouldValidate: true,
+                  })
                 }
                 placeholder="Start date"
               />
-              {errors.start_date?.message && <p className="text-xs text-destructive">{errors.start_date.message}</p>}
+              {errors.start_date?.message && (
+                <p className="text-xs text-destructive">
+                  {errors.start_date.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="contract-end">
@@ -148,35 +192,59 @@ export function CreateContractForm({
               <DatePicker
                 value={watch("end_date") ? new Date(watch("end_date")) : null}
                 onChange={(date) =>
-                  setValue("end_date", format(date, "yyyy-MM-dd"), { shouldValidate: true })
+                  setValue("end_date", format(date, "yyyy-MM-dd"), {
+                    shouldValidate: true,
+                  })
                 }
                 placeholder="End date"
               />
-              {errors.end_date?.message && <p className="text-xs text-destructive">{errors.end_date.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contract-renewal">
-                Renewal <span className="text-destructive">*</span>
-              </Label>
-              <DatePicker
-                value={watch("renewal_date") ? new Date(watch("renewal_date")) : null}
-                onChange={(date) =>
-                  setValue("renewal_date", format(date, "yyyy-MM-dd"), { shouldValidate: true })
-                }
-                placeholder="Renewal date"
-              />
-              {errors.renewal_date?.message && <p className="text-xs text-destructive">{errors.renewal_date.message}</p>}
+              {errors.end_date?.message && (
+                <p className="text-xs text-destructive">
+                  {errors.end_date.message}
+                </p>
+              )}
             </div>
           </div>
-
+          <div className="space-y-2">
+            <Label htmlFor="contract-renewal">
+              Renewal <span className="text-destructive">*</span>
+            </Label>
+            <DatePicker
+              value={
+                watch("renewal_date") ? new Date(watch("renewal_date")) : null
+              }
+              onChange={(date) =>
+                setValue("renewal_date", format(date, "yyyy-MM-dd"), {
+                  shouldValidate: true,
+                })
+              }
+              placeholder="Renewal date"
+            />
+            {errors.renewal_date?.message && (
+              <p className="text-xs text-destructive">
+                {errors.renewal_date.message}
+              </p>
+            )}
+          </div>
           {/* Two-column: Amount + Currency */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contract-amount">
                 Amount <span className="text-destructive">*</span>
               </Label>
-              <Input id="contract-amount" type="number" step="0.01" min="0" {...register("amount")} placeholder="0.00" />
-              {errors.amount?.message && <p className="text-xs text-destructive">{errors.amount.message}</p>}
+              <Input
+                id="contract-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                {...register("amount")}
+                placeholder="0.00"
+              />
+              {errors.amount?.message && (
+                <p className="text-xs text-destructive">
+                  {errors.amount.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Currency</Label>
@@ -215,7 +283,11 @@ export function CreateContractForm({
           </div>
 
           <DrawerFooter className="mt-auto">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
@@ -226,5 +298,5 @@ export function CreateContractForm({
         </form>
       </DrawerContent>
     </Drawer>
-  )
+  );
 }

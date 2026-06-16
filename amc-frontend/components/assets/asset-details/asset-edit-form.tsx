@@ -53,7 +53,7 @@ export function AssetEditForm({
   })
 
   const selectedContact = contacts.find(
-    (c) => c.name === watch("primary_contact_name") && c.email === watch("primary_contact_email")
+    (c) => c.name === watch("primary_contact_name") && (c.email || "") === (watch("primary_contact_email") || "")
   ) ?? null
 
   // Sync form when asset prop changes or drawer opens

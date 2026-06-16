@@ -80,7 +80,7 @@ export function CreateAssetForm({
     contacts.find(
       (c) =>
         c.name === watch("primary_contact_name") &&
-        c.email === watch("primary_contact_email"),
+        (c.email || "") === (watch("primary_contact_email") || ""),
     ) ?? null;
 
   const onFormSubmit = (data: AssetFormValues) => {
