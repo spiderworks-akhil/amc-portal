@@ -22,7 +22,6 @@ import type { MonitorListItem, CreateMonitorPayload } from "@/types/api"
 import type { SortField } from "./monitor-table"
 import { MonitorCreateDrawer } from "./monitor-create-drawer"
 import { MonitorEditDrawer } from "./monitor-edit-drawer"
-import { MonitorDetailDrawer } from "./monitor-detail-drawer"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
@@ -57,9 +56,7 @@ export function MonitorsPageContent() {
   const debouncedSearch = useDebounce(inputValue, 300)
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
-  const [detailOpen, setDetailOpen] = useState(false)
   const [editingMonitor, setEditingMonitor] = useState<MonitorListItem | null>(null)
-  const [detailMonitorId, setDetailMonitorId] = useState<string | null>(null)
 
   useEffect(() => {
     if (search !== inputValue && search !== debouncedSearch) {
@@ -158,14 +155,6 @@ export function MonitorsPageContent() {
     [deleteMonitor]
   )
 
-  const handleView = useCallback(
-    (id: string) => {
-      setDetailMonitorId(id)
-      setDetailOpen(true)
-    },
-    []
-  )
-
   const handleEdit = useCallback(
     (monitor: MonitorListItem) => {
       setEditingMonitor(monitor)
@@ -246,7 +235,6 @@ export function MonitorsPageContent() {
           sortField={sortField}
           sortOrder={sortOrder}
           onSort={handleSort}
-          onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onTriggerCheck={handleTriggerCheck}
@@ -335,12 +323,6 @@ export function MonitorsPageContent() {
         />
       )}
 
-      {/* Detail Drawer */}
-      <MonitorDetailDrawer
-        open={detailOpen}
-        onOpenChange={(open) => { setDetailOpen(open); if (!open) setDetailMonitorId(null) }}
-        monitorId={detailMonitorId}
-      />
     </div>
   )
 }

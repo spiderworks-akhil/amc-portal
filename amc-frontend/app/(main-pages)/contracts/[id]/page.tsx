@@ -48,6 +48,26 @@ export default function ContractDetailPage() {
   const updateMutation = useUpdateContract()
   const { data: contract, isLoading, isError } = useContract(id)
 
+  const handleEditSubmit = useCallback(
+    (data: {
+      billing_cycle?: string
+      start_date?: string
+      end_date?: string
+      renewal_date?: string
+      amount?: number
+      currency?: string
+      auto_renew?: boolean
+      scope?: string
+      status?: string
+    }) => {
+      updateMutation.mutate(
+        { id, ...data },
+        { onSuccess: () => setEditOpen(false) },
+      )
+    },
+    [id, updateMutation],
+  )
+
   if (isLoading) return <DetailSkeleton />
 
   if (isError || !contract) {
@@ -75,26 +95,6 @@ export default function ContractDetailPage() {
   const daysUntilEnd = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   const isExpiringSoon = daysUntilEnd > 0 && daysUntilEnd <= 30
   const isExpired = daysUntilEnd <= 0
-
-  const handleEditSubmit = useCallback(
-    (data: {
-      billing_cycle?: string
-      start_date?: string
-      end_date?: string
-      renewal_date?: string
-      amount?: number
-      currency?: string
-      auto_renew?: boolean
-      scope?: string
-      status?: string
-    }) => {
-      updateMutation.mutate(
-        { id, ...data },
-        { onSuccess: () => setEditOpen(false) },
-      )
-    },
-    [id, updateMutation],
-  )
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">

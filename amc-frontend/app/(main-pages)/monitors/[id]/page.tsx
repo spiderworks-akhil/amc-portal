@@ -18,8 +18,15 @@ import {
   Globe,
   Pencil,
   Loader2,
+  CheckCircle2,
+  XCircle,
+  Zap,
+  Gauge,
 } from "lucide-react"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Bar, BarChart, XAxis, YAxis, Cell } from "recharts"
 import { useState } from "react"
+import { format } from "date-fns"
 import type { MonitorCurrentStatus, MonitorCheckType } from "@/types/api"
 
 const STATUS_CONFIG: Record<MonitorCurrentStatus, { color: "emerald" | "red" | "gray"; label: string }> = {
@@ -141,76 +148,140 @@ export default function MonitorDetailPage() {
         </div>
       </div>
 
+      {/* Summary Stats Bar */}
+      {(() => {
+        const checks = checksData?.data ?? []
+        const totalChecks = checks.length
+        const upChecks = checks.filter(c => c.status === 'up').length
+        const downChecks = checks.filter(c => c.status === 'down').length
+        const avgResponseMs = checks.length > 0
+          ? Math.round(checks.reduce((sum, c) => sum + (c.response_time_ms ?? 0), 0) / checks.length)
+          : 0
+        const uptimePct = totalChecks > 0 ? Math.round((upChecks / totalChecks) * 100) : 0
+
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div className="rounded-xl border border-border/50 bg-card p-3.5 hover:border-primary/20 hover:bg-accent/30 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium">Uptime</p>
+                  <p className="text-lg font-bold tabular-nums tracking-tight">{uptimePct}%</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-card p-3.5 hover:border-primary/20 hover:bg-accent/30 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0">
+                  <Zap className="size-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium">Avg Response</p>
+                  <p className="text-lg font-bold tabular-nums tracking-tight">{avgResponseMs}ms</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-card p-3.5 hover:border-primary/20 hover:bg-accent/30 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center shrink-0">
+                  <Activity className="size-4 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium">Total Checks</p>
+                  <p className="text-lg font-bold tabular-nums tracking-tight">{totalChecks}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-card p-3.5 hover:border-primary/20 hover:bg-accent/30 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center shrink-0">
+                  <Gauge className="size-4 text-rose-600 dark:text-rose-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium">Success Rate</p>
+                  <p className="text-lg font-bold tabular-nums tracking-tight">{totalChecks > 0 ? Math.round((upChecks / totalChecks) * 100) : 0}%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left: Config Details */}
         <div className="lg:col-span-3 space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Target className="size-4" />
                 Configuration
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Target className="size-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Target</p>
-                  <p className="text-sm font-mono">{monitor.target}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Activity className="size-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Check Type</p>
-                  <p className="text-sm">{TYPE_LABELS[monitor.check_type]}</p>
-                </div>
-              </div>
-
-              {monitor.expected_status_code !== null && (
-                <div className="flex items-start gap-3">
-                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Activity className="size-4 text-primary" />
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                {/* Target - full width */}
+                <div className="sm:col-span-2 flex items-start gap-3 p-3 rounded-lg bg-muted/30 -mx-1">
+                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Globe className="size-4 text-primary" />
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Expected Status Code</p>
-                    <p className="text-sm font-mono">{monitor.expected_status_code}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-muted-foreground font-medium">Target</p>
+                    <p className="text-sm font-mono truncate">{monitor.target}</p>
                   </div>
                 </div>
-              )}
 
-              {monitor.expected_keyword && (
-                <div className="flex items-start gap-3">
-                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Activity className="size-4 text-primary" />
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-accent/50 flex items-center justify-center shrink-0">
+                    <Activity className="size-4 text-muted-foreground" />
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Expected Keyword</p>
-                    <p className="text-sm font-mono">{monitor.expected_keyword}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-medium">Check Type</p>
+                    <p className="text-sm">{TYPE_LABELS[monitor.check_type]}</p>
                   </div>
                 </div>
-              )}
 
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Clock className="size-4 text-primary" />
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-accent/50 flex items-center justify-center shrink-0">
+                    <Clock className="size-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-medium">Interval</p>
+                    <p className="text-sm">
+                      {monitor.interval_seconds >= 3600
+                        ? `Every ${monitor.interval_seconds / 3600}h`
+                        : monitor.interval_seconds >= 60
+                          ? `Every ${monitor.interval_seconds / 60}m`
+                          : `Every ${monitor.interval_seconds}s`}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Interval</p>
-                  <p className="text-sm">
-                    {monitor.interval_seconds >= 3600
-                      ? `Every ${monitor.interval_seconds / 3600} hours`
-                      : monitor.interval_seconds >= 60
-                        ? `Every ${monitor.interval_seconds / 60} minutes`
-                        : `Every ${monitor.interval_seconds} seconds`}
-                  </p>
-                </div>
+
+                {monitor.expected_status_code !== null && (
+                  <div className="flex items-center gap-3">
+                    <div className="size-8 rounded-lg bg-accent/50 flex items-center justify-center shrink-0">
+                      <Target className="size-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground font-medium">Expected Status</p>
+                      <p className="text-sm font-mono">{monitor.expected_status_code}</p>
+                    </div>
+                  </div>
+                )}
+
+                {monitor.expected_keyword && (
+                  <div className="sm:col-span-2 flex items-center gap-3">
+                    <div className="size-8 rounded-lg bg-accent/50 flex items-center justify-center shrink-0">
+                      <Activity className="size-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground font-medium">Expected Keyword</p>
+                      <p className="text-sm font-mono">{monitor.expected_keyword}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -237,41 +308,185 @@ export default function MonitorDetailPage() {
           </Card>
         </div>
 
-        {/* Right: Status */}
-        <div className="lg:col-span-2">
+        {/* Right: Status & Checks */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Status Card */}
           <Card>
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Activity className="size-4" />
+                Status
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Current</span>
-                <Badge variant="dot" size="sm" color={statusCfg.color}>
-                  {statusCfg.label}
-                </Badge>
+            <CardContent className="space-y-5">
+              {/* Current Status */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground font-medium">Current</span>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                    statusCfg.color === 'emerald'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400'
+                      : statusCfg.color === 'red'
+                        ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400'
+                        : 'bg-muted text-muted-foreground'
+                  }`}>
+                    <span className={`size-1.5 rounded-full ${
+                      statusCfg.color === 'emerald'
+                        ? 'bg-emerald-500 animate-pulse'
+                        : statusCfg.color === 'red'
+                          ? 'bg-red-500'
+                          : 'bg-muted-foreground/40'
+                    }`} />
+                    {statusCfg.label}
+                  </span>
+                </div>
+                {/* Visual status bar */}
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      statusCfg.color === 'emerald' ? 'w-full bg-emerald-400'
+                      : statusCfg.color === 'red' ? 'w-full bg-red-400'
+                      : 'w-1/3 bg-muted-foreground/30'
+                    }`}
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Enabled</span>
-                <span className={`text-sm font-medium ${monitor.enabled ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
-                  {monitor.enabled ? "Yes" : "No"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Last Checked</span>
-                <span className="text-sm text-muted-foreground">
-                  {monitor.last_checked_at
-                    ? new Date(monitor.last_checked_at).toLocaleString()
-                    : "Never"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Asset</span>
-                <span className="text-sm text-muted-foreground truncate max-w-[140px]">
-                  {monitor.asset_name || "—"}
-                </span>
+
+              <div className="border-t border-border/40 pt-4 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Enabled</span>
+                  {monitor.enabled ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                      <CheckCircle2 className="size-3" />
+                      Yes
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                      <XCircle className="size-3" />
+                      No
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Last Checked</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {monitor.last_checked_at
+                      ? format(new Date(monitor.last_checked_at), "MMM d, HH:mm")
+                      : "Never"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Asset</span>
+                  <span className="text-xs text-muted-foreground truncate max-w-[130px] font-medium">
+                    {monitor.asset_name || "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Type</span>
+                  <span className="inline-flex items-center rounded-md border border-border/50 bg-accent/30 px-1.5 py-0.5 text-[10px] font-mono font-medium">
+                    {TYPE_LABELS[monitor.check_type]}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Check Distribution Mini Card */}
+          {(() => {
+            const checks = checksData?.data ?? []
+            const upChecks = checks.filter(c => c.status === 'up').length
+            const downChecks = checks.filter(c => c.status === 'down').length
+            const unknownChecks = checks.filter(c => c.status === 'unknown').length
+            const total = checks.length
+
+            if (total === 0) return null
+
+            const chartConfig = {
+              up: { label: "Up", color: "#22c55e" },
+              down: { label: "Down", color: "#ef4444" },
+              unknown: { label: "Unknown", color: "#9ca3af" },
+            }
+
+            const chartData = [
+              { name: "Up", value: upChecks, fill: "var(--color-up)" },
+              { name: "Down", value: downChecks, fill: "var(--color-down)" },
+              { name: "Unknown", value: unknownChecks, fill: "var(--color-unknown)" },
+            ].filter(d => d.value > 0)
+
+            return (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    <Activity className="size-3.5 text-muted-foreground" />
+                    Check Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <ChartContainer
+                    config={chartConfig}
+                    initialDimension={{ width: 240, height: chartData.length * 24 + 10 }}
+                    className="w-full [&_.recharts-surface]:overflow-visible"
+                  >
+                    <BarChart
+                      data={chartData}
+                      layout="vertical"
+                      margin={{ top: 0, right: 28, bottom: 0, left: 52 }}
+                      barSize={14}
+                      barGap={4}
+                    >
+                      <XAxis type="number" hide domain={[0, Math.max(1, ...chartData.map(d => d.value))]} />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={48}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={
+                          <ChartTooltipContent
+                            hideLabel
+                            formatter={(value: unknown) => {
+                              const count = typeof value === 'number' ? value : 0
+                              return <span className="font-semibold text-foreground tabular-nums">{count} check{count !== 1 ? 's' : ''}</span>
+                            }}
+                          />
+                        }
+                      />
+                      <Bar dataKey="value" radius={[0, 3, 3, 0]}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+
+                  <div className="flex items-center justify-center gap-3 text-xs">
+                    {upChecks > 0 && (
+                      <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                        <span className="size-2 rounded-full bg-emerald-500" />
+                        {upChecks} up
+                      </span>
+                    )}
+                    {downChecks > 0 && (
+                      <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                        <span className="size-2 rounded-full bg-red-500" />
+                        {downChecks} down
+                      </span>
+                    )}
+                    {unknownChecks > 0 && (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <span className="size-2 rounded-full bg-gray-400" />
+                        {unknownChecks} unknown
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })()}
         </div>
       </div>
 

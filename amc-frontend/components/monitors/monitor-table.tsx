@@ -28,14 +28,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/r-alert-dialog"
+import Link from "next/link"
 import {
   ArrowUpDown,
   MoreVertical,
   Pencil,
   Trash2,
   Play,
-  ExternalLink,
-  Globe,
   Activity,
 } from "lucide-react"
 import type { MonitorListItem, MonitorCheckType, MonitorCurrentStatus } from "@/types/api"
@@ -62,7 +61,6 @@ interface MonitorTableProps {
   sortField: SortField
   sortOrder: "asc" | "desc"
   onSort: (field: SortField) => void
-  onView: (id: string) => void
   onEdit: (monitor: MonitorListItem) => void
   onDelete: (id: string) => void
   onTriggerCheck: (id: string) => void
@@ -101,7 +99,6 @@ export function MonitorTable({
   sortField,
   sortOrder,
   onSort,
-  onView,
   onEdit,
   onDelete,
   onTriggerCheck,
@@ -149,14 +146,18 @@ export function MonitorTable({
                 return (
                   <TableRow
                     key={monitor.id}
-                    className="cursor-pointer group transition-colors hover:bg-muted/40"
-                    onClick={() => onView(monitor.id)}
+                    className="group transition-colors hover:bg-muted/40"
                   >
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Activity className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="font-medium truncate max-w-[180px]">{monitor.name}</span>
-                      </div>
+                      <Link
+                        href={`/monitors/${monitor.id}`}
+                        className="flex items-center gap-2 group/link"
+                      >
+                        <div className="size-7 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center shrink-0">
+                          <Activity className="size-3.5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <span className="font-medium truncate max-w-[180px] group-hover/link:text-primary transition-colors">{monitor.name}</span>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <span className="inline-flex items-center rounded-md border border-border/60 bg-accent/50 px-2 py-0.5 text-xs font-mono font-medium text-muted-foreground">

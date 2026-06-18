@@ -364,6 +364,163 @@ export default function AssetDetailPage() {
         </div>
       </div>
 
+      {/* Overview Section */}
+      {(() => {
+        const now = new Date()
+
+        // Compute health data from domains
+        const expiredDomains = asset.domains.filter(d => d.expiry_date && new Date(d.expiry_date) <= now).length
+        const expiringDomains = asset.domains.filter(d => {
+          if (!d.expiry_date) return false
+          const days = Math.ceil((new Date(d.expiry_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          return days > 0 && days <= 30
+        }).length
+
+        // Compute health data from SSL
+        const expiredSsl = asset.ssl_certificates.filter(c => c.valid_to && new Date(c.valid_to) <= now).length
+        const expiringSsl = asset.ssl_certificates.filter(c => {
+          if (!c.valid_to) return false
+          const days = Math.ceil((new Date(c.valid_to).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          return days > 0 && days <= 30
+        }).length
+
+        // Compute health data from monitors
+        const monitors = monitorsData?.data ?? []
+        const monitorsUp = monitors.filter(m => m.current_status === "up").length
+        const monitorsDown = monitors.filter(m => m.current_status === "down").length
+
+        const totalItems = asset.domains.length + asset.ssl_certificates.length + asset.servers.length + monitors.length + (contractsData?.data?.length ?? 0)
+        const needsAttention = expiredDomains + expiringDomains + expiredSsl + expiringSsl + monitorsDown
+
+        // Compute health score (0-100)
+        const totalChecks = asset.domains.length + asset.ssl_certificates.length
+        const totalIssues = expiredDomains + expiringDomains + expiredSsl + expiringSsl
+        const healthScore = totalChecks > 0 ? Math.round(((totalChecks - totalIssues) / totalChecks) * 100) : 100
+
+        return (
+          <Card className="mb-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Monitor className="size-4" />
+                Overview
+              </CardTitle>
+              <CardDescription>Quick snapshot of asset health and linked resources</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:items-stretch gap-4">
+                {/* Health Score */}
+                <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30 lg:flex-1">
+                  <div className="relative size-12 shrink-0">
+                    <svg className="size-12 -rotate-90" viewBox="0 0 36 36">
+                      <circle
+                        cx="18" cy="18" r="15.5"
+                        fill="none"
+                        stroke="currentColor"
+                        className="text-muted/50"
+                        strokeWidth="3"
+                      />
+                      <circle
+                        cx="18" cy="18" r="15.5"
+                        fill="none"
+                        stroke="currentColor"
+                        className={
+                          healthScore >= 80 ? 'text-emerald-500' :
+                          healthScore >= 50 ? 'text-amber-500' :
+                          'text-red-500'
+                        }
+                        strokeWidth="3"
+                        strokeDasharray={`${(healthScore / 100) * 97.4} 97.4`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className={`absolute inset-0 flex items-center justify-center text-xs font-bold tabular-nums ${
+                      healthScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' :
+                      healthScore >= 50 ? 'text-amber-600 dark:text-amber-400' :
+                      'text-red-600 dark:text-red-400'
+                    }`}>
+                      {healthScore}%
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-medium leading-none">Health</p>
+                    <p className="text-sm font-semibold mt-1 leading-snug">
+                      {healthScore >= 80 ? 'Good' : healthScore >= 50 ? 'Fair' : 'Poor'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal">
+                      {totalIssues} issue{totalIssues !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Needs Attention */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 lg:flex-1">
+                  <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${
+                    needsAttention > 0 ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-emerald-50 dark:bg-emerald-950/30'
+                  }`}>
+                    {needsAttention > 0 ? (
+                      <AlertTriangle className={`size-5 ${
+                        needsAttention > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+                      }`} />
+                    ) : (
+                      <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-medium leading-none">Needs Attention</p>
+                    <p className={`text-lg font-bold leading-snug mt-0.5 ${
+                      needsAttention > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+                    }`}>
+                      {needsAttention}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Total Items */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 lg:flex-1">
+                  <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0">
+                    <Layers className="size-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-medium leading-none">Total Resources</p>
+                    <p className="text-lg font-bold leading-snug mt-0.5 text-blue-600 dark:text-blue-400">
+                      {totalItems}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Monitor Status */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 lg:flex-1">
+                  <div className="size-10 rounded-full bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center shrink-0">
+                    <Activity className="size-5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-medium leading-none">Monitors</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {monitors.length > 0 ? (
+                        <>
+                          <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            {monitorsUp}
+                          </span>
+                          {monitorsDown > 0 && (
+                            <span className="flex items-center gap-1 text-xs font-semibold text-red-600 dark:text-red-400">
+                              <span className="size-1.5 rounded-full bg-red-500" />
+                              {monitorsDown}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })()}
+
       {/* Two-column layout: Asset Info + Status */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
         {/* Left: Asset Details */}
@@ -373,13 +530,14 @@ export default function AssetDetailPage() {
             <CardHeader>
               <CardTitle>Asset Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
+              {/* URL row */}
               <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <Globe className="size-4 text-primary" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-muted-foreground font-medium">Primary URL</p>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <p className="text-xs text-muted-foreground font-medium leading-none mb-1">Primary URL</p>
                   {asset.primary_url ? (
                     <a
                       href={asset.primary_url}
@@ -391,65 +549,71 @@ export default function AssetDetailPage() {
                       <ExternalLink className="size-3 shrink-0" />
                     </a>
                   ) : (
-                    <p className="text-sm text-muted-foreground/50">—</p>
+                    <p className="text-sm text-muted-foreground">—</p>
                   )}
                 </div>
               </div>
 
+              {/* Contact row */}
               {asset.primary_contact_name && (
                 <div className="flex items-start gap-3">
-                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <User className="size-4 text-primary" />
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Contact</p>
+                  <div className="pt-0.5">
+                    <p className="text-xs text-muted-foreground font-medium leading-none mb-1">Contact</p>
                     <p className="text-sm">{asset.primary_contact_name}</p>
                     {asset.primary_contact_email && (
-                      <a href={`mailto:${asset.primary_contact_email}`} className="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5">
-                        <Mail className="size-3" />
-                        {asset.primary_contact_email}
-                      </a>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Mail className="size-3 shrink-0 text-muted-foreground" />
+                        <a href={`mailto:${asset.primary_contact_email}`} className="text-xs text-primary hover:underline truncate">
+                          {asset.primary_contact_email}
+                        </a>
+                      </div>
                     )}
                   </div>
                 </div>
               )}
 
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Building2 className="size-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Client</p>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/clients/${asset.client_id}`)}
-                    className="text-sm text-primary hover:underline text-left"
-                  >
-                    {asset.client_name}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <CalendarClock className="size-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Created</p>
-                  <p className="text-sm">{formatDate(asset.created_at)}</p>
-                </div>
-              </div>
-
-              {asset.tech_stack && asset.tech_stack.length > 0 && (
+              {/* Client + Created side by side */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Building2 className="size-4 text-primary" />
+                  </div>
+                  <div className="pt-0.5">
+                    <p className="text-xs text-muted-foreground font-medium leading-none mb-1">Client</p>
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/clients/${asset.client_id}`)}
+                      className="text-sm text-primary hover:underline text-left leading-snug"
+                    >
+                      {asset.client_name}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <CalendarClock className="size-4 text-primary" />
+                  </div>
+                  <div className="pt-0.5">
+                    <p className="text-xs text-muted-foreground font-medium leading-none mb-1">Created</p>
+                    <p className="text-sm leading-snug">{formatDate(asset.created_at)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tech Stack */}
+              {asset.tech_stack && asset.tech_stack.length > 0 && (
+                <div className="flex items-start gap-3 pt-1 border-t border-border/40">
+                  <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Layers className="size-4 text-primary" />
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Tech Stack</p>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
+                  <div className="pt-0.5 min-w-0 flex-1">
+                    <p className="text-xs text-muted-foreground font-medium leading-none mb-2">Tech Stack</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {asset.tech_stack.map((tech, i) => (
-                        <span key={i} className="inline-flex items-center rounded-md border border-border/60 bg-accent/50 px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        <span key={i} className="inline-flex items-center rounded-full border border-border/60 bg-accent/50 px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
                           {tech}
                         </span>
                       ))}
@@ -479,29 +643,32 @@ export default function AssetDetailPage() {
         {/* Right: Monitoring & Quick Info */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg leading-none">
+                <Activity className="size-4" />
+                Status
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              {/* Monitoring toggle */}
+              <div className="flex items-center justify-between min-h-9">
                 <span className="text-sm text-muted-foreground">Monitoring</span>
-                {asset.monitoring_enabled ? (
-                  <span className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="size-4" />
-                    Enabled
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <XCircle className="size-4" />
-                    Disabled
-                  </span>
-                )}
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                  asset.monitoring_enabled
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400'
+                    : 'bg-muted text-muted-foreground'
+                }`}>
+                  <span className={`size-1.5 rounded-full ${
+                    asset.monitoring_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/40'
+                  }`} />
+                  {asset.monitoring_enabled ? 'Enabled' : 'Disabled'}
+                </span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between min-h-9">
                 <span className="text-sm text-muted-foreground">Type</span>
-                <span className="text-sm font-medium">{asset.type_name}</span>
+                <span className="text-sm font-medium capitalize leading-none">{asset.type_name}</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between min-h-9">
                 <span className="text-sm text-muted-foreground">Status</span>
                 <Badge
                   variant="dot"
@@ -511,10 +678,7 @@ export default function AssetDetailPage() {
                   {STATUS_LABELS[asset.status] ?? asset.status}
                 </Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Client ID</span>
-                <span className="text-xs font-mono text-muted-foreground truncate max-w-[140px]">{asset.client_id}</span>
-              </div>
+             
             </CardContent>
           </Card>
         </div>
@@ -564,25 +728,16 @@ export default function AssetDetailPage() {
                     className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group"
                   >
                     <div className="flex items-start gap-3">
-                      <div
-                        className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0 cursor-pointer"
-                        onClick={() => router.push("/domains")}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/domains") }}
-                      >
+                      <div className="size-9 rounded-lg bg-accent/60 flex items-center justify-center shrink-0 ring-1 ring-border/30">
                         <Globe2 className="size-4 text-muted-foreground" />
                       </div>
                       <Link
-                        className="min-w-0 flex-1 cursor-pointer"
+                        className="min-w-0 flex-1 cursor-pointer pt-0.5"
                         href={`/domains/${domain.id}`}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/domains/${domain.id}`) }}
                       >
-                        <p className="text-sm font-medium truncate">{domain.fqdn}</p>
+                        <p className="text-sm font-medium truncate leading-snug group-hover:text-primary transition-colors">{domain.fqdn}</p>
                         {domain.registrar_name && (
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          <p className="text-xs text-muted-foreground truncate mt-0.5 leading-normal">
                             {domain.registrar_name}
                           </p>
                         )}
@@ -590,7 +745,7 @@ export default function AssetDetailPage() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setEditingDomain(domain); setEditDomainOpen(true) }}
-                        className="size-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 mt-0.5"
+                        className="size-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 mt-1"
                         aria-label="Edit domain"
                       >
                         <Pencil className="size-3.5" />
@@ -666,31 +821,22 @@ export default function AssetDetailPage() {
                     className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group"
                   >
                     <div className="flex items-start gap-3">
-                      <div
-                        className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0 cursor-pointer"
-                        onClick={() => router.push("/ssl-certificates")}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/ssl-certificates") }}
-                      >
+                      <div className="size-9 rounded-lg bg-accent/60 flex items-center justify-center shrink-0 ring-1 ring-border/30">
                         <ShieldCheck className="size-4 text-muted-foreground" />
                       </div>
                       <Link
-                        className="min-w-0 flex-1 cursor-pointer"
+                        className="min-w-0 flex-1 cursor-pointer pt-0.5"
                         href={`/ssl-certificates/${cert.id}`}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/ssl-certificates/${cert.id}`) }}
                       >
-                        <p className="text-sm font-medium truncate">{cert.common_name || cert.domain_fqdn || "SSL Certificate"}</p>
+                        <p className="text-sm font-medium truncate leading-snug group-hover:text-primary transition-colors">{cert.common_name || cert.domain_fqdn || "SSL Certificate"}</p>
                         {cert.issuer && (
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">{cert.issuer}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5 leading-normal">{cert.issuer}</p>
                         )}
                       </Link>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setEditingSsl(cert); setEditSslOpen(true) }}
-                        className="size-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 mt-0.5"
+                        className="size-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 mt-1"
                         aria-label="Edit SSL certificate"
                       >
                         <Pencil className="size-3.5" />
@@ -777,7 +923,7 @@ export default function AssetDetailPage() {
                       <Server className="size-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{server.label}</p>
+                      <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{server.label}</p>
                       {server.ip_addresses && server.ip_addresses.length > 0 && (
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {server.ip_addresses[0]}
@@ -845,12 +991,12 @@ export default function AssetDetailPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                        <Activity className="size-4 text-muted-foreground" />
+                      <div className="size-9 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center shrink-0 ring-1 ring-border/30">
+                        <Activity className="size-4 text-amber-600 dark:text-amber-400" />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{monitor.name}</p>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{monitor.target}</p>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <p className="text-sm font-medium truncate leading-snug group-hover:text-primary transition-colors">{monitor.name}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5 leading-normal font-mono">{monitor.target}</p>
                       </div>
                     </div>
                     <div className="shrink-0">
