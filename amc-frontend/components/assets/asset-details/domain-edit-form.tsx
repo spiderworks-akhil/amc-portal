@@ -3,7 +3,6 @@
 import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
 import { format } from "date-fns"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
@@ -18,18 +17,8 @@ import {
 } from "@/components/ui/tooltip"
 import { SmoothSelect } from "@/components/ui/smooth-select"
 import DatePicker from "@/components/date-picker"
+import { editDomainSchema, type EditDomainFormValues } from "@/components/domains/domain-validation"
 import type { Provider } from "@/types/api"
-
-const domainSchema = z.object({
-  fqdn: z.string().min(1, "Domain name is required").max(255),
-  registrar_id: z.string().optional(),
-  registered_date: z.string().optional(),
-  expiry_date: z.string().optional(),
-  auto_renew: z.boolean().optional(),
-  nameservers: z.string().optional(),
-  notes: z.string().optional(),
-})
-type DomainFormValues = z.infer<typeof domainSchema>
 
 interface DomainEditFormProps {
   open: boolean
@@ -68,8 +57,8 @@ export function DomainEditForm({
   domain,
   registrars,
 }: DomainEditFormProps) {
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<DomainFormValues>({
-    resolver: zodResolver(domainSchema),
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<EditDomainFormValues>({
+    resolver: zodResolver(editDomainSchema),
     defaultValues: {
       fqdn: domain.fqdn ?? "",
       registrar_id: domain.registrar_id ?? "",
@@ -97,14 +86,14 @@ export function DomainEditForm({
   const watchedRegisteredDate = watch("registered_date")
   const watchedExpiryDate = watch("expiry_date")
 
-  const onFormSubmit = (data: DomainFormValues) => {
+  const onFormSubmit = (data: EditDomainFormValues) => {
     const ns = data.nameservers
       ? data.nameservers.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined
     const nameservers = ns && ns.length > 0 ? ns : undefined
 
     onSubmit({
-      fqdn: data.fqdn.trim().toLowerCase(),
+      fqdn: data.fqdn,
       registrar_id: data.registrar_id || undefined,
       registered_date: data.registered_date || undefined,
       expiry_date: data.expiry_date || undefined,

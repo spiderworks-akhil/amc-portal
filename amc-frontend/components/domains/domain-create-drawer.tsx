@@ -9,18 +9,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, Info, CheckCircle2, AlertCircle } from "lucide-react"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import DatePicker from "@/components/date-picker"
 import { useDebounce } from "@/hooks/use-debounce"
 import { lookupDomainDetails } from "@/hooks/use-domains"
+import { useAssets } from "@/hooks/use-assets"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { assetDetailDomainSchema, cleanFqdnInput, type AssetDetailDomainFormValues } from "@/components/domains/domain-validation"
+import { createDomainSchema, cleanFqdnInput, type CreateDomainFormValues } from "./domain-validation"
+import type { AssetListItem } from "@/types/api"
 
-interface CreateDomainFormProps {
+interface DomainCreateDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: {
@@ -33,19 +36,20 @@ interface CreateDomainFormProps {
     notes?: string
   }) => void
   isPending: boolean
-  assetId: string
 }
 
-export function CreateDomainForm({
+export function DomainCreateDrawer({
   open,
   onOpenChange,
   onSubmit,
   isPending,
-  assetId,
-}: CreateDomainFormProps) {
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors }  } = useForm<AssetDetailDomainFormValues>({
-    resolver: zodResolver(assetDetailDomainSchema),
+}: DomainCreateDrawerProps) {
+  const { data: assetsData } = useAssets({ limit: 200, sort_by: "name", sort_order: "asc" })
+
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CreateDomainFormValues>({
+    resolver: zodResolver(createDomainSchema),
     defaultValues: {
+      asset_id: "",
       fqdn: "",
       registered_date: "",
       expiry_date: "",
@@ -140,14 +144,19 @@ export function CreateDomainForm({
     }
   }, [open])
 
-  const onFormSubmit = (data: AssetDetailDomainFormValues) => {
+  const assetOptions = (assetsData?.data ?? []).map((a: AssetListItem) => ({
+    value: a.id,
+    label: `${a.name}${a.client_name ? ` (${a.client_name})` : ""}`,
+  }))
+
+  const onFormSubmit = (data: CreateDomainFormValues) => {
     const ns = data.nameservers
       ? data.nameservers.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined
     const nameservers = ns && ns.length > 0 ? ns : undefined
 
     onSubmit({
-      asset_id: assetId,
+      asset_id: data.asset_id,
       fqdn: data.fqdn,
       registered_date: data.registered_date || undefined,
       expiry_date: data.expiry_date || undefined,
@@ -164,9 +173,30 @@ export function CreateDomainForm({
       <DrawerContent className="w-full sm:max-w-md overflow-y-auto max-h-screen">
         <DrawerHeader>
           <DrawerTitle>Create Domain</DrawerTitle>
-          <DrawerDescription>Add a new domain and link it to this asset.</DrawerDescription>
+          <DrawerDescription>Add a new domain and link it to an asset.</DrawerDescription>
         </DrawerHeader>
         <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">
+          {/* Asset */}
+          <div className="space-y-2">
+            <Label htmlFor="asset-select">
+              Asset <span className="text-destructive">*</span>
+            </Label>
+            <SearchableSelect
+              id="asset-select"
+              options={assetOptions}
+              value={watch("asset_id")}
+              onChange={(value) =>
+                setValue("asset_id", value, { shouldValidate: true, shouldDirty: true })
+              }
+              placeholder="Search asset..."
+              searchPlaceholder="Type to search..."
+              emptyText="No assets found."
+            />
+            {errors.asset_id?.message && (
+              <p className="text-xs text-destructive">{errors.asset_id.message}</p>
+            )}
+          </div>
+
           {/* FQDN */}
           <div className="space-y-2">
             <Label htmlFor="domain-fqdn">

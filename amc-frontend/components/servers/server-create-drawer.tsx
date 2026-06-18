@@ -37,25 +37,6 @@ const serverSchema = z.object({
 })
 type ServerFormValues = z.infer<typeof serverSchema>
 
-interface CreateServerFormProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: {
-    provider_id: string
-    label: string
-    ip_addresses?: string[]
-    region?: string
-    operating_system?: string
-    panel_url?: string
-    monthly_cost?: number
-    currency?: string
-    renewal_date?: string
-    notes?: string
-  }) => void
-  isPending: boolean
-  providers: Provider[]
-}
-
 const CURRENCIES = [
   { value: "USD", label: "USD" },
   { value: "EUR", label: "EUR" },
@@ -71,13 +52,35 @@ function hostnameToLabel(hostname: string): string {
     .join(" ") + " Panel"
 }
 
-export function CreateServerForm({
+interface ServerCreateDrawerProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (data: {
+    provider_id: string
+    label: string
+    ip_addresses?: string[]
+    region?: string
+    operating_system?: string
+    panel_url?: string
+    monthly_cost?: number
+    currency?: string
+    renewal_date?: string
+    notes?: string
+  }) => void
+  isPending: boolean
+  /** Pre-selected asset ID — hides asset linking (used from asset detail page) */
+  assetId?: string
+  /** Providers list (passed from parent to avoid refetch) */
+  providers?: Provider[]
+}
+
+export function ServerCreateDrawer({
   open,
   onOpenChange,
   onSubmit,
   isPending,
-  providers,
-}: CreateServerFormProps) {
+  providers = [],
+}: ServerCreateDrawerProps) {
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<ServerFormValues>({
     resolver: zodResolver(serverSchema),
     defaultValues: {
@@ -181,15 +184,14 @@ export function CreateServerForm({
       return
     }
 
-    // Extract hostname from URL (e.g., "https://panel.digitalocean.com/" → "panel.digitalocean.com")
     let hostname: string | null = null
     try {
       hostname = new URL(debouncedPanelUrl).hostname
     } catch {
-      return // Invalid URL
+      return
     }
     if (!hostname || hostname.length < 4 || hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      return // Skip raw IPs (already handled by IP field) and localhost
+      return
     }
 
     let cancelled = false
@@ -199,14 +201,12 @@ export function CreateServerForm({
     setDetectedCity(null)
     setDetectedCountry(null)
 
-    // Derive a label from the hostname (e.g., "panel.digitalocean.com" → "DigitalOcean Panel")
     const labelFromHostname = hostnameToLabel(hostname)
 
     detectProvider.mutate(hostname, {
       onSuccess: (result: DetectProviderResult) => {
         if (cancelled) return
         handleDetectionResult.current(result)
-        // Override label with hostname-derived label if user hasn't modified it
         if (labelFromHostname && !userModifiedLabel.current) {
           setValue("label", labelFromHostname, { shouldValidate: true })
         }
@@ -243,7 +243,6 @@ export function CreateServerForm({
       ? data.ip_addresses.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined
 
-    // Only send ip_addresses when there are actual IPs — empty array causes jsonb issues
     const ipAddresses = ips && ips.length > 0 ? ips : undefined
 
     onSubmit({
@@ -262,12 +261,14 @@ export function CreateServerForm({
     reset()
   }
 
+  const providerOptions = providers.map((p) => ({ value: p.id, label: p.name }))
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
       <DrawerContent className="w-full sm:max-w-md overflow-y-auto max-h-screen">
         <DrawerHeader>
           <DrawerTitle>Create Server</DrawerTitle>
-          <DrawerDescription>Add a new server and link it to this asset.</DrawerDescription>
+          <DrawerDescription>Add a new hosting server to the inventory.</DrawerDescription>
         </DrawerHeader>
         <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">
           {/* Provider */}
@@ -280,7 +281,7 @@ export function CreateServerForm({
               control={control}
               render={({ field }) => (
                 <SmoothSelect
-                  options={providers.map((p) => ({ value: p.id, label: p.name }))}
+                  options={providerOptions}
                   value={field.value}
                   onChange={(value) => {
                     userModifiedProvider.current = true
@@ -434,7 +435,7 @@ export function CreateServerForm({
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="size-4 animate-spin" />}
-              {isPending ? "Creating..." : "Create & Link Server"}
+              {isPending ? "Creating..." : "Create Server"}
             </Button>
           </DrawerFooter>
         </form>

@@ -27,6 +27,23 @@ export class ServerService {
     @InjectKysely() private readonly db: Kysely<DB>,
   ) {}
 
+  /**
+   * Normalize a panel URL by ensuring a protocol is present.
+   * Users often enter bare hostnames like "panel.example.com" without https://.
+   */
+  private normalizePanelUrl(raw: string | undefined): string | null {
+    if (!raw) return null;
+    let cleaned = raw.trim();
+    if (!cleaned) return null;
+    // Add https:// if no protocol is present
+    if (!/^https?:\/\//i.test(cleaned)) {
+      cleaned = 'https://' + cleaned;
+    }
+    // Strip trailing slash for consistency
+    cleaned = cleaned.replace(/\/+$/, '');
+    return cleaned;
+  }
+
   async create(dto: CreateServerDto, createdBy?: string) {
     return this.db
       .insertInto('servers')
@@ -36,7 +53,7 @@ export class ServerService {
         ip_addresses: JSON.stringify(dto.ip_addresses ?? []),
         region: dto.region ?? null,
         operating_system: dto.operating_system ?? null,
-        panel_url: dto.panel_url ?? null,
+        panel_url: this.normalizePanelUrl(dto.panel_url),
         monthly_cost: dto.monthly_cost !== undefined ? String(dto.monthly_cost) : null,
         currency: dto.currency ?? 'USD',
         renewal_date: dto.renewal_date ? new Date(dto.renewal_date) : null,
@@ -209,7 +226,7 @@ export class ServerService {
     if (dto.ip_addresses !== undefined) updateData.ip_addresses = JSON.stringify(dto.ip_addresses);
     if (dto.region !== undefined) updateData.region = dto.region;
     if (dto.operating_system !== undefined) updateData.operating_system = dto.operating_system;
-    if (dto.panel_url !== undefined) updateData.panel_url = dto.panel_url;
+    if (dto.panel_url !== undefined) updateData.panel_url = this.normalizePanelUrl(dto.panel_url);
     if (dto.monthly_cost !== undefined) updateData.monthly_cost = String(dto.monthly_cost);
     if (dto.currency !== undefined) updateData.currency = dto.currency;
     if (dto.renewal_date !== undefined) updateData.renewal_date = new Date(dto.renewal_date);

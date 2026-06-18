@@ -3,9 +3,10 @@
 import { useCallback, useState, useEffect } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { ServerTable, type ServerSortField } from "@/components/servers/server-table"
-import { useServers, useDeleteServer } from "@/hooks/use-servers"
+import { useServers, useCreateServer, useDeleteServer } from "@/hooks/use-servers"
 import { useProviders } from "@/hooks/use-providers"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { useDebounce } from "@/hooks/use-debounce"
 import {
   Pagination,
@@ -16,8 +17,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Search } from "lucide-react"
+import { Plus, Search } from "lucide-react"
 import { SmoothSelect } from "../ui/smooth-select"
+import { ServerCreateDrawer } from "./server-create-drawer"
 
 export function ServersPageContent() {
   const router = useRouter()
@@ -36,6 +38,7 @@ export function ServersPageContent() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(sortOrderParam as "asc" | "desc")
   const debouncedSearch = useDebounce(inputValue, 300)
 
+  const createServer = useCreateServer()
   const deleteServer = useDeleteServer()
 
   useEffect(() => {
@@ -133,9 +136,28 @@ export function ServersPageContent() {
     [deleteServer]
   )
 
+  const [createOpen, setCreateOpen] = useState(false)
+
+  const handleCreateSubmit = useCallback(
+    (data: Parameters<typeof createServer.mutate>[0]) => {
+      createServer.mutate(data, {
+        onSuccess: () => setCreateOpen(false),
+      })
+    },
+    [createServer]
+  )
+
   const totalPages = data?.meta.totalPages ?? 0
 
   return (
+    <>
+    <ServerCreateDrawer
+      open={createOpen}
+      onOpenChange={setCreateOpen}
+      onSubmit={handleCreateSubmit}
+      isPending={createServer.isPending}
+      providers={providersData?.data ?? []}
+    />
     <div className="container mx-auto max-w-7xl px-4 py-4">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -145,6 +167,10 @@ export function ServersPageContent() {
               Manage hosting servers, providers, and renewal dates
             </p>
           </div>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4 mr-1.5" />
+            Add Server
+          </Button>
         </div>
 
         {/* Search & Filter */}
@@ -247,5 +273,6 @@ export function ServersPageContent() {
         )}
       </div>
     </div>
+    </>
   )
 }

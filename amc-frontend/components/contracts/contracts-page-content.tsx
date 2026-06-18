@@ -2,8 +2,11 @@
 
 import { useCallback, useState, useEffect } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 import { ContractGrid } from "@/components/contracts/contract-grid"
-import { useContracts } from "@/hooks/use-contracts"
+import { ContractCreateDrawer } from "@/components/contracts/contract-create-drawer"
+import { useContracts, useCreateContract } from "@/hooks/use-contracts"
 import { useDebounce } from "@/hooks/use-debounce"
 
 export function ContractsPageContent() {
@@ -16,6 +19,8 @@ export function ContractsPageContent() {
   const statusFilter = searchParams.get("status") || "all"
   const limit = 30
 
+  const createMutation = useCreateContract()
+  const [createOpen, setCreateOpen] = useState(false)
   const [inputValue, setInputValue] = useState(search)
   const debouncedSearch = useDebounce(inputValue, 300)
 
@@ -81,6 +86,27 @@ export function ContractsPageContent() {
     [updateParams]
   )
 
+  const handleCreateSubmit = useCallback(
+    (data: {
+      client_id: string
+      contract_number?: string
+      billing_cycle: string
+      start_date: string
+      end_date: string
+      renewal_date: string
+      amount: number
+      currency?: string
+      auto_renew?: boolean
+      scope?: string
+      status?: string
+    }) => {
+      createMutation.mutate(data, {
+        onSuccess: () => setCreateOpen(false),
+      })
+    },
+    [createMutation]
+  )
+
   const handleContractClick = useCallback(
     (id: string) => {
       router.push(`/contracts/${id}`)
@@ -98,7 +124,18 @@ export function ContractsPageContent() {
               Track AMC agreements, renewals, and contract value
             </p>
           </div>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4 mr-1.5" />
+            New Contract
+          </Button>
         </div>
+
+        <ContractCreateDrawer
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSubmit={handleCreateSubmit}
+          isPending={createMutation.isPending}
+        />
 
         <ContractGrid
           data={data?.data || []}

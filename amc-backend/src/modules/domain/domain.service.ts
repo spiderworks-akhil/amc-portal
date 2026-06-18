@@ -34,8 +34,27 @@ export class DomainService {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * Clean a raw FQDN input by stripping protocol, path, trailing dot, etc.
+   * This protects against users accidentally pasting full URLs.
+   */
+  private cleanFqdn(raw: string): string {
+    let cleaned = raw.trim().toLowerCase();
+    // Strip protocol
+    cleaned = cleaned.replace(/^https?:\/\//, '');
+      // Strip path, query string, fragment
+    cleaned = cleaned.split('/')[0].split('?')[0].split('#')[0];
+    // Strip trailing dot(s)
+    cleaned = cleaned.replace(/\.+$/, '');
+    return cleaned;
+  }
+
   async create(dto: CreateDomainDto, createdBy?: string) {
-    await this.verifyDomainExists(dto.fqdn);
+    const cleanedFqdn = this.cleanFqdn(dto.fqdn);
+    await this.verifyDomainExists(cleanedFqdn);
+
+    // Use cleaned fqdn for the rest of the create flow
+    dto.fqdn = cleanedFqdn;
 
     const result = await this.db.transaction().execute(async (trx) => {
       const domain = await trx
@@ -342,8 +361,9 @@ export class DomainService {
 
     if (dto.asset_id !== undefined) updateData.asset_id = dto.asset_id;
     if (dto.fqdn !== undefined) {
-      await this.verifyDomainExists(dto.fqdn);
-      updateData.fqdn = dto.fqdn;
+      const cleanedFqdn = this.cleanFqdn(dto.fqdn);
+      await this.verifyDomainExists(cleanedFqdn);
+      updateData.fqdn = cleanedFqdn;
     }
     if (dto.registrar_id !== undefined)
       updateData.registrar_id = dto.registrar_id;
@@ -559,7 +579,7 @@ export class DomainService {
 
   /** Exposed for frontend DNS verification endpoint — validates domain exists */
   async verifyFqdn(fqdn: string) {
-    await this.verifyDomainExists(fqdn);
+    await this.verifyDomainExists(this.cleanFqdn(fqdn));
   }
 
   /** Extract a date string (yyyy-MM-dd) from a variety of WHOIS date formats */
@@ -763,7 +783,8 @@ export class DomainService {
 
   /** Look up a domain via RDAP → WHOIS → DNS fallback chain */
   async lookupDomainDetails(fqdn: string) {
-    await this.verifyDomainExists(fqdn);
+    const cleanedFqdn = this.cleanFqdn(fqdn);
+    await this.verifyDomainExists(cleanedFqdn);
 
     let registeredDate: string | undefined;
     let expiryDate: string | undefined;
@@ -772,44 +793,44 @@ export class DomainService {
 
     // 1. Try RDAP (node-rdap handles TLD-specific bootstrapping)
     try {
-      const rdapResult = await this.lookupRdap(fqdn);
+      const rdapResult = await this.lookupRdap(cleanedFqdn);
       registeredDate = rdapResult.registeredDate;
       expiryDate = rdapResult.expiryDate;
       registrar = rdapResult.registrar;
       nameservers = rdapResult.nameservers;
 
       this.logger.log(
-        `RDAP lookup succeeded for ${fqdn}: registered=${registeredDate ?? '—'}, ` +
+        `RDAP lookup succeeded for ${cleanedFqdn}: registered=${registeredDate ?? '—'}, ` +
           `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
           `${nameservers.length} nameservers`,
       );
     } catch (rdapErr: unknown) {
       this.logger.warn(
-        `RDAP lookup failed for ${fqdn}: ${rdapErr instanceof Error ? rdapErr.message : rdapErr}`,
+        `RDAP lookup failed for ${cleanedFqdn}: ${rdapErr instanceof Error ? rdapErr.message : rdapErr}`,
       );
 
       // 2. Fallback: WHOIS via whoiser
       try {
-        const whoisResult = await this.lookupWhois(fqdn);
+        const whoisResult = await this.lookupWhois(cleanedFqdn);
         registeredDate = whoisResult.registeredDate;
         expiryDate = whoisResult.expiryDate;
         registrar = whoisResult.registrar;
         nameservers = whoisResult.nameservers;
 
         this.logger.log(
-          `WHOIS fallback succeeded for ${fqdn}: registered=${registeredDate ?? '—'}, ` +
+          `WHOIS fallback succeeded for ${cleanedFqdn}: registered=${registeredDate ?? '—'}, ` +
             `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
             `${nameservers.length} nameservers`,
         );
       } catch (whoisErr: unknown) {
         this.logger.warn(
-          `WHOIS fallback also failed for ${fqdn}: ${whoisErr instanceof Error ? whoisErr.message : whoisErr}`,
+          `WHOIS fallback also failed for ${cleanedFqdn}: ${whoisErr instanceof Error ? whoisErr.message : whoisErr}`,
         );
 
         // 3. Final fallback: DNS NS resolution
         try {
-          nameservers = await dns.resolveNs(fqdn);
-          this.logger.log(`Fallback DNS NS resolution succeeded for ${fqdn}`);
+          nameservers = await dns.resolveNs(cleanedFqdn);
+          this.logger.log(`Fallback DNS NS resolution succeeded for ${cleanedFqdn}`);
         } catch {
           // NS records are optional
         }
@@ -823,7 +844,7 @@ export class DomainService {
 
     return {
       valid: true,
-      fqdn,
+      fqdn: cleanedFqdn,
       nameservers,
       registered_date: registeredDate,
       expiry_date: expiryDate,

@@ -1,7 +1,8 @@
 "use client"
 
+import { useCallback, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useContract } from "@/hooks/use-contracts"
+import { useContract, useUpdateContract } from "@/hooks/use-contracts"
 
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,7 +20,9 @@ import {
   ExternalLink,
   Mail,
   History,
+  Pencil,
 } from "lucide-react"
+import { ContractEditDrawer } from "@/components/contracts/contract-edit-drawer"
 
 const CONTRACT_STATUS_COLORS: Record<string, "emerald" | "amber" | "red" | "blue" | "gray"> = {
   active: "emerald",
@@ -41,6 +44,8 @@ export default function ContractDetailPage() {
   const router = useRouter()
   const id = params.id as string
 
+  const [editOpen, setEditOpen] = useState(false)
+  const updateMutation = useUpdateContract()
   const { data: contract, isLoading, isError } = useContract(id)
 
   if (isLoading) return <DetailSkeleton />
@@ -70,6 +75,26 @@ export default function ContractDetailPage() {
   const daysUntilEnd = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   const isExpiringSoon = daysUntilEnd > 0 && daysUntilEnd <= 30
   const isExpired = daysUntilEnd <= 0
+
+  const handleEditSubmit = useCallback(
+    (data: {
+      billing_cycle?: string
+      start_date?: string
+      end_date?: string
+      renewal_date?: string
+      amount?: number
+      currency?: string
+      auto_renew?: boolean
+      scope?: string
+      status?: string
+    }) => {
+      updateMutation.mutate(
+        { id, ...data },
+        { onSuccess: () => setEditOpen(false) },
+      )
+    },
+    [id, updateMutation],
+  )
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -103,6 +128,10 @@ export default function ContractDetailPage() {
               </button>
             </p>
           </div>
+          <Button size="sm" variant="outline" className="shrink-0" onClick={() => setEditOpen(true)}>
+            <Pencil className="size-3.5 mr-1.5" />
+            Edit
+          </Button>
         </div>
       </div>
 
@@ -239,6 +268,15 @@ export default function ContractDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Edit Drawer */}
+      <ContractEditDrawer
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSubmit={handleEditSubmit}
+        isPending={updateMutation.isPending}
+        contract={contract}
+      />
 
       {/* Linked Assets Section */}
       <Card className="mb-6">

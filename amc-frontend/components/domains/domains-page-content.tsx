@@ -2,9 +2,12 @@
 
 import { useCallback, useState, useEffect } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 import { DomainGrid } from "@/components/domains/domain-grid"
-import { useDomains, useDeleteDomain } from "@/hooks/use-domains"
+import { useDomains, useDeleteDomain, useCreateDomain } from "@/hooks/use-domains"
 import { useDebounce } from "@/hooks/use-debounce"
+import { DomainCreateDrawer } from "@/components/domains/domain-create-drawer"
 
 export function DomainsPageContent() {
   const router = useRouter()
@@ -19,6 +22,7 @@ export function DomainsPageContent() {
   const expiryDateTo = searchParams.get("expiry_to") || undefined
   const limit = 30
 
+  const [createOpen, setCreateOpen] = useState(false)
   const [inputValue, setInputValue] = useState(search)
   const debouncedSearch = useDebounce(inputValue, 300)
 
@@ -55,6 +59,7 @@ export function DomainsPageContent() {
     expiry_date_to: expiryDateTo,
   })
 
+  const createMutation = useCreateDomain()
   const deleteMutation = useDeleteDomain()
 
   const updateParams = useCallback(
@@ -107,6 +112,23 @@ export function DomainsPageContent() {
     [router]
   )
 
+  const handleCreateSubmit = useCallback(
+    (data: {
+      asset_id: string
+      fqdn: string
+      registered_date?: string
+      expiry_date?: string
+      auto_renew?: boolean
+      nameservers?: string[]
+      notes?: string
+    }) => {
+      createMutation.mutate(data, {
+        onSuccess: () => setCreateOpen(false),
+      })
+    },
+    [createMutation]
+  )
+
   const handleDelete = useCallback(
     (id: string) => {
       deleteMutation.mutate(id)
@@ -127,15 +149,25 @@ export function DomainsPageContent() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-4">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Domains</h1>
-            <p className="mt-1 text-muted-foreground">
-              Track domain registrations, expiry dates, and SSL certificates
-            </p>
+      <div className="space-y-4">          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Domains</h1>
+              <p className="mt-1 text-muted-foreground">
+                Track domain registrations, expiry dates, and SSL certificates
+              </p>
+            </div>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4 mr-1.5" />
+              Add Domain
+            </Button>
           </div>
-        </div>
+
+        <DomainCreateDrawer
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSubmit={handleCreateSubmit}
+          isPending={createMutation.isPending}
+        />
 
         <DomainGrid
           data={data?.data || []}

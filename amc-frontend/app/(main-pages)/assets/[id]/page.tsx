@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { DetailSkeleton } from "@/components/clients/client-details/detail-skeleton"
-import { CreateServerForm } from "@/components/assets/asset-details/create-server-form"
-import { CreateContractForm } from "@/components/assets/asset-details/create-contract-form"
+import { ServerCreateDrawer } from "@/components/servers/server-create-drawer"
+import { ContractCreateDrawer } from "@/components/contracts/contract-create-drawer"
 import { CreateDomainForm } from "@/components/assets/asset-details/create-domain-form"
 import { CreateSslForm } from "@/components/assets/asset-details/create-ssl-form"
 import { DomainEditForm } from "@/components/assets/asset-details/domain-edit-form"
@@ -1028,7 +1028,7 @@ export default function AssetDetailPage() {
       />
 
       {/* Create Server Drawer */}
-      <CreateServerForm
+      <ServerCreateDrawer
         key={`create-server-${createServerOpen}`}
         open={createServerOpen}
         onOpenChange={setCreateServerOpen}
@@ -1038,7 +1038,7 @@ export default function AssetDetailPage() {
       />
 
       {/* Create Contract Drawer */}
-      <CreateContractForm
+      <ContractCreateDrawer
         key={`create-contract-${createContractOpen}`}
         open={createContractOpen}
         onOpenChange={setCreateContractOpen}

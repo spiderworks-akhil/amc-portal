@@ -13,6 +13,7 @@ export const BILLING_CYCLE_LABELS: Record<string, string> = {
   monthly: "Monthly",
   quarterly: "Quarterly",
   yearly: "Yearly",
+  custom: "Custom",
 }
 
 export const STATUS_OPTIONS = [

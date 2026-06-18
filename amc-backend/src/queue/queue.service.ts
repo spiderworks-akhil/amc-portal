@@ -55,6 +55,7 @@ export class QueueService {
           jobId: `immediate-check-${monitorId}-${Date.now()}`,
           removeOnComplete: true,
           removeOnFail: false,
+          priority: 1,
         },
       );
     } catch (err) {
@@ -105,6 +106,7 @@ export class QueueService {
           jobId: `immediate-domain-refresh-${domainId}-${Date.now()}`,
           removeOnComplete: true,
           removeOnFail: false,
+          priority: 1,
         },
       );
     } catch (err) {
@@ -155,6 +157,7 @@ export class QueueService {
           jobId: `immediate-ssl-refresh-${sslId}-${Date.now()}`,
           removeOnComplete: true,
           removeOnFail: false,
+          priority: 1,
         },
       );
     } catch (err) {

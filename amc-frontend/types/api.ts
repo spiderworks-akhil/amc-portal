@@ -436,6 +436,19 @@ export interface UpdateSslPayload {
   type?: string
 }
 
+export interface UpdateContractPayload {
+  contract_number?: string
+  billing_cycle?: string
+  start_date?: string
+  end_date?: string
+  renewal_date?: string
+  amount?: number
+  currency?: string
+  auto_renew?: boolean
+  scope?: string
+  status?: string
+}
+
 export interface UpdateAssetPayload {
   name?: string
   primary_url?: string
