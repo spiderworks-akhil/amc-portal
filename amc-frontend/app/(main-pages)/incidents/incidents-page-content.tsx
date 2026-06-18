@@ -1,13 +1,19 @@
-"use client"
+"use client";
 
-import { useCallback, useState } from "react"
-import { useSearchParams, useRouter, usePathname } from "next/navigation"
-import Link from "next/link"
-import { useIncidents, useResolveIncident, useAcknowledgeIncident, useDeleteIncident, useCheckExpiredIncidents } from "@/hooks/use-incidents"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { SmoothSelect } from "@/components/ui/smooth-select"
+import { useCallback, useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import {
+  useIncidents,
+  useResolveIncident,
+  useAcknowledgeIncident,
+  useDeleteIncident,
+  useCheckExpiredIncidents,
+} from "@/hooks/use-incidents";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SmoothSelect } from "@/components/ui/smooth-select";
 import {
   Table,
   TableBody,
@@ -15,13 +21,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +37,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/r-alert-dialog"
+} from "@/components/ui/r-alert-dialog";
 import {
   Pagination,
   PaginationContent,
@@ -40,7 +46,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
+} from "@/components/ui/pagination";
 import {
   AlertTriangle,
   AlertCircle,
@@ -51,21 +57,31 @@ import {
   Trash2,
   ExternalLink,
   Clock,
-} from "lucide-react"
-import type { IncidentListItem, IncidentSeverity } from "@/types/api"
+  Globe,
+  Shield,
+  Monitor,
+} from "lucide-react";
+import type { IncidentListItem, IncidentSeverity } from "@/types/api";
 
-const SEVERITY_CONFIG: Record<IncidentSeverity, { color: "red" | "amber" | "blue" | "gray"; icon: typeof AlertTriangle; label: string }> = {
+const SEVERITY_CONFIG: Record<
+  IncidentSeverity,
+  {
+    color: "red" | "amber" | "blue" | "gray";
+    icon: typeof AlertTriangle;
+    label: string;
+  }
+> = {
   critical: { color: "red", icon: AlertTriangle, label: "Critical" },
   major: { color: "amber", icon: AlertCircle, label: "Major" },
   minor: { color: "blue", icon: Info, label: "Minor" },
   info: { color: "gray", icon: Info, label: "Info" },
-}
+};
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
   { value: "open", label: "Open" },
   { value: "resolved", label: "Resolved" },
-]
+];
 
 const SEVERITY_OPTIONS = [
   { value: "all", label: "All Severities" },
@@ -73,57 +89,64 @@ const SEVERITY_OPTIONS = [
   { value: "major", label: "Major" },
   { value: "minor", label: "Minor" },
   { value: "info", label: "Info" },
-]
+];
 
 export function IncidentsPageContent() {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const page = Number(searchParams.get("page")) || 1
-  const statusFilter = searchParams.get("status") || "all"
-  const severityFilter = searchParams.get("severity") || "all"
-  const limit = 50
+  const page = Number(searchParams.get("page")) || 1;
+  const statusFilter = searchParams.get("status") || "all";
+  const severityFilter = searchParams.get("severity") || "all";
+  const limit = 50;
 
   const { data, isLoading } = useIncidents({
     page,
     limit,
-    status: statusFilter !== "all" ? (statusFilter as "open" | "resolved") : undefined,
+    status:
+      statusFilter !== "all"
+        ? (statusFilter as "open" | "resolved")
+        : undefined,
     severity: severityFilter !== "all" ? severityFilter : undefined,
     sort_by: "started_at",
     sort_order: "desc",
-  })
+  });
+ console.log("console",data?.data);
+ 
+  const { mutate: resolveIncident, isPending: isResolving } =
+    useResolveIncident();
+  const { mutate: acknowledgeIncident, isPending: isAcknowledging } =
+    useAcknowledgeIncident();
+  const { mutate: deleteIncident } = useDeleteIncident();
+  const { mutate: checkExpired, isPending: isCheckingExpired } =
+    useCheckExpiredIncidents();
 
-  const { mutate: resolveIncident, isPending: isResolving } = useResolveIncident()
-  const { mutate: acknowledgeIncident, isPending: isAcknowledging } = useAcknowledgeIncident()
-  const { mutate: deleteIncident } = useDeleteIncident()
-  const { mutate: checkExpired, isPending: isCheckingExpired } = useCheckExpiredIncidents()
-
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const deleteIncidentItem = data?.data.find((i) => i.id === deleteId)
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const deleteIncidentItem = data?.data.find((i) => i.id === deleteId);
 
   const updateParams = useCallback(
     (updates: Record<string, string | undefined>) => {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams(searchParams.toString());
       Object.entries(updates).forEach(([key, value]) => {
-        if (value) params.set(key, value)
-        else params.delete(key)
-      })
-      if (!updates.page) params.set("page", "1")
-      router.replace(`${pathname}?${params.toString()}`)
+        if (value) params.set(key, value);
+        else params.delete(key);
+      });
+      if (!updates.page) params.set("page", "1");
+      router.replace(`${pathname}?${params.toString()}`);
     },
-    [router, pathname, searchParams]
-  )
+    [router, pathname, searchParams],
+  );
 
   const handlePageChange = useCallback(
     (newPage: number) => {
-      updateParams({ page: String(newPage) })
+      updateParams({ page: String(newPage) });
     },
-    [updateParams]
-  )
+    [updateParams],
+  );
 
-  const totalPages = data?.meta.totalPages ?? 0
-  const total = data?.meta.total ?? 0
+  const totalPages = data?.meta.totalPages ?? 0;
+  const total = data?.meta.total ?? 0;
 
   return (
     <div className="container mx-auto max-w-7xl">
@@ -143,7 +166,7 @@ export function IncidentsPageContent() {
             disabled={isCheckingExpired}
           >
             <AlertTriangle className="size-3.5 mr-1.5" />
-            {isCheckingExpired ? 'Checking...' : 'Check Expired'}
+            {isCheckingExpired ? "Checking..." : "Check Expired"}
           </Button>
         </div>
 
@@ -153,7 +176,9 @@ export function IncidentsPageContent() {
             <SmoothSelect
               options={STATUS_OPTIONS}
               value={statusFilter}
-              onChange={(value) => updateParams({ status: value === "all" ? undefined : value })}
+              onChange={(value) =>
+                updateParams({ status: value === "all" ? undefined : value })
+              }
               className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
             />
           </div>
@@ -161,7 +186,9 @@ export function IncidentsPageContent() {
             <SmoothSelect
               options={SEVERITY_OPTIONS}
               value={severityFilter}
-              onChange={(value) => updateParams({ severity: value === "all" ? undefined : value })}
+              onChange={(value) =>
+                updateParams({ severity: value === "all" ? undefined : value })
+              }
               className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
             />
           </div>
@@ -201,15 +228,18 @@ export function IncidentsPageContent() {
                 ))
               ) : data?.data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-12 text-muted-foreground"
+                  >
                     No incidents found
                   </TableCell>
                 </TableRow>
               ) : (
                 data?.data.map((incident) => {
-                  const severityCfg = SEVERITY_CONFIG[incident.severity]
-                  const SeverityIcon = severityCfg.icon
-                  const isResolved = !!incident.resolved_at
+                  const severityCfg = SEVERITY_CONFIG[incident.severity];
+                  const SeverityIcon = severityCfg.icon;
+                  const isResolved = !!incident.resolved_at;
                   return (
                     <TableRow
                       key={incident.id}
@@ -217,16 +247,52 @@ export function IncidentsPageContent() {
                       onClick={() => router.push(`/incidents/${incident.id}`)}
                     >
                       <TableCell>
-                        <Badge variant="dot" size="sm" color={severityCfg.color} className="capitalize">
-                          <SeverityIcon className="size-3 mr-1" />
-                          {severityCfg.label}
+                        <Badge
+                          style={{ backgroundColor: severityCfg.color }}
+                          className="capitalize flex items-center gap-1"
+                        >
+                          {/* <SeverityIcon className="size-1" /> */}
+                         <SeverityIcon size="1.5" /> {severityCfg.label} 
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium truncate max-w-[180px]">{incident.monitor_name}</span>
-                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">{incident.monitor_target}</span>
-                        </div>
+                        {incident.target_type === 'domain' ? (
+                          <div className="flex items-center gap-2">
+                            <Globe className="size-4 shrink-0 text-blue-500" />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium truncate max-w-[180px]">
+                                {incident.domain_fqdn || "—"}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                Domain Expiry
+                              </span>
+                            </div>
+                          </div>
+                        ) : incident.target_type === 'ssl' ? (
+                          <div className="flex items-center gap-2">
+                            <Shield className="size-4 shrink-0 text-emerald-500" />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium truncate max-w-[180px]">
+                                {incident.ssl_name || incident.domain_fqdn || "—"}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                SSL Expiry
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Monitor className="size-4 shrink-0 text-muted-foreground" />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium truncate max-w-[180px]">
+                                {incident.monitor_name || "—"}
+                              </span>
+                              <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                                {incident.monitor_target}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
@@ -261,23 +327,47 @@ export function IncidentsPageContent() {
                       <TableCell>
                         <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon-xs" className="size-7">
+                            <DropdownMenuTrigger
+                              asChild
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                className="size-7"
+                              >
                                 <MoreVertical className="size-3.5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/incidents/${incident.id}`) }}>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/incidents/${incident.id}`);
+                                }}
+                              >
                                 <Eye className="size-3.5 mr-2" />
                                 View Details
                               </DropdownMenuItem>
                               {!isResolved && (
                                 <>
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); acknowledgeIncident(incident.id) }} disabled={isAcknowledging}>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      acknowledgeIncident(incident.id);
+                                    }}
+                                    disabled={isAcknowledging}
+                                  >
                                     <CheckCircle2 className="size-3.5 mr-2" />
                                     Acknowledge
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); resolveIncident(incident.id) }} disabled={isResolving}>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      resolveIncident(incident.id);
+                                    }}
+                                    disabled={isResolving}
+                                  >
                                     <CheckCircle2 className="size-3.5 mr-2" />
                                     Resolve
                                   </DropdownMenuItem>
@@ -286,8 +376,8 @@ export function IncidentsPageContent() {
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onClick={(e) => {
-                                  e.stopPropagation()
-                                  setDeleteId(incident.id)
+                                  e.stopPropagation();
+                                  setDeleteId(incident.id);
                                 }}
                               >
                                 <Trash2 className="size-3.5 mr-2" />
@@ -298,7 +388,7 @@ export function IncidentsPageContent() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })
               )}
             </TableBody>
@@ -313,37 +403,37 @@ export function IncidentsPageContent() {
                 <PaginationPrevious
                   href="#"
                   onClick={(e) => {
-                    e.preventDefault()
-                    if (page > 1) handlePageChange(page - 1)
+                    e.preventDefault();
+                    if (page > 1) handlePageChange(page - 1);
                   }}
                   className={page === 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum
+                let pageNum;
                 if (totalPages <= 5) {
-                  pageNum = i + 1
+                  pageNum = i + 1;
                 } else if (page <= 3) {
-                  pageNum = i + 1
+                  pageNum = i + 1;
                 } else if (page >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i
+                  pageNum = totalPages - 4 + i;
                 } else {
-                  pageNum = page - 2 + i
+                  pageNum = page - 2 + i;
                 }
                 return (
                   <PaginationItem key={pageNum}>
                     <PaginationLink
                       href="#"
                       onClick={(e) => {
-                        e.preventDefault()
-                        handlePageChange(pageNum)
+                        e.preventDefault();
+                        handlePageChange(pageNum);
                       }}
                       isActive={page === pageNum}
                     >
                       {pageNum}
                     </PaginationLink>
                   </PaginationItem>
-                )
+                );
               })}
               {totalPages > 5 && page < totalPages - 2 && (
                 <PaginationItem>
@@ -354,10 +444,12 @@ export function IncidentsPageContent() {
                 <PaginationNext
                   href="#"
                   onClick={(e) => {
-                    e.preventDefault()
-                    if (page < totalPages) handlePageChange(page + 1)
+                    e.preventDefault();
+                    if (page < totalPages) handlePageChange(page + 1);
                   }}
-                  className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                  className={
+                    page === totalPages ? "pointer-events-none opacity-50" : ""
+                  }
                 />
               </PaginationItem>
             </PaginationContent>
@@ -366,20 +458,25 @@ export function IncidentsPageContent() {
       </div>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Incident</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this incident for <strong>{deleteIncidentItem?.monitor_name}</strong>? This action cannot be undone.
+              Are you sure you want to delete this incident for{" "}
+              <strong>{deleteIncidentItem?.monitor_name}</strong>? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deleteId) deleteIncident(deleteId)
-                setDeleteId(null)
+                if (deleteId) deleteIncident(deleteId);
+                setDeleteId(null);
               }}
               className="bg-destructive hover:bg-destructive/80"
             >
@@ -389,5 +486,5 @@ export function IncidentsPageContent() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

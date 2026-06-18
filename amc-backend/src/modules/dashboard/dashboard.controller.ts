@@ -18,4 +18,10 @@ export class DashboardController {
   async getSummary() {
     return this.dashboardService.getSummary();
   }
+
+  @Get('expiry-calendar')
+  @HttpCode(HttpStatus.OK)
+  async getExpiryCalendar() {
+    return this.dashboardService.getExpiryCalendar();
+  }
 }

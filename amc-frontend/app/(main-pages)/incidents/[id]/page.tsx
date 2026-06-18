@@ -135,7 +135,7 @@ export default function IncidentDetailPage() {
             <h1 className="text-2xl font-bold tracking-tight">
               {incident.monitor_name ?? incident.cause ?? 'Incident'}
             </h1>
-            <Badge variant="dot" size="sm" color={severityCfg.color} className="capitalize">
+            <Badge variant="dot"  color={severityCfg.color} className="capitalize">
               <SeverityIcon className="size-3 mr-1" />
               {severityCfg.label}
             </Badge>
@@ -405,7 +405,7 @@ export default function IncidentDetailPage() {
                   <Gauge className="size-3" />
                   Severity
                 </span>
-                <Badge variant="dot" size="sm" color={severityCfg.color}>
+                <Badge variant="dot" color={severityCfg.color}>
                   {severityCfg.label}
                 </Badge>
               </div>

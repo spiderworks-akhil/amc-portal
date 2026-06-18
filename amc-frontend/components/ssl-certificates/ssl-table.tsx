@@ -37,8 +37,10 @@ import {
   Trash2,
   Clock,
   AlertTriangle,
+  ShieldAlert,
 } from "lucide-react"
 import type { SslListItem } from "@/types/api"
+import { SslWarningBadges } from "./ssl-warning-badge"
 import { formatSslType, getExpiryBadge } from "./constants"
 import { formatDate } from "@/lib/format-utils"
 
@@ -144,9 +146,15 @@ export function SslTable({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="font-medium truncate max-w-[200px]">
+                        <span className="font-medium truncate max-w-[180px]">
                           {cert.common_name || cert.domain_fqdn || "SSL Certificate"}
                         </span>
+                        <SslWarningBadges
+                          isSelfSigned={!!cert.is_self_signed}
+                          hostnameMismatch={!!cert.hostname_mismatch}
+                          isExpired={isExpired}
+                          compact
+                        />
                       </div>
                     </TableCell>
                     <TableCell>

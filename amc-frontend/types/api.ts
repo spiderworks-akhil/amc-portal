@@ -389,6 +389,8 @@ export interface SslListItem {
   domain_fqdn: string
   asset_name?: string | null
   days_to_expiry: number | null
+  is_self_signed?: boolean
+  hostname_mismatch?: boolean
 }
 
 export interface CreateDomainPayload {
@@ -549,6 +551,8 @@ export interface IncidentListItem {
   asset_name: string | null
   target_type: string | null
   target_id: string | null
+  domain_fqdn: string | null
+  ssl_name: string | null
 }
 
 export interface IncidentDetail extends IncidentListItem {}
@@ -561,4 +565,29 @@ export interface ListIncidentsParams {
   status?: "open" | "resolved"
   sort_by?: string
   sort_order?: "asc" | "desc"
+}
+
+export interface AuditLogListItem {
+  id: string
+  actor_id: string | null
+  actor_name: string | null
+  actor_email: string | null
+  entity_type: string
+  entity_id: string
+  action: string
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+  ip: string | null
+  created_at: string
+}
+
+export interface ListAuditLogsParams {
+  page?: number
+  limit?: number
+  entity_type?: string
+  entity_id?: string
+  action?: string
+  actor_id?: string
+  date_from?: string
+  date_to?: string
 }

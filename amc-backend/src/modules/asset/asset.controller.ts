@@ -4,6 +4,7 @@ import {
   HttpCode, HttpStatus, ParseUUIDPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AssetService } from './asset.service';
 import {
@@ -19,6 +20,7 @@ export class AssetController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Asset created successfully')
+  @AuditLog({ entityType: 'asset' })
   async create(
     @Body() dto: CreateAssetDto,
     @CurrentUser() user: { id: string },
@@ -47,6 +49,7 @@ export class AssetController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Asset updated successfully')
+  @AuditLog({ entityType: 'asset' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateAssetDto,
@@ -57,6 +60,7 @@ export class AssetController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Asset deleted successfully')
+  @AuditLog({ entityType: 'asset' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.assetService.delete(id);
   }

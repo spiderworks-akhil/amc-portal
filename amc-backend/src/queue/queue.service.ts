@@ -34,10 +34,10 @@ export class QueueService {
 
   async removeScheduledCheck(monitorId: string) {
     try {
-      const repeatableJobs = await this.monitorQueue.getRepeatableJobs();
+      const repeatableJobs = await this.monitorQueue.getJobSchedulers();
       for (const job of repeatableJobs) {
         if (job.id === `monitor-check-${monitorId}`) {
-          await this.monitorQueue.removeRepeatableByKey(job.key);
+          await this.monitorQueue.removeJobScheduler(job.key);
           this.logger.log(`Removed scheduled check for ${monitorId}`);
         }
       }
@@ -84,10 +84,10 @@ export class QueueService {
 
   async removeScheduledDomainRefresh(domainId: string) {
     try {
-      const repeatableJobs = await this.domainRefreshQueue.getRepeatableJobs();
+      const repeatableJobs = await this.domainRefreshQueue.getJobSchedulers();
       for (const job of repeatableJobs) {
         if (job.id === `domain-refresh-${domainId}`) {
-          await this.domainRefreshQueue.removeRepeatableByKey(job.key);
+          await this.domainRefreshQueue.removeJobScheduler(job.key);
           this.logger.log(`Removed scheduled domain refresh for ${domainId}`);
         }
       }
@@ -134,10 +134,10 @@ export class QueueService {
 
   async removeScheduledSslRefresh(sslId: string) {
     try {
-      const repeatableJobs = await this.sslRefreshQueue.getRepeatableJobs();
+      const repeatableJobs = await this.sslRefreshQueue.getJobSchedulers();
       for (const job of repeatableJobs) {
         if (job.id === `ssl-refresh-${sslId}`) {
-          await this.sslRefreshQueue.removeRepeatableByKey(job.key);
+          await this.sslRefreshQueue.removeJobScheduler(job.key);
           this.logger.log(`Removed scheduled SSL refresh for ${sslId}`);
         }
       }

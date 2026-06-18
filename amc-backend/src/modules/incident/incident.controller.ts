@@ -12,6 +12,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { IncidentService } from './incident.service';
 import { CreateIncidentDto } from './dto/create-incident.dto';
@@ -25,6 +26,7 @@ export class IncidentController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Incident created successfully')
+  @AuditLog({ entityType: 'incident' })
   async create(
     @Body() dto: CreateIncidentDto,
     @CurrentUser() user: { id: string },
@@ -47,6 +49,7 @@ export class IncidentController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Incident updated successfully')
+  @AuditLog({ entityType: 'incident' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateIncidentDto,
@@ -57,6 +60,7 @@ export class IncidentController {
   @Post(':id/resolve')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Incident resolved successfully')
+  @AuditLog({ entityType: 'incident' })
   async resolve(@Param('id', ParseUUIDPipe) id: string) {
     return this.incidentService.resolve(id);
   }
@@ -64,6 +68,7 @@ export class IncidentController {
   @Post(':id/acknowledge')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Incident acknowledged successfully')
+  @AuditLog({ entityType: 'incident' })
   async acknowledge(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: { id: string },
@@ -86,6 +91,7 @@ export class IncidentController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Incident deleted successfully')
+  @AuditLog({ entityType: 'incident' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.incidentService.remove(id);
   }

@@ -10,6 +10,7 @@ import { useCreateServer, useLinkAssetToServer } from "@/hooks/use-servers"
 import { useCreateContract, useLinkAssetToContract } from "@/hooks/use-contracts"
 import { useCreateDomain, useUpdateDomain, useDeleteDomain } from "@/hooks/use-domains"
 import { useCreateSsl, useUpdateSsl, useDeleteSsl } from "@/hooks/use-ssl"
+import { useMonitorsByAsset, useCreateMonitor } from "@/hooks/use-monitors"
 
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ import { CreateSslForm } from "@/components/assets/asset-details/create-ssl-form
 import { DomainEditForm } from "@/components/assets/asset-details/domain-edit-form"
 import { SslEditForm } from "@/components/assets/asset-details/ssl-edit-form"
 import { CreateProviderDialog } from "@/components/providers/create-provider-dialog"
+import { MonitorCreateDrawer } from "@/components/monitors/monitor-create-drawer"
 import { formatDate, formatCurrency } from "@/lib/format-utils"
 import type { AssetDetail } from "@/types/api"
 import {
@@ -36,6 +38,7 @@ import {
   Building2,
   Server,
   CalendarClock,
+  Clock,
   DollarSign,
   Plus,
   RefreshCw,
@@ -47,6 +50,7 @@ import {
   Layers,
   Cpu,
   Pencil,
+  Activity,
 } from "lucide-react"
 import { AssetEditForm } from "@/components/assets/asset-details/asset-edit-form"
 import Link from "next/link"
@@ -94,6 +98,8 @@ export default function AssetDetailPage() {
   const updateSsl = useUpdateSsl()
   const deleteSsl = useDeleteSsl()
   const createProvider = useCreateProvider()
+  const { data: monitorsData, isLoading: monitorsLoading } = useMonitorsByAsset(id)
+  const createMonitor = useCreateMonitor()
 
   const [editOpen, setEditOpen] = useState(false)
   const [createServerOpen, setCreateServerOpen] = useState(false)
@@ -103,6 +109,7 @@ export default function AssetDetailPage() {
   const [createProviderOpen, setCreateProviderOpen] = useState(false)
   const [editDomainOpen, setEditDomainOpen] = useState(false)
   const [editSslOpen, setEditSslOpen] = useState(false)
+  const [createMonitorOpen, setCreateMonitorOpen] = useState(false)
   const [editingDomain, setEditingDomain] = useState<AssetDetail['domains'][number] | null>(null)
   const [editingSsl, setEditingSsl] = useState<AssetDetail['ssl_certificates'][number] | null>(null)
 
@@ -268,6 +275,24 @@ export default function AssetDetailPage() {
     [createProvider, refetchProviders]
   )
 
+  const handleCreateMonitor = useCallback(
+    (data: {
+      asset_id: string
+      name: string
+      check_type: string
+      target: string
+      interval_seconds?: number
+      expected_status_code?: number
+      expected_keyword?: string
+      enabled?: boolean
+    }) => {
+      createMonitor.mutate(data as import("@/types/api").CreateMonitorPayload, {
+        onSuccess: () => setCreateMonitorOpen(false),
+      })
+    },
+    [createMonitor]
+  )
+
   const isCreatingServer = createServer.isPending || linkAssetToServer.isPending
   const isCreatingContract = createContract.isPending || linkAssetToContract.isPending
   const isCreatingDomain = createDomain.isPending
@@ -276,6 +301,8 @@ export default function AssetDetailPage() {
   const isDeletingDomain = deleteDomain.isPending
   const isUpdatingSsl = updateSsl.isPending
   const isDeletingSsl = deleteSsl.isPending
+
+  const isCreatingMonitor = createMonitor.isPending
 
   // Filter providers to get registrars for domain creation
   const registrars = (providersData?.data ?? []).filter((p) => p.type === "registrar")
@@ -766,6 +793,114 @@ export default function AssetDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Monitors Section */}
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="size-4" />
+              Monitors
+            </CardTitle>
+            <CardDescription>
+              {monitorsLoading
+                ? "Loading monitors..."
+                : !monitorsData?.data?.length
+                  ? "No monitors linked to this asset"
+                  : `${monitorsData.meta.total} monitor${monitorsData.meta.total !== 1 ? "s" : ""}`
+              }
+            </CardDescription>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setCreateMonitorOpen(true)}>
+            <Plus className="size-3.5 mr-1.5" />
+            Create Monitor
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {monitorsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-border/60 p-4 space-y-3">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : !monitorsData?.data?.length ? (
+            <div className="text-center py-10 text-muted-foreground">
+              <Activity className="size-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-medium">No monitors set up</p>
+              <p className="text-xs mt-1">Create an uptime monitor to keep track of this asset&apos;s availability.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {monitorsData.data.map((monitor) => (
+                <div
+                  key={monitor.id}
+                  className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group cursor-pointer"
+                  onClick={() => router.push(`/monitors/${monitor.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/monitors/${monitor.id}`) }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                        <Activity className="size-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{monitor.name}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{monitor.target}</p>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {monitor.current_status === "up" ? (
+                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          <CheckCircle2 className="size-3.5" />
+                          Up
+                        </span>
+                      ) : monitor.current_status === "down" ? (
+                        <span className="flex items-center gap-1 text-xs text-destructive font-medium">
+                          <XCircle className="size-3.5" />
+                          Down
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+                          <Clock className="size-3.5" />
+                          Unknown
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-1.5 text-xs text-muted-foreground border-t border-border/40 pt-3">
+                    <div className="flex items-center justify-between">
+                      <span>Type</span>
+                      <span className="uppercase font-medium">{monitor.check_type}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Interval</span>
+                      <span>
+                        {monitor.interval_seconds >= 3600
+                          ? `${monitor.interval_seconds / 3600}h`
+                          : monitor.interval_seconds >= 60
+                            ? `${monitor.interval_seconds / 60}m`
+                            : `${monitor.interval_seconds}s`}
+                      </span>
+                    </div>
+                    {monitor.last_checked_at && (
+                      <div className="flex items-center justify-between">
+                        <span>Last checked</span>
+                        <span>{formatDate(monitor.last_checked_at)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Contracts Section */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-start justify-between">
@@ -962,13 +1097,17 @@ export default function AssetDetailPage() {
         />
       )}
 
-      {/* Create Provider Dialog */}
-      <CreateProviderDialog
-        open={createProviderOpen}
-        onOpenChange={setCreateProviderOpen}
-        onSubmit={handleCreateProvider}
-        isPending={createProvider.isPending}
+      {/* Create Monitor Drawer */}
+      <MonitorCreateDrawer
+        open={createMonitorOpen}
+        onOpenChange={setCreateMonitorOpen}
+        onSubmit={handleCreateMonitor}
+        isPending={isCreatingMonitor}
+        preSelectedAssetId={id}
       />
+
+      {/* Create Provider Dialog */}
+    
     </div>
   )
 }

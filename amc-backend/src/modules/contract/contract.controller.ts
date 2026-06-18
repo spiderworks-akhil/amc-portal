@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ContractService } from './contract.service';
 import {
@@ -30,6 +31,7 @@ export class ContractController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Contract created successfully')
+  @AuditLog({ entityType: 'contract' })
   async create(
     @Body() dto: CreateContractDto,
     @CurrentUser() user: { id: string },
@@ -66,6 +68,7 @@ export class ContractController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Contract updated successfully')
+  @AuditLog({ entityType: 'contract' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateContractDto,
@@ -76,6 +79,7 @@ export class ContractController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Contract deleted successfully')
+  @AuditLog({ entityType: 'contract' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.contractService.remove(id);
   }
@@ -85,6 +89,7 @@ export class ContractController {
   @Post(':id/assets')
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Assets linked to contract successfully')
+  @AuditLog({ entityType: 'contract' })
   async addAssets(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssetIdsDto,
@@ -95,6 +100,7 @@ export class ContractController {
   @Delete(':id/assets')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Assets unlinked from contract successfully')
+  @AuditLog({ entityType: 'contract' })
   async removeAssets(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssetIdsDto,
@@ -113,6 +119,7 @@ export class ContractController {
   @Post(':id/renew')
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Contract renewed successfully')
+  @AuditLog({ entityType: 'contract' })
   async renew(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RenewContractDto,

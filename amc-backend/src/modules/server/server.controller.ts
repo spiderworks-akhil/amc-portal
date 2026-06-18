@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ServerService } from './server.service';
 import {
@@ -29,6 +30,7 @@ export class ServerController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Server created successfully')
+  @AuditLog({ entityType: 'server' })
   async create(
     @Body() dto: CreateServerDto,
     @CurrentUser() user: { id: string },
@@ -79,6 +81,7 @@ export class ServerController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Server updated successfully')
+  @AuditLog({ entityType: 'server' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateServerDto,
@@ -89,6 +92,7 @@ export class ServerController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Server deleted successfully')
+  @AuditLog({ entityType: 'server' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.serverService.remove(id);
   }
@@ -98,6 +102,7 @@ export class ServerController {
   @Post(':id/assets')
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Assets linked to server successfully')
+  @AuditLog({ entityType: 'server' })
   async addAssets(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssetIdsDto,
@@ -108,6 +113,7 @@ export class ServerController {
   @Delete(':id/assets')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Assets unlinked from server successfully')
+  @AuditLog({ entityType: 'server' })
   async removeAssets(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssetIdsDto,

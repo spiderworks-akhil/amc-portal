@@ -12,6 +12,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ProviderService } from './provider.service';
 import {
@@ -27,6 +28,7 @@ export class ProviderController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Provider created successfully')
+  @AuditLog({ entityType: 'provider' })
   async create(
     @Body() dto: CreateProviderDto,
     @CurrentUser() user: { id: string },
@@ -67,6 +69,7 @@ export class ProviderController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Provider updated successfully')
+  @AuditLog({ entityType: 'provider' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProviderDto,
@@ -77,6 +80,7 @@ export class ProviderController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Provider deleted successfully')
+  @AuditLog({ entityType: 'provider' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.providerService.remove(id);
   }

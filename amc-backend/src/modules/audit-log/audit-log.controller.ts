@@ -1,34 +1,46 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { AuditLogService } from './audit-log.service';
-import { CreateAuditLogDto } from './dto/create-audit-log.dto';
-import { UpdateAuditLogDto } from './dto/update-audit-log.dto';
+import { CreateAuditLogDto, ListAuditLogsDto } from './dto/create-audit-log.dto';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
+import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @Controller('audit-log')
 export class AuditLogController {
   constructor(private readonly auditLogService: AuditLogService) {}
 
   @Post()
-  create(@Body() createAuditLogDto: CreateAuditLogDto) {
-    return this.auditLogService.create(createAuditLogDto);
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Audit log created')
+  @AuditLog({ entityType: 'user' })
+  async create(@Body() dto: CreateAuditLogDto) {
+    return this.auditLogService.create(dto);
   }
 
-  @Get()
-  findAll() {
-    return this.auditLogService.findAll();
+  @Get('list')
+  @HttpCode(HttpStatus.OK)
+  async list(@Query() dto: ListAuditLogsDto) {
+    return this.auditLogService.list(dto);
+  }
+
+  @Get('recent')
+  @HttpCode(HttpStatus.OK)
+  async getRecent(@Query('limit') limit?: string) {
+    return this.auditLogService.getRecent(limit ? parseInt(limit, 10) : 20);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.auditLogService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuditLogDto: UpdateAuditLogDto) {
-    return this.auditLogService.update(+id, updateAuditLogDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.auditLogService.remove(+id);
+  @HttpCode(HttpStatus.OK)
+  async get(@Param('id', ParseUUIDPipe) id: string) {
+    return this.auditLogService.getById(id);
   }
 }

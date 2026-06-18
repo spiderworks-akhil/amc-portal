@@ -152,7 +152,7 @@ export class SslService {
         .execute(),
     ]);
 
-    // Enrich with days-to-expiry
+    // Enrich with days-to-expiry and warning flags
     const now = new Date();
     const enriched = data.map((c) => ({
       ...c,
@@ -162,6 +162,12 @@ export class SslService {
               (1000 * 60 * 60 * 24),
           )
         : null,
+      is_self_signed: c.issuer !== null && c.common_name !== null
+        ? c.issuer.toLowerCase() === c.common_name.toLowerCase() ||
+          c.common_name.toLowerCase().includes(c.issuer.toLowerCase()) ||
+          c.issuer.toLowerCase().includes(c.common_name.toLowerCase())
+        : false,
+      hostname_mismatch: c.common_name !== null && c.common_name !== c.domain_fqdn && !c.common_name.startsWith('*.'),
     }));
 
     return {
@@ -203,7 +209,21 @@ export class SslService {
         )
       : null;
 
-    return { ...cert, days_to_expiry: daysToExpiry, snapshots };
+    const isSelfSigned = cert.issuer !== null && cert.common_name !== null
+      ? cert.issuer.toLowerCase() === cert.common_name.toLowerCase() ||
+        cert.common_name.toLowerCase().includes(cert.issuer.toLowerCase()) ||
+        cert.issuer.toLowerCase().includes(cert.common_name.toLowerCase())
+      : false;
+
+    const hostnameMismatch = cert.common_name !== null && cert.common_name !== cert.domain_fqdn && !cert.common_name.startsWith('*.');
+
+    return {
+      ...cert,
+      days_to_expiry: daysToExpiry,
+      is_self_signed: isSelfSigned,
+      hostname_mismatch: hostnameMismatch,
+      snapshots,
+    };
   }
 
   async update(id: string, dto: UpdateSslDto) {

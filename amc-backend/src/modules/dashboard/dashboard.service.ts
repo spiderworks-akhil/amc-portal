@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { Kysely } from 'kysely';
+import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
 
 @Injectable()
@@ -324,6 +324,152 @@ export class DashboardService {
       minor: Number(severityStats?.minor_open ?? 0),
       info: Number(severityStats?.info_open ?? 0),
       recentIncidents,
+    };
+  }
+
+  async getExpiryCalendar() {
+    const now = new Date();
+    const sixMonths = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+
+    const [domains, sslCerts, contracts, servers] = await Promise.all([
+      // Domains expiring within 6 months
+      this.db
+        .selectFrom('domains')
+        .innerJoin('assets', 'assets.id', 'domains.asset_id')
+        .innerJoin('clients', 'clients.id', 'assets.client_id')
+        .select([
+          'domains.id',
+          'domains.fqdn',
+          'domains.expiry_date',
+          'domains.auto_renew',
+          'assets.name as asset_name',
+          'clients.name as client_name',
+          sql`'domain'`.as('item_type'),
+          sql`null`.as('extra_info'),
+        ])
+        .where('domains.expiry_date', 'is not', null)
+        .where('domains.expiry_date', '>=', now)
+        .where('domains.expiry_date', '<=', sixMonths)
+        .orderBy('domains.expiry_date', 'asc')
+        .execute(),
+
+      // SSL certificates expiring within 6 months
+      this.db
+        .selectFrom('ssl_certificates')
+        .innerJoin('domains', 'domains.id', 'ssl_certificates.domain_id')
+        .leftJoin('assets', 'assets.id', 'ssl_certificates.asset_id')
+        .select([
+          'ssl_certificates.id',
+          sql`COALESCE(ssl_certificates.common_name, domains.fqdn)`.as('fqdn'),
+          'ssl_certificates.valid_to',
+          sql`null::boolean`.as('auto_renew'),
+          'assets.name as asset_name',
+          sql`null`.as('client_name'),
+          sql`'ssl'`.as('item_type'),
+          sql`ssl_certificates.issuer`.as('extra_info'),
+        ])
+        .where('ssl_certificates.valid_to', 'is not', null)
+        .where('ssl_certificates.valid_to', '>=', now)
+        .where('ssl_certificates.valid_to', '<=', sixMonths)
+        .orderBy('ssl_certificates.valid_to', 'asc')
+        .execute(),
+
+      // Contracts ending within 6 months
+      this.db
+        .selectFrom('contracts')
+        .innerJoin('clients', 'clients.id', 'contracts.client_id')
+        .select([
+          'contracts.id',
+          sql`contracts.contract_number || ' - ' || clients.name`.as('fqdn'),
+          'contracts.end_date',
+          'contracts.auto_renew',
+          sql`null`.as('asset_name'),
+          'clients.name as client_name',
+          sql`'contract'`.as('item_type'),
+          sql`contracts.billing_cycle || ' · ' || contracts.currency || ' ' || contracts.amount`.as('extra_info'),
+        ])
+        .where('contracts.deleted_at', 'is', null)
+        .where('contracts.end_date', '<=', sixMonths)
+        .orderBy('contracts.end_date', 'asc')
+        .execute(),
+
+      // Servers renewing within 6 months
+      this.db
+        .selectFrom('servers')
+        .innerJoin('service_providers', 'service_providers.id', 'servers.provider_id')
+        .select([
+          'servers.id',
+          sql`servers.label || ' (' || service_providers.name || ')'`.as('fqdn'),
+          'servers.renewal_date',
+          sql`null::boolean`.as('auto_renew'),
+          sql`null`.as('asset_name'),
+          'service_providers.name as client_name',
+          sql`'server'`.as('item_type'),
+          sql`'$' || servers.monthly_cost || '/' || servers.currency`.as('extra_info'),
+        ])
+        .where('servers.renewal_date', 'is not', null)
+        .where('servers.renewal_date', '>=', now)
+        .where('servers.renewal_date', '<=', sixMonths)
+        .orderBy('servers.renewal_date', 'asc')
+        .execute(),
+    ]);
+
+    // Combine and enrich all items
+    const allItems = [
+      ...domains.map((d) => ({
+        ...d,
+        date: d.expiry_date,
+        days_to_event: d.expiry_date
+          ? Math.ceil((new Date(d.expiry_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          : null,
+      })),
+      ...sslCerts.map((s) => ({
+        ...s,
+        date: s.valid_to,
+        days_to_event: s.valid_to
+          ? Math.ceil((new Date(s.valid_to).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          : null,
+      })),
+      ...contracts.map((c) => ({
+        ...c,
+        date: c.end_date,
+        days_to_event: c.end_date
+          ? Math.ceil((new Date(c.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          : null,
+      })),
+      ...servers.map((s) => ({
+        ...s,
+        date: s.renewal_date,
+        days_to_event: s.renewal_date
+          ? Math.ceil((new Date(s.renewal_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          : null,
+      })),
+    ];
+
+    // Sort by date
+    allItems.sort((a, b) => {
+      const da = a.date ? new Date(a.date).getTime() : Infinity;
+      const db = b.date ? new Date(b.date).getTime() : Infinity;
+      return da - db;
+    });
+
+    // Group by month
+    const grouped: Record<string, typeof allItems> = {};
+    for (const item of allItems) {
+      if (!item.date) continue;
+      const d = new Date(item.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    }
+
+    return {
+      total: allItems.length,
+      months: Object.entries(grouped).map(([key, items]) => ({
+        key,
+        label: new Date(items[0].date!).toLocaleString('en-US', { year: 'numeric', month: 'long' }),
+        items,
+      })),
     };
   }
 

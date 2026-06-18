@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { MonitorService } from './monitor.service';
 import {
@@ -28,6 +29,7 @@ export class MonitorController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Monitor created successfully')
+  @AuditLog({ entityType: 'monitor' })
   async create(
     @Body() dto: CreateMonitorDto,
     @CurrentUser() user: { id: string },
@@ -50,6 +52,7 @@ export class MonitorController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Monitor updated successfully')
+  @AuditLog({ entityType: 'monitor' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateMonitorDto,
@@ -60,6 +63,7 @@ export class MonitorController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Monitor deleted successfully')
+  @AuditLog({ entityType: 'monitor' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.monitorService.remove(id);
   }

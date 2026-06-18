@@ -42,7 +42,9 @@ export class DomainService {
           asset_id: dto.asset_id,
           fqdn: dto.fqdn,
           registrar_id: dto.registrar_id ?? null,
-          registered_date: dto.registered_date ? new Date(dto.registered_date) : null,
+          registered_date: dto.registered_date
+            ? new Date(dto.registered_date)
+            : null,
           expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
           auto_renew: dto.auto_renew ?? false,
           nameservers: JSON.stringify(dto.nameservers ?? []),
@@ -69,11 +71,11 @@ export class DomainService {
         })
         .returningAll()
         .executeTakeFirstOrThrow();
-     this.logger.log("SSl ",ssl)
+      this.logger.log('SSl ', ssl);
       return { domain, ssl };
     });
 
-    this.logger.log("Transaction completed",result.ssl);
+    this.logger.log('Transaction completed', result.ssl);
 
     // Fire-and-forget background TLS lookup to enrich the SSL certificate
     this.sslService.triggerCheck(result.ssl.id).catch((err) => {
@@ -84,15 +86,26 @@ export class DomainService {
 
     // Fire-and-forget background registrar enrichment if not provided
     if (!dto.registrar_id) {
-      this.detectAndLinkRegistrar(result.domain.id, result.domain.fqdn).catch((err) => {
-        this.logger.error(
-          `Background registrar lookup failed for domain ${result.domain.id} (${result.domain.fqdn}): ${err instanceof Error ? err.message : err}`,
-        );
-      });
+      this.detectAndLinkRegistrar(result.domain.id, result.domain.fqdn).catch(
+        (err) => {
+          this.logger.error(
+            `Background registrar lookup failed for domain ${result.domain.id} (${result.domain.fqdn}): ${err instanceof Error ? err.message : err}`,
+          );
+        },
+      );
     }
 
-    // Schedule periodic domain refresh via BullMQ
-    await this.queueService.scheduleDomainRefresh(result.domain.id, process.env.DOMAIN_REFRESH_CRON || '0 0 * * *');
+    try {
+      await this.queueService.scheduleDomainRefresh(
+        result.domain.id,
+        process.env.DOMAIN_REFRESH_CRON || '0 0 * * *',
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to schedule refresh for domain ${result.domain.id}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+    }
 
     return result.domain;
   }
@@ -117,7 +130,11 @@ export class DomainService {
     let query = this.db
       .selectFrom('domains')
       .innerJoin('assets', 'assets.id', 'domains.asset_id')
-      .leftJoin('service_providers', 'service_providers.id', 'domains.registrar_id');
+      .leftJoin(
+        'service_providers',
+        'service_providers.id',
+        'domains.registrar_id',
+      );
 
     if (client_id) {
       query = query.where('assets.client_id', '=', client_id);
@@ -142,11 +159,19 @@ export class DomainService {
     }
 
     if (expiry_date_from) {
-      query = query.where('domains.expiry_date', '>=', new Date(expiry_date_from));
+      query = query.where(
+        'domains.expiry_date',
+        '>=',
+        new Date(expiry_date_from),
+      );
     }
 
     if (expiry_date_to) {
-      query = query.where('domains.expiry_date', '<=', new Date(expiry_date_to));
+      query = query.where(
+        'domains.expiry_date',
+        '<=',
+        new Date(expiry_date_to),
+      );
     }
 
     if (auto_renew !== undefined) {
@@ -161,7 +186,8 @@ export class DomainService {
       } else if (status === DomainStatusFilter.EXPIRING_SOON) {
         const threshold = new Date();
         threshold.setDate(threshold.getDate() + 30);
-        query = query.where('domains.expiry_date', '>', now)
+        query = query
+          .where('domains.expiry_date', '>', now)
           .where('domains.expiry_date', '<=', threshold);
       } else if (status === DomainStatusFilter.ACTIVE) {
         const threshold = new Date();
@@ -256,7 +282,11 @@ export class DomainService {
     const domain = await this.db
       .selectFrom('domains')
       .innerJoin('assets', 'assets.id', 'domains.asset_id')
-      .leftJoin('service_providers', 'service_providers.id', 'domains.registrar_id')
+      .leftJoin(
+        'service_providers',
+        'service_providers.id',
+        'domains.registrar_id',
+      )
       .selectAll('domains')
       .select([
         'assets.name as asset_name',
@@ -295,7 +325,12 @@ export class DomainService {
         )
       : null;
 
-    return { ...domain, days_to_expiry: daysToExpiry, sslCertificates, snapshots };
+    return {
+      ...domain,
+      days_to_expiry: daysToExpiry,
+      sslCertificates,
+      snapshots,
+    };
   }
 
   async update(id: string, dto: UpdateDomainDto) {
@@ -308,11 +343,15 @@ export class DomainService {
       await this.verifyDomainExists(dto.fqdn);
       updateData.fqdn = dto.fqdn;
     }
-    if (dto.registrar_id !== undefined) updateData.registrar_id = dto.registrar_id;
-    if (dto.registered_date !== undefined) updateData.registered_date = new Date(dto.registered_date);
-    if (dto.expiry_date !== undefined) updateData.expiry_date = new Date(dto.expiry_date);
+    if (dto.registrar_id !== undefined)
+      updateData.registrar_id = dto.registrar_id;
+    if (dto.registered_date !== undefined)
+      updateData.registered_date = new Date(dto.registered_date);
+    if (dto.expiry_date !== undefined)
+      updateData.expiry_date = new Date(dto.expiry_date);
     if (dto.auto_renew !== undefined) updateData.auto_renew = dto.auto_renew;
-    if (dto.nameservers !== undefined) updateData.nameservers = JSON.stringify(dto.nameservers);
+    if (dto.nameservers !== undefined)
+      updateData.nameservers = JSON.stringify(dto.nameservers);
     if (dto.notes !== undefined) updateData.notes = dto.notes;
 
     const domain = await this.db
@@ -337,10 +376,7 @@ export class DomainService {
     // Remove scheduled cron job
     await this.queueService.removeScheduledDomainRefresh(id);
 
-    await this.db
-      .deleteFrom('domains')
-      .where('id', '=', id)
-      .execute();
+    await this.db.deleteFrom('domains').where('id', '=', id).execute();
 
     return { message: 'Domain deleted successfully' };
   }
@@ -359,10 +395,12 @@ export class DomainService {
         updated_at: new Date(),
       };
 
-      if (live.registered_date) updateData.registered_date = new Date(live.registered_date);
+      if (live.registered_date)
+        updateData.registered_date = new Date(live.registered_date);
       if (live.expiry_date) updateData.expiry_date = new Date(live.expiry_date);
       if (live.registrar_id) updateData.registrar_id = live.registrar_id;
-      if (live.nameservers.length > 0) updateData.nameservers = JSON.stringify(live.nameservers);
+      if (live.nameservers.length > 0)
+        updateData.nameservers = JSON.stringify(live.nameservers);
 
       await this.db
         .updateTable('domains')
@@ -372,13 +410,13 @@ export class DomainService {
 
       this.logger.log(
         `Domain refresh succeeded for ${domain.fqdn}: ` +
-        `expiry=${live.expiry_date ?? '—'}, registrar=${live.registrar ?? '—'}, ` +
-        `${live.nameservers.length} nameservers`,
+          `expiry=${live.expiry_date ?? '—'}, registrar=${live.registrar ?? '—'}, ` +
+          `${live.nameservers.length} nameservers`,
       );
     } catch (err: unknown) {
       this.logger.warn(
         `Domain refresh lookup failed for ${domain.fqdn} (${id}): ` +
-        `${err instanceof Error ? err.message : err}`,
+          `${err instanceof Error ? err.message : err}`,
       );
       // Still record the attempt
       await this.db
@@ -468,9 +506,7 @@ export class DomainService {
       }
     }
 
-    return query
-      .orderBy('domains.expiry_date', 'asc')
-      .execute();
+    return query.orderBy('domains.expiry_date', 'asc').execute();
   }
 
   async getExpiryStats() {
@@ -532,13 +568,26 @@ export class DomainService {
       return d.toISOString().split('T')[0];
     }
     // Try parsing common WHOIS date formats like "14-sep-2028" or "2028-09-14T00:00:00Z"
-    const cleaned = raw.replace(/(\d{1,2})\-([a-z]{3})\-(\d{4})/i, (_, d, m, y) => {
-      const months: Record<string, string> = {
-        jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-        jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
-      };
-      return `${y}-${months[m.toLowerCase()] || '01'}-${d.padStart(2, '0')}`;
-    });
+    const cleaned = raw.replace(
+      /(\d{1,2})\-([a-z]{3})\-(\d{4})/i,
+      (_, d, m, y) => {
+        const months: Record<string, string> = {
+          jan: '01',
+          feb: '02',
+          mar: '03',
+          apr: '04',
+          may: '05',
+          jun: '06',
+          jul: '07',
+          aug: '08',
+          sep: '09',
+          oct: '10',
+          nov: '11',
+          dec: '12',
+        };
+        return `${y}-${months[m.toLowerCase()] || '01'}-${d.padStart(2, '0')}`;
+      },
+    );
     if (cleaned !== raw) {
       const d2 = new Date(cleaned);
       if (!isNaN(d2.getTime())) return d2.toISOString().split('T')[0];
@@ -555,7 +604,9 @@ export class DomainService {
     let registrar: string | undefined;
 
     // Extract events (registration, expiration)
-    const events = (result as { events?: Array<{ eventAction: string; eventDate: string }> }).events;
+    const events = (
+      result as { events?: Array<{ eventAction: string; eventDate: string }> }
+    ).events;
     if (events) {
       for (const event of events) {
         const dateStr = event.eventDate?.split('T')[0];
@@ -568,7 +619,13 @@ export class DomainService {
     }
 
     // Extract registrar name from entities → vcard
-    const entities = (result as { entities?: Array<{ vcardArray?: [string, Array<[string, unknown, string, string]>] }> }).entities;
+    const entities = (
+      result as {
+        entities?: Array<{
+          vcardArray?: [string, Array<[string, unknown, string, string]>];
+        }>;
+      }
+    ).entities;
     if (entities) {
       for (const entity of entities) {
         const vcard = entity.vcardArray?.[1];
@@ -584,7 +641,8 @@ export class DomainService {
     }
 
     // Extract nameservers
-    const nsEntries = (result as { nameservers?: Array<{ ldhName: string }> }).nameservers;
+    const nsEntries = (result as { nameservers?: Array<{ ldhName: string }> })
+      .nameservers;
     const nameservers = nsEntries
       ? nsEntries.map((ns) => ns.ldhName).filter(Boolean)
       : [];
@@ -598,7 +656,12 @@ export class DomainService {
     const first = await whoiser.firstResult(raw);
 
     if (!first || typeof first !== 'object') {
-      return { registeredDate: undefined, expiryDate: undefined, registrar: undefined, nameservers: [] as string[] };
+      return {
+        registeredDate: undefined,
+        expiryDate: undefined,
+        registrar: undefined,
+        nameservers: [] as string[],
+      };
     }
 
     const record = first as Record<string, string | string[]>;
@@ -625,7 +688,7 @@ export class DomainService {
         .map((s) => s.trim().toLowerCase())
         .filter((s) => s.length > 0 && s.includes('.'));
     }
-    this.logger.log("Registrar:", registrar)
+    this.logger.log('Registrar:', registrar);
     return { registeredDate, expiryDate, registrar, nameservers };
   }
 
@@ -715,8 +778,8 @@ export class DomainService {
 
       this.logger.log(
         `RDAP lookup succeeded for ${fqdn}: registered=${registeredDate ?? '—'}, ` +
-        `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
-        `${nameservers.length} nameservers`,
+          `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
+          `${nameservers.length} nameservers`,
       );
     } catch (rdapErr: unknown) {
       this.logger.warn(
@@ -733,8 +796,8 @@ export class DomainService {
 
         this.logger.log(
           `WHOIS fallback succeeded for ${fqdn}: registered=${registeredDate ?? '—'}, ` +
-          `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
-          `${nameservers.length} nameservers`,
+            `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
+            `${nameservers.length} nameservers`,
         );
       } catch (whoisErr: unknown) {
         this.logger.warn(
@@ -852,7 +915,9 @@ export class DomainService {
       .where('id', '=', domainId)
       .execute();
 
-    this.logger.log(`Background registrar enrichment for ${fqdn}: matched to provider ${registrarId}`);
+    this.logger.log(
+      `Background registrar enrichment for ${fqdn}: matched to provider ${registrarId}`,
+    );
   }
 
   private async checkExists(id: string) {

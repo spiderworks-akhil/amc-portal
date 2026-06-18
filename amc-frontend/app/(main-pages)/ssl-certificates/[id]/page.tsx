@@ -37,6 +37,7 @@ import {
   AlertTriangle,
   ExternalLink,
 } from "lucide-react"
+import { SslWarningBadges } from "@/components/ssl-certificates/ssl-warning-badge"
 import { toast } from "sonner"
 
 const SSL_TYPE_LABELS: Record<string, string> = {
@@ -139,7 +140,7 @@ export default function SslCertificateDetailPage() {
               <h1 className="text-2xl font-bold tracking-tight truncate">
                 {cert.common_name || cert.domain_fqdn || "SSL Certificate"}
               </h1>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 {isExpired && (
                   <Badge variant="dot" size="sm" color="red">
                     Expired
@@ -155,6 +156,11 @@ export default function SslCertificateDetailPage() {
                     Active
                   </Badge>
                 )}
+                <SslWarningBadges
+                  isSelfSigned={!!cert.is_self_signed}
+                  hostnameMismatch={!!cert.hostname_mismatch}
+                  isExpired={isExpired}
+                />
                 {cert.type && (
                   <span className="inline-flex items-center rounded-md border border-border/50 bg-accent/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase shrink-0">
                     {cert.type}

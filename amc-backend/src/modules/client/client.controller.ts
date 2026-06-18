@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { ClientService } from './client.service';
 import {
   CreateClientDto,
@@ -22,6 +23,7 @@ export class ClientController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Client created successfully')
+  @AuditLog({ entityType: 'client' })
   async create(@Body() dto: CreateClientDto) {
     return this.clientService.createClient(dto);
   }
@@ -53,6 +55,7 @@ export class ClientController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Client updated successfully')
+  @AuditLog({ entityType: 'client' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateClientDto,
@@ -63,11 +66,13 @@ export class ClientController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Client deleted successfully')
+  @AuditLog({ entityType: 'client' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.clientService.deleteClient(id);
   }
 
   @Post(':id/managers')
+  @AuditLog({ entityType: 'client' })
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Managers assigned successfully')
   async addManagers(
@@ -80,6 +85,7 @@ export class ClientController {
   @Delete(':id/managers')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Managers removed successfully')
+  @AuditLog({ entityType: 'client' })
   async removeManagers(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ManagerIdsDto,
@@ -90,6 +96,7 @@ export class ClientController {
   @Post(':id/contacts')
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Contact added successfully')
+  @AuditLog({ entityType: 'client' })
   async addContacts(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateContactDto,
@@ -100,6 +107,7 @@ export class ClientController {
   @Put('contacts/:contactId')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Contact updated successfully')
+  @AuditLog({ entityType: 'client', idParam: 'contactId' })
   async updateContact(
     @Param('contactId', ParseUUIDPipe) contactId: string,
     @Body() dto: UpdateContactDto,
@@ -110,6 +118,7 @@ export class ClientController {
   @Delete('contacts/:contactId')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Contact deleted successfully')
+  @AuditLog({ entityType: 'client', idParam: 'contactId' })
   async removeContact(@Param('contactId', ParseUUIDPipe) contactId: string) {
     return this.clientService.deleteContact(contactId);
   }

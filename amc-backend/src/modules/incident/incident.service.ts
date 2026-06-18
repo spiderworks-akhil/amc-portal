@@ -51,7 +51,9 @@ export class IncidentService {
       .selectFrom('incidents')
       .leftJoin('monitors', 'monitors.id', 'incidents.monitor_id')
       .leftJoin('assets', 'assets.id', 'monitors.asset_id')
-      .leftJoin('users', 'users.id', 'incidents.acknowledged_by');
+      .leftJoin('users', 'users.id', 'incidents.acknowledged_by')
+      .leftJoin('domains', 'domains.id', 'incidents.target_id')
+      .leftJoin('ssl_certificates', 'ssl_certificates.id', 'incidents.target_id');
 
     let countQuery = this.db
       .selectFrom('incidents')
@@ -107,6 +109,8 @@ export class IncidentService {
           'monitors.check_type as monitor_check_type',
           'monitors.current_status as monitor_current_status',
           'assets.name as asset_name',
+          'domains.fqdn as domain_fqdn',
+          'ssl_certificates.common_name as ssl_name',
         ])
         .orderBy(sql`${sql.raw(sortColumn)}`, order)
         .limit(limit)
@@ -126,6 +130,8 @@ export class IncidentService {
       .leftJoin('monitors', 'monitors.id', 'incidents.monitor_id')
       .leftJoin('assets', 'assets.id', 'monitors.asset_id')
       .leftJoin('users', 'users.id', 'incidents.acknowledged_by')
+      .leftJoin('domains', 'domains.id', 'incidents.target_id')
+      .leftJoin('ssl_certificates', 'ssl_certificates.id', 'incidents.target_id')
       .select([
         'incidents.id',
         'incidents.monitor_id',
@@ -145,6 +151,8 @@ export class IncidentService {
         'monitors.check_type as monitor_check_type',
         'monitors.current_status as monitor_current_status',
         'assets.name as asset_name',
+        'domains.fqdn as domain_fqdn',
+        'ssl_certificates.common_name as ssl_name',
       ])
       .where('incidents.id', '=', id)
       .executeTakeFirst();

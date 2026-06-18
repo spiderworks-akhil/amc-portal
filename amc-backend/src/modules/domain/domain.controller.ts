@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DomainService } from './domain.service';
 import {
@@ -28,6 +29,7 @@ export class DomainController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Domain created successfully')
+  @AuditLog({ entityType: 'domain' })
   async create(
     @Body() dto: CreateDomainDto,
     @CurrentUser() user: { id: string },
@@ -84,6 +86,7 @@ export class DomainController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Domain updated successfully')
+  @AuditLog({ entityType: 'domain' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateDomainDto,
@@ -94,6 +97,7 @@ export class DomainController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Domain deleted successfully')
+  @AuditLog({ entityType: 'domain' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.domainService.remove(id);
   }

@@ -10,6 +10,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { ClientModule } from './modules/client/client.module';
 import { AssetModule } from './modules/asset/asset.module';
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
+import { AuditLogInterceptor } from "./common/interceptors/audit-log.interceptor";
 import { UsersModule } from './modules/users/users.module';
 import { ContractModule } from './modules/contract/contract.module';
 import { DomainModule } from './modules/domain/domain.module';
@@ -93,6 +94,7 @@ import { MonitorModule } from './modules/monitor/monitor.module';
   providers: [
     AppService,
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
   ],
 })
 export class AppModule {}

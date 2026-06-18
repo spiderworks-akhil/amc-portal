@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SslService } from './ssl.service';
 import {
@@ -28,6 +29,7 @@ export class SslController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('SSL certificate created successfully')
+  @AuditLog({ entityType: 'ssl' })
   async create(
     @Body() dto: CreateSslDto,
     @CurrentUser() user: { id: string },
@@ -85,6 +87,7 @@ export class SslController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('SSL certificate updated successfully')
+  @AuditLog({ entityType: 'ssl' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSslDto,
@@ -95,6 +98,7 @@ export class SslController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('SSL certificate deleted successfully')
+  @AuditLog({ entityType: 'ssl' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.sslService.remove(id);
   }

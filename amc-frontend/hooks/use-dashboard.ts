@@ -90,6 +90,30 @@ export interface DashboardOverview {
   incidentSummary: DashboardIncidentSummary
 }
 
+/** Expiry calendar item — unified across domains, SSL, contracts, servers */
+export interface ExpiryCalendarItem {
+  id: string
+  fqdn: string
+  date: string | null
+  auto_renew: boolean | null
+  asset_name: string | null
+  client_name: string | null
+  item_type: 'domain' | 'ssl' | 'contract' | 'server'
+  extra_info: string | null
+  days_to_event: number | null
+}
+
+export interface ExpiryCalendarMonth {
+  key: string
+  label: string
+  items: ExpiryCalendarItem[]
+}
+
+export interface ExpiryCalendarResponse {
+  total: number
+  months: ExpiryCalendarMonth[]
+}
+
 export interface DashboardContract {
   id: string
   client_name: string
@@ -144,6 +168,16 @@ function useDashboardOverview(managerId?: string) {
         expiringSsl: (data.expiringSsl || []).map(enrichSsl),
         expiredSslCerts: (data.expiredSslCerts || []).map(enrichSsl),
       }
+    },
+  })
+}
+
+export function useExpiryCalendar() {
+  return useQuery({
+    queryKey: ["dashboard", "expiry-calendar"],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ExpiryCalendarResponse>("/dashboard/expiry-calendar")
+      return data
     },
   })
 }

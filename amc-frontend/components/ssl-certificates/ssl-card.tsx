@@ -9,8 +9,11 @@ import {
   CalendarClock,
   HardDrive,
   Clock,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react"
 import type { SslListItem } from "@/types/api"
+import { SslWarningBadges, getSslWarnings } from "./ssl-warning-badge"
 import { formatDate } from "@/lib/format-utils"
 import { formatSslType, getExpiryBadge } from "./constants"
 
@@ -29,41 +32,74 @@ export function SslCard({ cert, onClick }: SslCardProps) {
     cert.days_to_expiry <= 30
 
   const title = cert.common_name || cert.domain_fqdn || "SSL Certificate"
+  const warnings = getSslWarnings(cert)
 
   return (
     <Card
-      className="group cursor-pointer transition-all duration-300 hover:border-primary/20 hover:shadow-lg"
+      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg ${
+        warnings.isExpired
+          ? 'hover:border-red-300/50 dark:hover:border-red-800/30'
+          : warnings.isSelfSigned || warnings.hostnameMismatch
+            ? 'hover:border-orange-300/50 dark:hover:border-orange-800/30'
+            : 'hover:border-primary/20'
+      }`}
       onClick={() => onClick(cert.id)}
     >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-        <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-primary/10 bg-primary/10">
-            <ShieldCheck className="h-5 w-5 text-primary" />
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 ${
+            warnings.isExpired
+              ? 'border-red-200 dark:border-red-900 bg-red-500/10'
+              : warnings.isSelfSigned || warnings.hostnameMismatch
+                ? 'border-orange-200 dark:border-orange-900 bg-orange-500/10'
+                : 'border-primary/10 bg-primary/10'
+          }`}>
+            {warnings.isExpired ? (
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+            ) : warnings.isSelfSigned ? (
+              <ShieldAlert className="h-5 w-5 text-orange-500" />
+            ) : (
+              <ShieldCheck className="h-5 w-5 text-primary" />
+            )}
           </div>
-          <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold leading-tight">
-              {title}
-            </h3>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="truncate text-lg font-semibold leading-tight">
+                {title}
+              </h3>
+              <SslWarningBadges
+                isSelfSigned={warnings.isSelfSigned}
+                hostnameMismatch={warnings.hostnameMismatch}
+                isExpired={warnings.isExpired}
+                compact
+              />
+            </div>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Globe className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{cert.domain_fqdn}</span>
             </p>
           </div>
         </div>
-        {typeLabel ? (
-          <Badge variant="dot" size="sm" color="blue" className="shrink-0 uppercase">
-            {typeLabel}
-          </Badge>
-        ) : expiryBadge ? (
-          <Badge
-            variant="dot"
-            size="sm"
-            color={expiryBadge.color}
-            className="shrink-0"
-          >
-            {expiryBadge.label}
-          </Badge>
-        ) : null}
+        <div className="flex items-start gap-1.5 shrink-0">
+          <SslWarningBadges
+            isSelfSigned={warnings.isSelfSigned}
+            hostnameMismatch={warnings.hostnameMismatch}
+            isExpired={warnings.isExpired}
+          />
+          {typeLabel ? (
+            <Badge variant="dot" size="sm" color="blue" className="uppercase">
+              {typeLabel}
+            </Badge>
+          ) : expiryBadge ? (
+            <Badge
+              variant="dot"
+              size="sm"
+              color={expiryBadge.color}
+            >
+              {expiryBadge.label}
+            </Badge>
+          ) : null}
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-2 pb-3 text-sm">
