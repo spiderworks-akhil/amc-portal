@@ -22,6 +22,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { ReminderModule } from './modules/reminder/reminder.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
+import { MonitorModule } from './modules/monitor/monitor.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { RedisModule } from './redis/redis.module';
     ReminderModule,
     QueueModule,
     RedisModule,
+    MonitorModule,
   ],
   controllers: [AppController],
   providers: [

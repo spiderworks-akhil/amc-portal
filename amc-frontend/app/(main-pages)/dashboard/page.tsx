@@ -10,6 +10,7 @@ import { ExpiringContracts } from "@/components/dashboard/expiring-contracts"
 import { ExpiringSsl } from "@/components/dashboard/expiring-ssl"
 import { ExpiredItems } from "@/components/dashboard/expired-items"
 import { QuickActions } from "@/components/dashboard/quick-actions"
+import { MonitorHealthWidget } from "@/components/dashboard/monitor-health"
 
 export default function DashboardPage() {
   const { data: session } = useSession()
@@ -46,8 +47,9 @@ export default function DashboardPage() {
         <StatCards summary={summary} expiryStats={expiryStats} isLoading={isLoading} />
         {/* <ExpiredItems expiredDomains={expiredDomains} expiredSsl={expiredSslCerts} /> */}
 
-        {/* Domain Health + Expiring Domains */}
+        {/* Monitor Health + Domain Health + Expiring Domains */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <MonitorHealthWidget summary={data?.monitorSummary} isLoading={isLoading} />
           <DomainHealth stats={expiryStats} isLoading={isLoading} />
           <ExpiringDomainsList domains={expiringDomains} isLoading={isLoading} />
         </div>

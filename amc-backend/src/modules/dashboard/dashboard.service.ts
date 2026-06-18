@@ -25,6 +25,7 @@ export class DashboardService {
       expiringSsl,
       expiredDomains,
       expiredSslCerts,
+      monitorSummary,
     ] = await Promise.all([
       this.getSummary(),
       this.getDomainExpiryStats(now, thirtyDays, sixtyDays, ninetyDays),
@@ -34,6 +35,7 @@ export class DashboardService {
       this.getExpiringSslCerts(now, ninetyDays),
       this.getExpiredDomains(now),
       this.getExpiredSslCerts(now),
+      this.getMonitorSummary(),
     ]);
 
     return {
@@ -45,6 +47,7 @@ export class DashboardService {
       expiringSsl,
       expiredDomains,
       expiredSslCerts,
+      monitorSummary,
     };
   }
 
@@ -254,5 +257,33 @@ export class DashboardService {
       .orderBy('ssl_certificates.valid_to', 'desc')
       .limit(10)
       .execute();
+  }
+
+  private async getMonitorSummary() {
+    const stats = await this.db
+      .selectFrom('monitors')
+      .select([
+        this.db.fn.countAll<number>().as('total'),
+        this.db.fn
+          .countAll<number>()
+          .filterWhere('current_status', '=', 'up')
+          .as('up'),
+        this.db.fn
+          .countAll<number>()
+          .filterWhere('current_status', '=', 'down')
+          .as('down'),
+        this.db.fn
+          .countAll<number>()
+          .filterWhere('current_status', '=', 'unknown')
+          .as('unknown'),
+      ])
+      .executeTakeFirst();
+
+    return {
+      totalMonitors: Number(stats?.total ?? 0),
+      upMonitors: Number(stats?.up ?? 0),
+      downMonitors: Number(stats?.down ?? 0),
+      unknownMonitors: Number(stats?.unknown ?? 0),
+    };
   }
 }

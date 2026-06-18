@@ -35,6 +35,14 @@ export interface DashboardSummary {
   activeContracts: number
 }
 
+/** Monitor health summary for dashboard */
+export interface MonitorSummary {
+  totalMonitors: number
+  upMonitors: number
+  downMonitors: number
+  unknownMonitors: number
+}
+
 /** SSL certificate list item for dashboard */
 export interface DashboardSsl {
   id: string
@@ -58,6 +66,7 @@ export interface DashboardOverview {
   expiringSsl: DashboardSsl[]
   expiredDomains: ExpiringDomain[]
   expiredSslCerts: DashboardSsl[]
+  monitorSummary: MonitorSummary
 }
 
 export interface DashboardContract {

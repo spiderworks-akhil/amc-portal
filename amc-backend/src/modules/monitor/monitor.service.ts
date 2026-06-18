@@ -1,0 +1,466 @@
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectKysely } from 'nestjs-kysely';
+import { Kysely, sql } from 'kysely';
+import { DB } from '../../db/types.generated';
+import axios from 'axios';
+import * as net from 'net';
+import ping from 'ping';
+import {
+  CreateMonitorDto,
+  UpdateMonitorDto,
+  ListMonitorsDto,
+  MonitorSortBy,
+  SortOrder,
+} from './dto';
+import { QueueService } from '../../queue/queue.service';
+
+const CONSECUTIVE_FAILURES_TO_INCIDENT = 3;
+
+@Injectable()
+export class MonitorService {
+  private readonly logger = new Logger(MonitorService.name);
+
+  constructor(
+    @InjectKysely() private readonly db: Kysely<DB>,
+    private readonly queueService: QueueService,
+  ) {}
+
+  // ── CRUD ──
+
+  async create(dto: CreateMonitorDto) {
+    const monitor = await this.db
+      .insertInto('monitors')
+      .values({
+        asset_id: dto.asset_id,
+        name: dto.name,
+        check_type: dto.check_type,
+        target: dto.target,
+        interval_seconds: dto.interval_seconds ?? 300,
+        expected_status_code: dto.expected_status_code ?? null,
+        expected_keyword: dto.expected_keyword ?? null,
+        enabled: dto.enabled ?? true,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    if (monitor.enabled) {
+      await this.queueService.scheduleMonitorCheck(monitor.id, monitor.interval_seconds);
+    }
+
+    return monitor;
+  }
+
+  async list(dto: ListMonitorsDto) {
+    const {
+      page = 1,
+      limit = 50,
+      search,
+      asset_id,
+      check_type,
+      current_status,
+      sort_by = MonitorSortBy.NAME,
+      sort_order = SortOrder.ASC,
+    } = dto;
+    const offset = (page - 1) * limit;
+
+    let baseQuery = this.db
+      .selectFrom('monitors')
+      .leftJoin('assets', 'assets.id', 'monitors.asset_id');
+
+    let countQuery = this.db
+      .selectFrom('monitors')
+      .select(this.db.fn.countAll<number>().as('total'));
+
+    if (search) {
+      const pattern = `%${search}%`;
+      const filter = (eb: any) => eb.or([
+        eb('monitors.name', 'ilike', pattern),
+        eb('monitors.target', 'ilike', pattern),
+      ]);
+      baseQuery = baseQuery.where(filter);
+      countQuery = countQuery.where(filter);
+    }
+
+    if (asset_id) {
+      baseQuery = baseQuery.where('monitors.asset_id', '=', asset_id);
+      countQuery = countQuery.where('monitors.asset_id', '=', asset_id);
+    }
+
+    if (check_type) {
+      baseQuery = baseQuery.where('monitors.check_type', '=', check_type);
+      countQuery = countQuery.where('monitors.check_type', '=', check_type);
+    }
+
+    if (current_status) {
+      baseQuery = baseQuery.where('monitors.current_status', '=', current_status);
+      countQuery = countQuery.where('monitors.current_status', '=', current_status);
+    }
+
+    const allowedSortColumns: Record<string, string> = {
+      [MonitorSortBy.NAME]: 'monitors.name',
+      [MonitorSortBy.STATUS]: 'monitors.current_status',
+      [MonitorSortBy.TYPE]: 'monitors.check_type',
+      [MonitorSortBy.CREATED_AT]: 'monitors.created_at',
+      [MonitorSortBy.LAST_CHECKED]: 'monitors.last_checked_at',
+    };
+
+    const sortColumn = allowedSortColumns[sort_by] ?? 'monitors.name';
+    const order = sort_order === SortOrder.DESC ? sql`desc` : sql`asc`;
+
+    const [{ total }, data] = await Promise.all([
+      countQuery.executeTakeFirst().then((r) => ({ total: Number(r?.total ?? 0) })),
+      baseQuery
+        .select([
+          'monitors.id',
+          'monitors.name',
+          'monitors.check_type',
+          'monitors.target',
+          'monitors.interval_seconds',
+          'monitors.current_status',
+          'monitors.enabled',
+          'monitors.last_checked_at',
+          'monitors.asset_id',
+          'monitors.created_at',
+          'monitors.updated_at',
+          'assets.name as asset_name',
+        ])
+        .orderBy(sql`${sql.raw(sortColumn)}`, order)
+        .limit(limit)
+        .offset(offset)
+        .execute(),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getById(id: string) {
+    const monitor = await this.db
+      .selectFrom('monitors')
+      .leftJoin('assets', 'assets.id', 'monitors.asset_id')
+      .selectAll('monitors')
+      .select([
+        'assets.name as asset_name',
+      ])
+      .where('monitors.id', '=', id)
+      .executeTakeFirst();
+
+    if (!monitor) throw new NotFoundException(`Monitor ${id} not found`);
+
+    const recentChecks = await this.db
+      .selectFrom('monitor_checks')
+      .selectAll()
+      .where('monitor_id', '=', id)
+      .orderBy('checked_at', 'desc')
+      .limit(50)
+      .execute();
+
+    return { ...monitor, recent_checks: recentChecks };
+  }
+
+  async update(id: string, dto: UpdateMonitorDto) {
+    const existing = await this.checkExists(id);
+
+    const updateData: Record<string, unknown> = { updated_at: new Date() };
+
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.asset_id !== undefined) updateData.asset_id = dto.asset_id;
+    if (dto.check_type !== undefined) updateData.check_type = dto.check_type;
+    if (dto.target !== undefined) updateData.target = dto.target;
+    if (dto.interval_seconds !== undefined) updateData.interval_seconds = dto.interval_seconds;
+    if (dto.expected_status_code !== undefined) updateData.expected_status_code = dto.expected_status_code;
+    if (dto.expected_keyword !== undefined) updateData.expected_keyword = dto.expected_keyword;
+    if (dto.enabled !== undefined) updateData.enabled = dto.enabled;
+
+    const updated = await this.db
+      .updateTable('monitors')
+      .set(updateData)
+      .where('id', '=', id)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    const wasEnabled = existing.enabled;
+    const isEnabled = updated.enabled;
+    const intervalChanged = dto.interval_seconds !== undefined && dto.interval_seconds !== existing.interval_seconds;
+
+    if (wasEnabled && (!isEnabled || intervalChanged)) {
+      await this.queueService.removeScheduledCheck(id);
+    }
+
+    if (isEnabled && (!wasEnabled || intervalChanged)) {
+      await this.queueService.scheduleMonitorCheck(id, updated.interval_seconds);
+    }
+
+    return updated;
+  }
+
+  async remove(id: string) {
+    await this.checkExists(id);
+
+    await this.queueService.removeScheduledCheck(id);
+
+    await this.db
+      .deleteFrom('monitors')
+      .where('id', '=', id)
+      .execute();
+
+    await this.db
+      .deleteFrom('monitor_checks')
+      .where('monitor_id', '=', id)
+      .execute();
+
+    return { message: 'Monitor deleted successfully' };
+  }
+
+  // ── Check Execution ──
+
+  async triggerCheck(id: string) {
+    const monitor = await this.db
+      .selectFrom('monitors')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirst();
+
+    if (!monitor) throw new NotFoundException(`Monitor ${id} not found`);
+
+    return this.executeCheck(monitor);
+  }
+
+  private async executeCheck(monitor: any) {
+    const startedAt = Date.now();
+    let status: string;
+    let statusCode: number | null = null;
+    let responseTimeMs: number | null = null;
+    let errorMessage: string | null = null;
+
+    try {
+      switch (monitor.check_type) {
+        case 'http':
+        case 'https': {
+          const res = await axios.get(monitor.target, {
+            timeout: 10000,
+            validateStatus: () => true,
+            responseType: 'text',
+          });
+          statusCode = res.status;
+          responseTimeMs = Date.now() - startedAt;
+          const expectedCode = monitor.expected_status_code ?? 200;
+          const passed = res.status === expectedCode;
+
+          if (monitor.expected_keyword) {
+            const hasKeyword = res.data?.includes(monitor.expected_keyword);
+            if (!hasKeyword) {
+              errorMessage = `Expected keyword "${monitor.expected_keyword}" not found in response`;
+            }
+            status = passed && hasKeyword ? 'up' : 'down';
+          } else {
+            status = passed ? 'up' : 'down';
+          }
+
+          if (status === 'down' && !errorMessage) {
+            errorMessage = `HTTP ${res.status} (expected ${expectedCode})`;
+          }
+          break;
+        }
+
+        case 'tcp': {
+          const url = new URL(`//${monitor.target}`, 'tcp://');
+          const host = url.hostname || monitor.target;
+          const port = parseInt(url.port, 10) || 80;
+
+          await new Promise<void>((resolve, reject) => {
+            const socket = new net.Socket();
+            const timeout = 10000;
+
+            socket.setTimeout(timeout);
+            socket.on('connect', () => {
+              responseTimeMs = Date.now() - startedAt;
+              socket.destroy();
+              resolve();
+            });
+            socket.on('error', (err) => {
+              socket.destroy();
+              reject(err);
+            });
+            socket.on('timeout', () => {
+              socket.destroy();
+              reject(new Error('Connection timed out'));
+            });
+            socket.connect(port, host);
+          });
+
+          status = 'up';
+          break;
+        }
+
+        case 'ping': {
+          const result = await ping.promise.probe(monitor.target, {
+            timeout: 10,
+            extra: ['-c', '1'],
+          });
+          responseTimeMs = result.time !== undefined ? Math.round(result.time) : null;
+          status = result.alive ? 'up' : 'down';
+          if (!result.alive) {
+            errorMessage = result.output || 'Host unreachable';
+          }
+          break;
+        }
+
+        case 'keyword': {
+          const res = await axios.get(monitor.target, {
+            timeout: 10000,
+            validateStatus: () => true,
+            responseType: 'text',
+          });
+          statusCode = res.status;
+          responseTimeMs = Date.now() - startedAt;
+
+          if (monitor.expected_keyword && !res.data?.includes(monitor.expected_keyword)) {
+            status = 'down';
+            errorMessage = `Expected keyword "${monitor.expected_keyword}" not found`;
+          } else {
+            status = res.status < 500 ? 'up' : 'down';
+            if (status === 'down') {
+              errorMessage = `HTTP ${res.status}`;
+            }
+          }
+          break;
+        }
+
+        default:
+          status = 'down';
+          errorMessage = `Unknown check type: ${monitor.check_type}`;
+      }
+    } catch (err: any) {
+      status = 'down';
+      errorMessage = err.message || 'Check failed';
+      responseTimeMs = Date.now() - startedAt;
+    }
+
+    // Record the check result
+    const checkResult = await this.db
+      .insertInto('monitor_checks')
+      .values({
+        monitor_id: monitor.id,
+        status_code: statusCode,
+        response_time_ms: responseTimeMs,
+        error_message: errorMessage,
+        status,
+        checked_at: new Date(),
+      })
+      .returningAll()
+      .executeTakeFirst();
+
+    // Update monitor status
+    await this.db
+      .updateTable('monitors')
+      .set({
+        current_status: status,
+        last_checked_at: new Date(),
+        updated_at: new Date(),
+      })
+      .where('id', '=', monitor.id)
+      .execute();
+
+    // Incident auto-creation on consecutive failures
+    if (status === 'down') {
+      await this.handleConsecutiveFailure(monitor.id);
+    }
+
+    return checkResult;
+  }
+
+  private async handleConsecutiveFailure(monitorId: string) {
+    // Count consecutive 'down' checks
+    const recentChecks = await this.db
+      .selectFrom('monitor_checks')
+      .select('status')
+      .where('monitor_id', '=', monitorId)
+      .orderBy('checked_at', 'desc')
+      .limit(CONSECUTIVE_FAILURES_TO_INCIDENT)
+      .execute();
+
+    const consecutiveDowns = recentChecks.filter((c) => c.status === 'down').length;
+
+    if (consecutiveDowns < CONSECUTIVE_FAILURES_TO_INCIDENT) return;
+
+    // Check if there's already an unresolved incident for this monitor
+    const existingIncident = await this.db
+      .selectFrom('incidents')
+      .select('id')
+      .where('monitor_id', '=', monitorId)
+      .where('resolved_at', 'is', null)
+      .executeTakeFirst();
+
+    if (existingIncident) return;
+
+    // Determine severity based on check type
+    const monitor = await this.db
+      .selectFrom('monitors')
+      .select('check_type')
+      .where('id', '=', monitorId)
+      .executeTakeFirst();
+
+    let severity = 'major';
+    if (monitor?.check_type === 'http' || monitor?.check_type === 'https') {
+      severity = 'critical';
+    } else if (monitor?.check_type === 'keyword') {
+      severity = 'minor';
+    }
+
+    await this.db
+      .insertInto('incidents')
+      .values({
+        monitor_id: monitorId,
+        started_at: new Date(),
+        severity,
+        notes: `Auto-created after ${CONSECUTIVE_FAILURES_TO_INCIDENT} consecutive failed checks`,
+      })
+      .execute();
+  }
+
+  // ── Check History ──
+
+  async getCheckHistory(monitorId: string, page = 1, limit = 50) {
+    await this.checkExists(monitorId);
+
+    const offset = (page - 1) * limit;
+
+    const [{ total }, data] = await Promise.all([
+      this.db
+        .selectFrom('monitor_checks')
+        .select(this.db.fn.countAll<number>().as('total'))
+        .where('monitor_id', '=', monitorId)
+        .executeTakeFirst()
+        .then((r) => ({ total: Number(r?.total ?? 0) })),
+      this.db
+        .selectFrom('monitor_checks')
+        .selectAll()
+        .where('monitor_id', '=', monitorId)
+        .orderBy('checked_at', 'desc')
+        .limit(limit)
+        .offset(offset)
+        .execute(),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  // ── Helpers ──
+
+  private async checkExists(id: string) {
+    const monitor = await this.db
+      .selectFrom('monitors')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirst();
+
+    if (!monitor) throw new NotFoundException(`Monitor ${id} not found`);
+    return monitor;
+  }
+}

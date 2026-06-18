@@ -19,6 +19,8 @@
 | `src/modules/incident/` | 🔲 Scaffolded | Controller exists, service is stub |
 | `src/modules/reminder/` | 🔲 Scaffolded | Controller exists, service is stub |
 | `src/modules/monitoring/` | ❌ Not created | No files |
+| `GET /dashboard/overview` | ✅ Done | Consolidated endpoint replaces 6 separate API calls |
+| Dashboard expired items | ✅ Done | Domains, SSL, contracts all show expired inline with red styling |
 | Docker Redis | ✅ Running | `redis:7-alpine` on port 6379 |
 
 ---
@@ -286,6 +288,26 @@
 
 ---
 
+### Phase 11: Dashboard API Optimization
+
+#### 11.1 Consolidated Overview Endpoint
+- [x] Create `GET /dashboard/overview` — returns summary, domain stats, expiring domains/SSL/contracts, expired domains/SSL in a single response
+- [x] Run all 8 data queries in parallel via `Promise.all`
+- [x] Support optional `manager_id` query param for filtered critical alerts
+
+#### 11.2 Frontend Consolidation
+- [x] Replace 6 individual hooks (`useDashboardSummary`, `useExpiringDomains`, `useDomainExpiryStats`, `useExpiringContracts`, `useExpiringSsl`) with single `useDashboardOverview(managerId?)` hook
+- [x] Clean up unused hook exports
+
+#### 11.3 Expired Items Display
+- [x] Add `getExpiredDomains(now)` — top 10 most recently expired domains
+- [x] Add `getExpiredSslCerts(now)` — top 10 most recently expired SSL certs
+- [x] Wire up `ExpiredItems` component in dashboard (was commented out)
+- [x] Remove lower-bound `>= now` filter on SSL certs query — expired certs now show inline with red styling (matches domains behavior)
+- [x] Remove `>= now` and `status != 'expired'` filters on contracts query — expired contracts now show inline with red styling (matches domains behavior)
+
+---
+
 ## API Endpoints Summary
 
 ### Tracking Engine Endpoints
@@ -317,6 +339,7 @@
 | `PATCH` | `/users/me/notifications` | Update preferences | 6.4 |
 | `GET` | `/contracts/renewal-pipeline` | Renewal pipeline view | 7.2 |
 | `GET` | `/dashboard/summary` | Cached dashboard stats | 10.1 |
+| `GET` | `/dashboard/overview` | Consolidated dashboard (summary + expiring + expired) | 11.1 |
 
 ---
 

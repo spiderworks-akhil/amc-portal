@@ -459,3 +459,71 @@ export interface UpdateServerPayload {
   renewal_date?: string
   notes?: string
 }
+
+export type MonitorCheckType = "http" | "https" | "tcp" | "ping" | "keyword"
+
+export type MonitorCurrentStatus = "up" | "down" | "unknown"
+
+export interface MonitorListItem {
+  id: string
+  name: string
+  check_type: MonitorCheckType
+  target: string
+  interval_seconds: number
+  current_status: MonitorCurrentStatus
+  enabled: boolean
+  last_checked_at: string | null
+  asset_id: string
+  asset_name: string
+  created_at: string
+  updated_at: string
+}
+
+export interface MonitorDetail extends MonitorListItem {
+  expected_status_code: number | null
+  expected_keyword: string | null
+  recent_checks: MonitorCheck[]
+}
+
+export interface MonitorCheck {
+  id: string
+  monitor_id: string
+  status_code: number | null
+  response_time_ms: number | null
+  error_message: string | null
+  status: MonitorCurrentStatus
+  checked_at: string
+}
+
+export interface CreateMonitorPayload {
+  asset_id: string
+  name: string
+  check_type: MonitorCheckType
+  target: string
+  interval_seconds?: number
+  expected_status_code?: number
+  expected_keyword?: string
+  enabled?: boolean
+}
+
+export interface UpdateMonitorPayload {
+  name?: string
+  asset_id?: string
+  check_type?: MonitorCheckType
+  target?: string
+  interval_seconds?: number
+  expected_status_code?: number
+  expected_keyword?: string
+  enabled?: boolean
+}
+
+export interface ListMonitorsParams {
+  page?: number
+  limit?: number
+  search?: string
+  asset_id?: string
+  check_type?: string
+  current_status?: string
+  sort_by?: string
+  sort_order?: "asc" | "desc"
+}
