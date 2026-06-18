@@ -308,14 +308,14 @@ export default function SslCertificateDetailPage() {
                   }
                 />
               )}
-              {cert.valid_from && (
+              {/* {cert.valid_from && (
                 <DetailRow
                   icon={<CalendarClock className="size-4 text-primary" />}
                   iconBg="bg-primary/10"
                   label="Valid From"
                   value={formatDate(cert.valid_from)}
                 />
-              )}
+              )} */}
               <DetailRow
                 icon={<CalendarClock className="size-4 text-muted-foreground" />}
                 iconBg="bg-muted"
