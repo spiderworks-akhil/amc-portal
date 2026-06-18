@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { MonitorService } from './monitor.service';
 import {
   CreateMonitorDto,
@@ -27,8 +28,11 @@ export class MonitorController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Monitor created successfully')
-  async create(@Body() dto: CreateMonitorDto) {
-    return this.monitorService.create(dto);
+  async create(
+    @Body() dto: CreateMonitorDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.monitorService.create(dto, user.id);
   }
 
   @Get('list')

@@ -185,6 +185,7 @@ export interface Incidents {
   acknowledged_by: string | null;
   cause: string | null;
   created_at: Generated<Timestamp>;
+  created_by_id: string | null;
   duration_seconds: number | null;
   id: Generated<string>;
   monitor_id: string;

@@ -4,6 +4,7 @@ import {
   HttpCode, HttpStatus, ParseUUIDPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AssetService } from './asset.service';
 import {
   CreateAssetDto,
@@ -18,8 +19,11 @@ export class AssetController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Asset created successfully')
-  async create(@Body() dto: CreateAssetDto) {
-    return this.assetService.create(dto);
+  async create(
+    @Body() dto: CreateAssetDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.assetService.create(dto, user.id);
   }
 
   @Get('list')

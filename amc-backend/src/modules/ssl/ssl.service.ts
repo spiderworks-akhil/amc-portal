@@ -9,6 +9,7 @@ import {
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
+import { QueueService } from '../../queue/queue.service';
 import {
   CreateSslDto,
   UpdateSslDto,
@@ -23,9 +24,10 @@ export class SslService {
 
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
+    private readonly queueService: QueueService,
   ) {}
 
-  async create(dto: CreateSslDto) {
+  async create(dto: CreateSslDto, createdBy?: string) {
     // Resolve the common_name or the linked domain's FQDN to verify it exists
     const fqdnToCheck =
       dto.common_name ??
@@ -45,12 +47,16 @@ export class SslService {
         valid_from: dto.valid_from ? new Date(dto.valid_from) : null,
         valid_to: dto.valid_to ? new Date(dto.valid_to) : null,
         type: dto.type ?? null,
+        created_by_id: createdBy ?? null,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
 
     // Create an initial snapshot
     await this.createSnapshot(cert.id);
+
+    // Schedule periodic SSL refresh via BullMQ
+    await this.queueService.scheduleSslRefresh(cert.id, process.env.SSL_REFRESH_CRON || '0 0 * * *');
 
     return cert;
   }
@@ -240,6 +246,9 @@ export class SslService {
       .deleteFrom('ssl_snapshots')
       .where('ssl_id', '=', id)
       .execute();
+
+    // Remove scheduled cron job
+    await this.queueService.removeScheduledSslRefresh(id);
 
     await this.db
       .deleteFrom('ssl_certificates')

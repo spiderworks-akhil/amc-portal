@@ -18,7 +18,7 @@ export class AssetService {
     @InjectKysely() private readonly db: Kysely<DB>,
   ) {}
 
-  async create(dto: CreateAssetDto) {
+  async create(dto: CreateAssetDto, createdBy?: string) {
     const asset = await this.db
       .insertInto('assets')
       .values({
@@ -34,6 +34,7 @@ export class AssetService {
         custom_fields: (dto.custom_fields ?? null) as any,
         tags: ((dto.tags ?? []) as any),
         notes: dto.notes ?? null,
+        created_by_id: createdBy ?? null,
       })
       .returningAll()
       .executeTakeFirst();

@@ -24,7 +24,7 @@ export class ProviderService {
     @InjectKysely() private readonly db: Kysely<DB>,
   ) {}
 
-  async create(dto: CreateProviderDto) {
+  async create(dto: CreateProviderDto, createdBy?: string) {
     return this.db
       .insertInto('service_providers')
       .values({
@@ -32,6 +32,7 @@ export class ProviderService {
         type: dto.type,
         website: dto.website ?? null,
         notes: dto.notes ?? null,
+        created_by_id: createdBy ?? null,
       })
       .returningAll()
       .executeTakeFirstOrThrow();

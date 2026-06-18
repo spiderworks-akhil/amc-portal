@@ -12,6 +12,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ProviderService } from './provider.service';
 import {
   CreateProviderDto,
@@ -26,8 +27,11 @@ export class ProviderController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Provider created successfully')
-  async create(@Body() dto: CreateProviderDto) {
-    return this.providerService.create(dto);
+  async create(
+    @Body() dto: CreateProviderDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.providerService.create(dto, user.id);
   }
 
   @Get('list')

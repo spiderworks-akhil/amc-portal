@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Megaphone,
   Server,
+  AlertTriangle,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -54,6 +55,7 @@ const navItems = [
       { title: "Domains", icon: Globe, href: "/domains" },
       { title: "SSL Certificates", icon: Shield, href: "/ssl-certificates" },
       { title: "Monitors", icon: Activity, href: "/monitors" },
+      { title: "Incidents", icon: AlertTriangle, href: "/incidents" },
     ],
   },
 ]

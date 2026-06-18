@@ -25,7 +25,7 @@ export class ContractService {
     @InjectKysely() private readonly db: Kysely<DB>,
   ) {}
 
-  async create(dto: CreateContractDto) {
+  async create(dto: CreateContractDto, createdBy?: string) {
     // Auto-generate contract number if not provided
     const contract_number =
       dto.contract_number || (await this.generateContractNumber(dto.client_id));
@@ -44,6 +44,7 @@ export class ContractService {
         auto_renew: dto.auto_renew ?? false,
         scope: dto.scope ?? null,
         status: dto.status ?? 'active',
+        created_by_id: createdBy ?? null,
       })
       .returningAll()
       .executeTakeFirst();

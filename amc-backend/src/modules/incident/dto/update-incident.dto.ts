@@ -1,4 +1,18 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateIncidentDto } from './create-incident.dto';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class UpdateIncidentDto extends PartialType(CreateIncidentDto) {}
+const SEVERITY_VALUES = ['critical', 'major', 'minor', 'info'] as const;
+
+export class UpdateIncidentDto {
+  @IsIn(SEVERITY_VALUES)
+  @IsOptional()
+  severity?: string;
+
+  @IsString()
+  @IsOptional()
+  cause?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(1000)
+  notes?: string;
+}

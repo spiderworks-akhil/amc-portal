@@ -527,3 +527,35 @@ export interface ListMonitorsParams {
   sort_by?: string
   sort_order?: "asc" | "desc"
 }
+
+export type IncidentSeverity = "critical" | "major" | "minor" | "info"
+
+export interface IncidentListItem {
+  id: string
+  monitor_id: string
+  severity: IncidentSeverity
+  cause: string | null
+  notes: string | null
+  started_at: string
+  resolved_at: string | null
+  duration_seconds: number | null
+  acknowledged_by: string | null
+  created_at: string
+  monitor_name: string
+  monitor_target: string
+  monitor_check_type: string
+  monitor_current_status: MonitorCurrentStatus
+  asset_name: string | null
+}
+
+export interface IncidentDetail extends IncidentListItem {}
+
+export interface ListIncidentsParams {
+  page?: number
+  limit?: number
+  monitor_id?: string
+  severity?: string
+  status?: "open" | "resolved"
+  sort_by?: string
+  sort_order?: "asc" | "desc"
+}

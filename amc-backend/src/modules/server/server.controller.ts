@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ServerService } from './server.service';
 import {
   CreateServerDto,
@@ -28,8 +29,11 @@ export class ServerController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Server created successfully')
-  async create(@Body() dto: CreateServerDto) {
-    return this.serverService.create(dto);
+  async create(
+    @Body() dto: CreateServerDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.serverService.create(dto, user.id);
   }
 
   @Get('list')

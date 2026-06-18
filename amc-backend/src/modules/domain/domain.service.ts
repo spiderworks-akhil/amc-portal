@@ -12,6 +12,7 @@ import * as whoiser from 'whoiser';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql, Transaction } from 'kysely';
 import { DB } from '../../db/types.generated';
+import { QueueService } from '../../queue/queue.service';
 import {
   CreateDomainDto,
   UpdateDomainDto,
@@ -28,9 +29,10 @@ export class DomainService {
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly sslService: SslService,
+    private readonly queueService: QueueService,
   ) {}
 
-  async create(dto: CreateDomainDto) {
+  async create(dto: CreateDomainDto, createdBy?: string) {
     await this.verifyDomainExists(dto.fqdn);
 
     const result = await this.db.transaction().execute(async (trx) => {
@@ -45,6 +47,7 @@ export class DomainService {
           auto_renew: dto.auto_renew ?? false,
           nameservers: JSON.stringify(dto.nameservers ?? []),
           notes: dto.notes ?? null,
+          created_by_id: createdBy ?? null,
         })
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -62,6 +65,7 @@ export class DomainService {
           valid_from: null,
           valid_to: null,
           type: null,
+          created_by_id: createdBy ?? null,
         })
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -86,6 +90,9 @@ export class DomainService {
         );
       });
     }
+
+    // Schedule periodic domain refresh via BullMQ
+    await this.queueService.scheduleDomainRefresh(result.domain.id, process.env.DOMAIN_REFRESH_CRON || '0 0 * * *');
 
     return result.domain;
   }
@@ -326,6 +333,9 @@ export class DomainService {
       .deleteFrom('domain_snapshots')
       .where('domain_id', '=', id)
       .execute();
+
+    // Remove scheduled cron job
+    await this.queueService.removeScheduledDomainRefresh(id);
 
     await this.db
       .deleteFrom('domains')

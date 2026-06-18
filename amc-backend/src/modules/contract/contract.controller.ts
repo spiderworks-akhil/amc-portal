@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ContractService } from './contract.service';
 import {
   CreateContractDto,
@@ -29,8 +30,11 @@ export class ContractController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Contract created successfully')
-  async create(@Body() dto: CreateContractDto) {
-    return this.contractService.create(dto);
+  async create(
+    @Body() dto: CreateContractDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.contractService.create(dto, user.id);
   }
 
   @Get('list')

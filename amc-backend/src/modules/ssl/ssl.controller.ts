@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SslService } from './ssl.service';
 import {
   CreateSslDto,
@@ -27,8 +28,11 @@ export class SslController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('SSL certificate created successfully')
-  async create(@Body() dto: CreateSslDto) {
-    return this.sslService.create(dto);
+  async create(
+    @Body() dto: CreateSslDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.sslService.create(dto, user.id);
   }
 
   @Get('list')

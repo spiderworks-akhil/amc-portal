@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueService } from './queue.service';
+import { CronBootstrapService } from './cron-bootstrap.service';
+import { DatabaseModule } from '../db/database.module';
 
 @Module({
   imports: [
+    DatabaseModule,
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         connection: {
@@ -23,7 +26,7 @@ import { QueueService } from './queue.service';
     BullModule.registerQueue({ name: 'domain-refresh' }),
     BullModule.registerQueue({ name: 'ssl-refresh' }),
   ],
-  providers: [QueueService],
+  providers: [QueueService, CronBootstrapService],
   exports: [QueueService, BullModule],
 })
 export class QueueModule {}

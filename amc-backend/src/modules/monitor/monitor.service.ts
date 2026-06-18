@@ -27,7 +27,7 @@ export class MonitorService {
 
   // ── CRUD ──
 
-  async create(dto: CreateMonitorDto) {
+  async create(dto: CreateMonitorDto, createdBy?: string) {
     const monitor = await this.db
       .insertInto('monitors')
       .values({
@@ -39,6 +39,7 @@ export class MonitorService {
         expected_status_code: dto.expected_status_code ?? null,
         expected_keyword: dto.expected_keyword ?? null,
         enabled: dto.enabled ?? true,
+        created_by_id: createdBy ?? null,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -339,13 +340,17 @@ export class MonitorService {
       responseTimeMs = Date.now() - startedAt;
     }
 
+    // Sanitize responseTimeMs — the ping library can return NaN
+    const safeResponseTimeMs =
+      responseTimeMs !== null && !isNaN(responseTimeMs) ? responseTimeMs : null;
+
     // Record the check result
     const checkResult = await this.db
       .insertInto('monitor_checks')
       .values({
         monitor_id: monitor.id,
         status_code: statusCode,
-        response_time_ms: responseTimeMs,
+        response_time_ms: safeResponseTimeMs,
         error_message: errorMessage,
         status,
         checked_at: new Date(),

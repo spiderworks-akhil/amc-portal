@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DomainService } from './domain.service';
 import {
   CreateDomainDto,
@@ -27,8 +28,11 @@ export class DomainController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Domain created successfully')
-  async create(@Body() dto: CreateDomainDto) {
-    return this.domainService.create(dto);
+  async create(
+    @Body() dto: CreateDomainDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.domainService.create(dto, user.id);
   }
 
   @Get('list')

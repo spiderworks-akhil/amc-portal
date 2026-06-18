@@ -27,7 +27,7 @@ export class ServerService {
     @InjectKysely() private readonly db: Kysely<DB>,
   ) {}
 
-  async create(dto: CreateServerDto) {
+  async create(dto: CreateServerDto, createdBy?: string) {
     return this.db
       .insertInto('servers')
       .values({
@@ -41,6 +41,7 @@ export class ServerService {
         currency: dto.currency ?? 'USD',
         renewal_date: dto.renewal_date ? new Date(dto.renewal_date) : null,
         notes: dto.notes ?? null,
+        created_by_id: createdBy ?? null,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
