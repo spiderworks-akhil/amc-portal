@@ -1,13 +1,7 @@
 "use client"
 
 import { useSession } from "next-auth/react"
-import {
-  useExpiringDomains,
-  useDomainExpiryStats,
-  useDashboardSummary,
-  useExpiringContracts,
-  useExpiringSsl,
-} from "@/hooks/use-dashboard"
+import { useDashboardOverview } from "@/hooks/use-dashboard"
 import { CriticalAlertsBanner } from "@/components/dashboard/critical-alerts-banner"
 import { StatCards } from "@/components/dashboard/stat-cards"
 import { DomainHealth } from "@/components/dashboard/domain-health"
@@ -20,16 +14,16 @@ export default function DashboardPage() {
   const { data: session } = useSession()
   const userId = session?.user?.id
 
-  const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
-  const { data: expiringDomains, isLoading: domainsLoading } = useExpiringDomains(90)
-  const { data: managerExpiringDomains } = useExpiringDomains(7, userId)
-  const { data: expiryStats, isLoading: statsLoading } = useDomainExpiryStats()
-  const { data: expiringContracts, isLoading: contractsLoading } = useExpiringContracts()
-  const { data: expiringSsl, isLoading: sslLoading } = useExpiringSsl()
+  const { data, isLoading } = useDashboardOverview(userId)
 
+  const summary = data?.summary
+  const expiryStats = data?.domainExpiryStats
+  const expiringDomains = data?.expiringDomains
+  const expiringContracts = data?.expiringContracts
+  const expiringSsl = data?.expiringSsl
 
   // Critical alerts: filtered to manager's clients only, expiring within 7 days
-  const criticalDomains = (managerExpiringDomains || []).filter(
+  const criticalDomains = (data?.managerExpiringDomains || []).filter(
     (d) => d.days_to_expiry !== null && d.days_to_expiry > 0 && d.days_to_expiry <= 7
   )
 
@@ -45,19 +39,19 @@ export default function DashboardPage() {
         </div>
 
         <CriticalAlertsBanner domains={criticalDomains} />
-        <StatCards summary={summary} expiryStats={expiryStats} isLoading={summaryLoading} />
+        <StatCards summary={summary} expiryStats={expiryStats} isLoading={isLoading} />
         {/* <ExpiredItems expiredDomains={expiredDomains} expiredSsl={expiredSsl} /> */}
 
         {/* Domain Health + Expiring Domains */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <DomainHealth stats={expiryStats} isLoading={statsLoading} />
-          <ExpiringDomainsList domains={expiringDomains} isLoading={domainsLoading} />
+          <DomainHealth stats={expiryStats} isLoading={isLoading} />
+          <ExpiringDomainsList domains={expiringDomains} isLoading={isLoading} />
         </div>
 
         {/* Contracts + SSL Expiring */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ExpiringContracts contracts={expiringContracts} isLoading={contractsLoading} />
-          <ExpiringSsl certs={expiringSsl} isLoading={sslLoading} />
+          <ExpiringContracts contracts={expiringContracts} isLoading={isLoading} />
+          <ExpiringSsl certs={expiringSsl} isLoading={isLoading} />
         </div>
 
         <QuickActions />
