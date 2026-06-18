@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { Logger } from '@nestjs/common';
+import { Logger, NotFoundException } from '@nestjs/common';
 import { MonitorService } from '../modules/monitor/monitor.service';
 
 @Processor('monitor-checks')
@@ -16,7 +16,16 @@ export class MonitorCheckProcessor extends WorkerHost {
     try {
       await this.monitorService.triggerCheck(job.data.monitorId);
     } catch (err) {
-      this.logger.error(`Monitor check failed for ${job.data.monitorId}: ${err}`);
+      if (err instanceof NotFoundException) {
+        this.logger.warn(`Monitor ${job.data.monitorId} no longer exists — removing scheduled check`);
+        try {
+          await job.remove();
+        } catch {
+          // Best-effort cleanup
+        }
+      } else {
+        this.logger.error(`Monitor check failed for ${job.data.monitorId}: ${err}`);
+      }
     }
   }
 }

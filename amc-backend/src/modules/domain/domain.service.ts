@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SslService } from '../ssl/ssl.service';
 import { ProviderType } from '../../db/types/enums';
 import * as rdap from 'node-rdap';
@@ -30,6 +31,7 @@ export class DomainService {
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly sslService: SslService,
     private readonly queueService: QueueService,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(dto: CreateDomainDto, createdBy?: string) {
@@ -98,7 +100,7 @@ export class DomainService {
     try {
       await this.queueService.scheduleDomainRefresh(
         result.domain.id,
-        process.env.DOMAIN_REFRESH_CRON || '0 0 * * *',
+        this.configService.get('DOMAIN_REFRESH_CRON', '0 0 * * *'),
       );
     } catch (err) {
       this.logger.error(

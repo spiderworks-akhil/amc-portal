@@ -5,7 +5,6 @@
 > Based on `index.html` (Requirement Sheet v1).
 > Stack: **NestJS + Kysely + PostgreSQL** | **Next.js (App Router) + Tailwind + shadcn/ui** | **Redis + BullMQ**
 
----
 
 ## Immediate Next Tasks (priority order)
 
@@ -75,7 +74,6 @@
 
 ### 0.2 Database
 - [x] Docker Compose with Redis 7
-- [ ] PG runs externally (no Docker Compose for PostgreSQL)
 - [x] Full Kysely type generation via `kysely-codegen` (25 tables)
 - [x] 11 timestamped migrations covering all Phase 1 entities
 - [x] Seed script: sample clients, assets, domains, SSL certs
@@ -132,7 +130,6 @@
 - [x] Full CRUD for both providers and servers
 - [x] Track cost, renewal date, specs, IPs
 - [x] Frontend: full servers list + detail + edit
-- [ ] **→ NEXT TASK** Providers list + detail pages
 
 ### 1.7 Domains module (auto-tracking)
 - [x] Full CRUD + WHOIS/RDAP auto-fill + snapshot history
@@ -178,18 +175,13 @@
 - [x] Backend is a stub (placeholder strings, `+id` bug in controller)
 - [x] No frontend pages
 
-### 1.13 Client Portal (UnNeccessary)
-- [ ] Not started at all (was part of v1 scope)
-
-### 1.14 CSV Import
+### 1.13 CSV Import
 - [ ] Not started
 
----
 
 ## Phase 2 — Enhanced
 
 - [ ] Ticketing / maintenance log module
-- [ ] Slack notifications (webhook)
 - [ ] WhatsApp/SMS via Twilio
 - [ ] Backup tracking + overdue alerts
 - [ ] DNS change detection (diff with persisted snapshot)

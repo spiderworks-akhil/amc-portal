@@ -6,6 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
@@ -25,6 +26,7 @@ export class SslService {
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly queueService: QueueService,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(dto: CreateSslDto, createdBy?: string) {
@@ -56,7 +58,7 @@ export class SslService {
     await this.createSnapshot(cert.id);
 
     // Schedule periodic SSL refresh via BullMQ
-    await this.queueService.scheduleSslRefresh(cert.id, process.env.SSL_REFRESH_CRON || '0 0 * * *');
+    await this.queueService.scheduleSslRefresh(cert.id, this.configService.get('SSL_REFRESH_CRON', '0 0 * * *'));
 
     return cert;
   }

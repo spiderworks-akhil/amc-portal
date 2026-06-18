@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { Logger } from '@nestjs/common';
+import { Logger, NotFoundException } from '@nestjs/common';
 import { DomainService } from '../modules/domain/domain.service';
 
 @Processor('domain-refresh')
@@ -16,7 +16,17 @@ export class DomainRefreshProcessor extends WorkerHost {
     try {
       await this.domainService.refreshDomain(job.data.domainId);
     } catch (err) {
-      this.logger.error(`Domain refresh failed for ${job.data.domainId}: ${err}`);
+      if (err instanceof NotFoundException) {
+        this.logger.warn(`Domain ${job.data.domainId} no longer exists — removing scheduled refresh`);
+        // Attempt to clean up the orphaned job
+        try {
+          await job.remove();
+        } catch {
+          // Best-effort cleanup
+        }
+      } else {
+        this.logger.error(`Domain refresh failed for ${job.data.domainId}: ${err}`);
+      }
     }
   }
 }

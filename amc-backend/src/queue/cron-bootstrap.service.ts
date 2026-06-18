@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely } from 'kysely';
 import { DB } from '../db/types.generated';
@@ -11,6 +12,7 @@ export class CronBootstrapService implements OnApplicationBootstrap {
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly queueService: QueueService,
+    private readonly configService: ConfigService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -30,7 +32,7 @@ export class CronBootstrapService implements OnApplicationBootstrap {
         return;
       }
 
-      const cronPattern = process.env.DOMAIN_REFRESH_CRON || '0 0 * * *';
+      const cronPattern = this.configService.get('DOMAIN_REFRESH_CRON', '0 0 * * *');
       let scheduled = 0;
 
       for (const domain of domains) {
@@ -62,7 +64,7 @@ export class CronBootstrapService implements OnApplicationBootstrap {
         return;
       }
 
-      const cronPattern = process.env.SSL_REFRESH_CRON || '0 0 * * *';
+      const cronPattern = this.configService.get('SSL_REFRESH_CRON', '0 0 * * *');
       let scheduled = 0;
 
       for (const cert of certs) {
