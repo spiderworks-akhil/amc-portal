@@ -8,6 +8,7 @@ import { DomainHealth } from "@/components/dashboard/domain-health"
 import { ExpiringDomainsList } from "@/components/dashboard/expiring-domains-list"
 import { ExpiringContracts } from "@/components/dashboard/expiring-contracts"
 import { ExpiringSsl } from "@/components/dashboard/expiring-ssl"
+import { ExpiredItems } from "@/components/dashboard/expired-items"
 import { QuickActions } from "@/components/dashboard/quick-actions"
 
 export default function DashboardPage() {
@@ -21,6 +22,9 @@ export default function DashboardPage() {
   const expiringDomains = data?.expiringDomains
   const expiringContracts = data?.expiringContracts
   const expiringSsl = data?.expiringSsl
+  // !! if not gonna use this remove query from  backend for optmization
+  const expiredDomains = data?.expiredDomains || []
+  const expiredSslCerts = data?.expiredSslCerts || []
 
   // Critical alerts: filtered to manager's clients only, expiring within 7 days
   const criticalDomains = (data?.managerExpiringDomains || []).filter(
@@ -40,7 +44,7 @@ export default function DashboardPage() {
 
         <CriticalAlertsBanner domains={criticalDomains} />
         <StatCards summary={summary} expiryStats={expiryStats} isLoading={isLoading} />
-        {/* <ExpiredItems expiredDomains={expiredDomains} expiredSsl={expiredSsl} /> */}
+        {/* <ExpiredItems expiredDomains={expiredDomains} expiredSsl={expiredSslCerts} /> */}
 
         {/* Domain Health + Expiring Domains */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

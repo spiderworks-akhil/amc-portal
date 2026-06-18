@@ -56,6 +56,8 @@ export interface DashboardOverview {
   managerExpiringDomains: ExpiringDomain[]
   expiringContracts: DashboardContract[]
   expiringSsl: DashboardSsl[]
+  expiredDomains: ExpiringDomain[]
+  expiredSslCerts: DashboardSsl[]
 }
 
 export interface DashboardContract {
@@ -93,20 +95,24 @@ function useDashboardOverview(managerId?: string) {
           : null,
       })
 
+      const enrichSsl = (s: DashboardSsl) => ({
+        ...s,
+        days_to_expiry: s.valid_to
+          ? Math.ceil((new Date(s.valid_to).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          : null,
+      })
+
       return {
         ...data,
         expiringDomains: (data.expiringDomains || []).map(enrichDomain),
         managerExpiringDomains: (data.managerExpiringDomains || []).map(enrichDomain),
+        expiredDomains: (data.expiredDomains || []).map(enrichDomain),
         expiringContracts: (data.expiringContracts || []).map((c) => ({
           ...c,
           days_to_renewal: Math.ceil((new Date(c.renewal_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
         })),
-        expiringSsl: (data.expiringSsl || []).map((s) => ({
-          ...s,
-          days_to_expiry: s.valid_to
-            ? Math.ceil((new Date(s.valid_to).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-            : null,
-        })),
+        expiringSsl: (data.expiringSsl || []).map(enrichSsl),
+        expiredSslCerts: (data.expiredSslCerts || []).map(enrichSsl),
       }
     },
   })

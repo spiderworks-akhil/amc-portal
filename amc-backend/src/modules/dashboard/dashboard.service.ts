@@ -23,6 +23,8 @@ export class DashboardService {
       managerExpiringDomains,
       expiringContracts,
       expiringSsl,
+      expiredDomains,
+      expiredSslCerts,
     ] = await Promise.all([
       this.getSummary(),
       this.getDomainExpiryStats(now, thirtyDays, sixtyDays, ninetyDays),
@@ -30,6 +32,8 @@ export class DashboardService {
       managerId ? this.getExpiringDomains(sevenDays, managerId) : Promise.resolve([]),
       this.getExpiringContracts(now, ninetyDays),
       this.getExpiringSslCerts(now, ninetyDays),
+      this.getExpiredDomains(now),
+      this.getExpiredSslCerts(now),
     ]);
 
     return {
@@ -39,6 +43,8 @@ export class DashboardService {
       managerExpiringDomains,
       expiringContracts,
       expiringSsl,
+      expiredDomains,
+      expiredSslCerts,
     };
   }
 
@@ -181,9 +187,7 @@ export class DashboardService {
         'clients.email as client_email',
       ])
       .where('contracts.deleted_at', 'is', null)
-      .where('contracts.end_date', '>=', now)
       .where('contracts.end_date', '<=', threshold)
-      .where('contracts.status', '!=', 'expired')
       .orderBy('contracts.end_date', 'asc')
       .execute();
   }
@@ -203,9 +207,52 @@ export class DashboardService {
         'domains.fqdn as domain_fqdn',
         'assets.name as asset_name',
       ])
-      .where('ssl_certificates.valid_to', '>=', now)
       .where('ssl_certificates.valid_to', '<=', threshold)
       .orderBy('ssl_certificates.valid_to', 'asc')
+      .execute();
+  }
+
+  private async getExpiredDomains(now: Date) {
+    return this.db
+      .selectFrom('domains')
+      .innerJoin('assets', 'assets.id', 'domains.asset_id')
+      .innerJoin('clients', 'clients.id', 'assets.client_id')
+      .select([
+        'domains.id',
+        'domains.fqdn',
+        'domains.expiry_date',
+        'domains.auto_renew',
+        'domains.last_checked_at',
+        'assets.name as asset_name',
+        'assets.client_id as client_id',
+        'clients.name as client_name',
+        'clients.email as client_email',
+      ])
+      .where('domains.expiry_date', 'is not', null)
+      .where('domains.expiry_date', '<', now)
+      .orderBy('domains.expiry_date', 'desc')
+      .limit(10)
+      .execute();
+  }
+
+  private async getExpiredSslCerts(now: Date) {
+    return this.db
+      .selectFrom('ssl_certificates')
+      .innerJoin('domains', 'domains.id', 'ssl_certificates.domain_id')
+      .leftJoin('assets', 'assets.id', 'ssl_certificates.asset_id')
+      .select([
+        'ssl_certificates.id',
+        'ssl_certificates.common_name',
+        'ssl_certificates.issuer',
+        'ssl_certificates.valid_to',
+        'ssl_certificates.type',
+        'ssl_certificates.last_checked_at',
+        'domains.fqdn as domain_fqdn',
+        'assets.name as asset_name',
+      ])
+      .where('ssl_certificates.valid_to', '<', now)
+      .orderBy('ssl_certificates.valid_to', 'desc')
+      .limit(10)
       .execute();
   }
 }
