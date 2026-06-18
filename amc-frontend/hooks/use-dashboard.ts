@@ -35,6 +35,26 @@ export interface DashboardSummary {
   activeContracts: number
 }
 
+/** Incident summary for dashboard */
+export interface DashboardIncidentSummary {
+  totalOpen: number
+  critical: number
+  major: number
+  minor: number
+  info: number
+  recentIncidents: Array<{
+    id: string
+    severity: string
+    started_at: string
+    notes: string | null
+    monitor_id: string
+    monitor_name: string
+    monitor_target: string
+    monitor_status: string
+    asset_name: string | null
+  }>
+}
+
 /** Monitor health summary for dashboard */
 export interface MonitorSummary {
   totalMonitors: number
@@ -67,6 +87,7 @@ export interface DashboardOverview {
   expiredDomains: ExpiringDomain[]
   expiredSslCerts: DashboardSsl[]
   monitorSummary: MonitorSummary
+  incidentSummary: DashboardIncidentSummary
 }
 
 export interface DashboardContract {

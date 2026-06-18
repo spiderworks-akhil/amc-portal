@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { useIncidents, useResolveIncident, useAcknowledgeIncident, useDeleteIncident } from "@/hooks/use-incidents"
+import { useIncidents, useResolveIncident, useAcknowledgeIncident, useDeleteIncident, useCheckExpiredIncidents } from "@/hooks/use-incidents"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -97,6 +97,7 @@ export function IncidentsPageContent() {
   const { mutate: resolveIncident, isPending: isResolving } = useResolveIncident()
   const { mutate: acknowledgeIncident, isPending: isAcknowledging } = useAcknowledgeIncident()
   const { mutate: deleteIncident } = useDeleteIncident()
+  const { mutate: checkExpired, isPending: isCheckingExpired } = useCheckExpiredIncidents()
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const deleteIncidentItem = data?.data.find((i) => i.id === deleteId)
@@ -135,6 +136,15 @@ export function IncidentsPageContent() {
               Monitor incidents and system alerts
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => checkExpired()}
+            disabled={isCheckingExpired}
+          >
+            <AlertTriangle className="size-3.5 mr-1.5" />
+            {isCheckingExpired ? 'Checking...' : 'Check Expired'}
+          </Button>
         </div>
 
         {/* Filters */}

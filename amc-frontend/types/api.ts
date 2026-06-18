@@ -532,7 +532,7 @@ export type IncidentSeverity = "critical" | "major" | "minor" | "info"
 
 export interface IncidentListItem {
   id: string
-  monitor_id: string
+  monitor_id: string | null
   severity: IncidentSeverity
   cause: string | null
   notes: string | null
@@ -540,12 +540,15 @@ export interface IncidentListItem {
   resolved_at: string | null
   duration_seconds: number | null
   acknowledged_by: string | null
+  acknowledged_by_name: string | null
   created_at: string
-  monitor_name: string
-  monitor_target: string
-  monitor_check_type: string
-  monitor_current_status: MonitorCurrentStatus
+  monitor_name: string | null
+  monitor_target: string | null
+  monitor_check_type: string | null
+  monitor_current_status: MonitorCurrentStatus | null
   asset_name: string | null
+  target_type: string | null
+  target_id: string | null
 }
 
 export interface IncidentDetail extends IncidentListItem {}

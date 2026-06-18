@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
@@ -18,17 +19,19 @@ export class IncidentService {
     const incident = await this.db
       .insertInto('incidents')
       .values({
-        monitor_id: dto.monitor_id,
+        monitor_id: dto.monitor_id ?? null,
         severity: dto.severity,
         cause: dto.cause ?? null,
         notes: dto.notes ?? null,
         started_at: new Date(),
         created_by_id: createdBy ?? null,
+        target_type: dto.target_type ?? null,
+        target_id: dto.target_id ?? null,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    this.logger.log(`Incident ${incident.id} created for monitor ${dto.monitor_id} (severity: ${dto.severity})`);
+    this.logger.log(`Incident ${incident.id} created (severity: ${dto.severity})`);
     return incident;
   }
 
@@ -46,8 +49,9 @@ export class IncidentService {
 
     let baseQuery = this.db
       .selectFrom('incidents')
-      .innerJoin('monitors', 'monitors.id', 'incidents.monitor_id')
-      .leftJoin('assets', 'assets.id', 'monitors.asset_id');
+      .leftJoin('monitors', 'monitors.id', 'incidents.monitor_id')
+      .leftJoin('assets', 'assets.id', 'monitors.asset_id')
+      .leftJoin('users', 'users.id', 'incidents.acknowledged_by');
 
     let countQuery = this.db
       .selectFrom('incidents')
@@ -95,6 +99,9 @@ export class IncidentService {
           'incidents.duration_seconds',
           'incidents.acknowledged_by',
           'incidents.created_at',
+          'incidents.target_type',
+          'incidents.target_id',
+          'users.name as acknowledged_by_name',
           'monitors.name as monitor_name',
           'monitors.target as monitor_target',
           'monitors.check_type as monitor_check_type',
@@ -116,8 +123,9 @@ export class IncidentService {
   async getById(id: string) {
     const incident = await this.db
       .selectFrom('incidents')
-      .innerJoin('monitors', 'monitors.id', 'incidents.monitor_id')
+      .leftJoin('monitors', 'monitors.id', 'incidents.monitor_id')
       .leftJoin('assets', 'assets.id', 'monitors.asset_id')
+      .leftJoin('users', 'users.id', 'incidents.acknowledged_by')
       .select([
         'incidents.id',
         'incidents.monitor_id',
@@ -129,6 +137,9 @@ export class IncidentService {
         'incidents.duration_seconds',
         'incidents.acknowledged_by',
         'incidents.created_at',
+        'incidents.target_type',
+        'incidents.target_id',
+        'users.name as acknowledged_by_name',
         'monitors.name as monitor_name',
         'monitors.target as monitor_target',
         'monitors.check_type as monitor_check_type',
@@ -214,6 +225,112 @@ export class IncidentService {
       .execute();
 
     return { message: 'Incident deleted successfully' };
+  }
+
+  // ── Expiry-to-Incident Cron Jobs ──
+
+  @Cron('0 */6 * * *') // Every 6 hours
+  async checkExpiredDomains() {
+    this.logger.log('Checking for expired domains to create incidents...');
+    const now = new Date();
+
+    const expiredDomains = await this.db
+      .selectFrom('domains')
+      .innerJoin('assets', 'assets.id', 'domains.asset_id')
+      .select([
+        'domains.id',
+        'domains.fqdn',
+        'domains.expiry_date',
+        'assets.name as asset_name',
+      ])
+      .where('domains.expiry_date', 'is not', null)
+      .where('domains.expiry_date', '<', now)
+      .execute();
+
+    let created = 0;
+    for (const domain of expiredDomains) {
+      // Check if an open incident already exists for this domain
+      const existing = await this.db
+        .selectFrom('incidents')
+        .select('id')
+        .where('target_type', '=', 'domain')
+        .where('target_id', '=', domain.id)
+        .where('resolved_at', 'is', null)
+        .executeTakeFirst();
+
+      if (existing) continue;
+
+      await this.db
+        .insertInto('incidents')
+        .values({
+          monitor_id: null,
+          severity: 'major',
+          cause: 'Domain Expired',
+          notes: `Domain ${domain.fqdn} (${domain.asset_name}) expired on ${domain.expiry_date?.toISOString().split('T')[0] ?? 'unknown date'}.`,
+          started_at: new Date(),
+          target_type: 'domain',
+          target_id: domain.id,
+        })
+        .execute();
+
+      created++;
+    }
+
+    this.logger.log(`Expired domain check complete: ${created} incident(s) created`);
+    return created;
+  }
+
+  @Cron('0 */6 * * *') // Every 6 hours
+  async checkExpiredSsl() {
+    this.logger.log('Checking for expired SSL certificates to create incidents...');
+    const now = new Date();
+
+    const expiredCerts = await this.db
+      .selectFrom('ssl_certificates')
+      .innerJoin('domains', 'domains.id', 'ssl_certificates.domain_id')
+      .leftJoin('assets', 'assets.id', 'ssl_certificates.asset_id')
+      .select([
+        'ssl_certificates.id',
+        'ssl_certificates.common_name',
+        'ssl_certificates.valid_to',
+        'domains.fqdn as domain_fqdn',
+        'assets.name as asset_name',
+      ])
+      .where('ssl_certificates.valid_to', 'is not', null)
+      .where('ssl_certificates.valid_to', '<', now)
+      .execute();
+
+    let created = 0;
+    for (const cert of expiredCerts) {
+      const existing = await this.db
+        .selectFrom('incidents')
+        .select('id')
+        .where('target_type', '=', 'ssl')
+        .where('target_id', '=', cert.id)
+        .where('resolved_at', 'is', null)
+        .executeTakeFirst();
+
+      if (existing) continue;
+
+      const hostname = cert.common_name ?? cert.domain_fqdn;
+      await this.db
+        .insertInto('incidents')
+        .values({
+          monitor_id: null,
+          severity: 'major',
+          cause: 'SSL Certificate Expired',
+          notes: `SSL certificate for ${hostname} (${cert.asset_name ?? cert.domain_fqdn}) expired on ${cert.valid_to?.toISOString().split('T')[0] ?? 'unknown date'}.`,
+          started_at: new Date(),
+          target_type: 'ssl',
+          target_id: cert.id,
+        })
+        .execute();
+
+      created++;
+    }
+
+    this.logger.log(`Expired SSL check complete: ${created} incident(s) created`);
+    return created;
   }
 
   private async checkExists(id: string) {

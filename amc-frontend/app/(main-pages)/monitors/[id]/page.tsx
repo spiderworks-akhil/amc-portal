@@ -79,7 +79,7 @@ export default function MonitorDetailPage() {
 
   if (isError || !monitor) {
     return (
-      <div className="container mx-auto px-4 py-16 max-w-7xl">
+      <div className="container mx-auto px-4 py-4 max-w-7xl">
         <div className="flex flex-col items-center justify-center text-center gap-4">
           <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center">
             <Activity className="size-8 text-destructive" />

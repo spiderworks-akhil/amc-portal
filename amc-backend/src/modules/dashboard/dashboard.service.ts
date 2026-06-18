@@ -26,6 +26,7 @@ export class DashboardService {
       expiredDomains,
       expiredSslCerts,
       monitorSummary,
+      incidentSummary,
     ] = await Promise.all([
       this.getSummary(),
       this.getDomainExpiryStats(now, thirtyDays, sixtyDays, ninetyDays),
@@ -36,6 +37,7 @@ export class DashboardService {
       this.getExpiredDomains(now),
       this.getExpiredSslCerts(now),
       this.getMonitorSummary(),
+      this.getIncidentSummary(),
     ]);
 
     return {
@@ -48,6 +50,7 @@ export class DashboardService {
       expiredDomains,
       expiredSslCerts,
       monitorSummary,
+      incidentSummary,
     };
   }
 
@@ -257,6 +260,71 @@ export class DashboardService {
       .orderBy('ssl_certificates.valid_to', 'desc')
       .limit(10)
       .execute();
+  }
+
+  private async getIncidentSummary() {
+    const now = new Date();
+
+    // Severity breakdown for open incidents
+    const severityStats = await this.db
+      .selectFrom('incidents')
+      .select([
+        this.db.fn
+          .countAll<number>()
+          .filterWhere('resolved_at', 'is', null)
+          .as('total_open'),
+        this.db.fn
+          .countAll<number>()
+          .filterWhere('resolved_at', 'is', null)
+          .filterWhere('severity', '=', 'critical')
+          .as('critical_open'),
+        this.db.fn
+          .countAll<number>()
+          .filterWhere('resolved_at', 'is', null)
+          .filterWhere('severity', '=', 'major')
+          .as('major_open'),
+        this.db.fn
+          .countAll<number>()
+          .filterWhere('resolved_at', 'is', null)
+          .filterWhere('severity', '=', 'minor')
+          .as('minor_open'),
+        this.db.fn
+          .countAll<number>()
+          .filterWhere('resolved_at', 'is', null)
+          .filterWhere('severity', '=', 'info')
+          .as('info_open'),
+      ])
+      .executeTakeFirst();
+
+    // Most recent open incidents (up to 5)
+    const recentIncidents = await this.db
+      .selectFrom('incidents')
+      .innerJoin('monitors', 'monitors.id', 'incidents.monitor_id')
+      .leftJoin('assets', 'assets.id', 'monitors.asset_id')
+      .select([
+        'incidents.id',
+        'incidents.severity',
+        'incidents.started_at',
+        'incidents.notes',
+        'incidents.monitor_id',
+        'monitors.name as monitor_name',
+        'monitors.target as monitor_target',
+        'monitors.current_status as monitor_status',
+        'assets.name as asset_name',
+      ])
+      .where('incidents.resolved_at', 'is', null)
+      .orderBy('incidents.started_at', 'desc')
+      .limit(5)
+      .execute();
+
+    return {
+      totalOpen: Number(severityStats?.total_open ?? 0),
+      critical: Number(severityStats?.critical_open ?? 0),
+      major: Number(severityStats?.major_open ?? 0),
+      minor: Number(severityStats?.minor_open ?? 0),
+      info: Number(severityStats?.info_open ?? 0),
+      recentIncidents,
+    };
   }
 
   private async getMonitorSummary() {

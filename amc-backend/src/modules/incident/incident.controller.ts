@@ -71,6 +71,18 @@ export class IncidentController {
     return this.incidentService.acknowledge(id, user.id);
   }
 
+  @Post('check-expired')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Expiry check completed')
+  async checkExpired() {
+    const domainResult = await this.incidentService.checkExpiredDomains();
+    const sslResult = await this.incidentService.checkExpiredSsl();
+    return {
+      domain_incidents: domainResult,
+      ssl_incidents: sslResult,
+    };
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Incident deleted successfully')

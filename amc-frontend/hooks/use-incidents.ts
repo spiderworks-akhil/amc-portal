@@ -78,3 +78,26 @@ export function useDeleteIncident() {
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+export function useCheckExpiredIncidents() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<{
+        domain_incidents: number
+        ssl_incidents: number
+      }>('/incident/check-expired')
+      return data
+    },
+    onSuccess: (res) => {
+      const total = res.domain_incidents + res.ssl_incidents
+      if (total > 0) {
+        toast.success(`Created ${total} incident(s) for expired resources (${res.domain_incidents} domains, ${res.ssl_incidents} SSL)`)
+      } else {
+        toast.info('No new expired resources found')
+      }
+      qc.invalidateQueries({ queryKey: [INCIDENTS_KEY] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}

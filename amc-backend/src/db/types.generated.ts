@@ -188,11 +188,13 @@ export interface Incidents {
   created_by_id: string | null;
   duration_seconds: number | null;
   id: Generated<string>;
-  monitor_id: string;
+  monitor_id: string | null;
   notes: string | null;
   resolved_at: Timestamp | null;
   severity: string;
   started_at: Generated<Timestamp>;
+  target_id: string | null;
+  target_type: string | null;
 }
 
 export interface MonitorChecks {

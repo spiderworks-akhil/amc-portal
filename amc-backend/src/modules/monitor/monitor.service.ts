@@ -374,23 +374,15 @@ export class MonitorService {
       await this.handleConsecutiveFailure(monitor.id);
     }
 
+    // Auto-resolve incidents on consecutive successes
+    if (status === 'up') {
+      await this.handleConsecutiveSuccess(monitor.id);
+    }
+
     return checkResult;
   }
 
   private async handleConsecutiveFailure(monitorId: string) {
-    // Count consecutive 'down' checks
-    const recentChecks = await this.db
-      .selectFrom('monitor_checks')
-      .select('status')
-      .where('monitor_id', '=', monitorId)
-      .orderBy('checked_at', 'desc')
-      .limit(CONSECUTIVE_FAILURES_TO_INCIDENT)
-      .execute();
-
-    const consecutiveDowns = recentChecks.filter((c) => c.status === 'down').length;
-
-    if (consecutiveDowns < CONSECUTIVE_FAILURES_TO_INCIDENT) return;
-
     // Check if there's already an unresolved incident for this monitor
     const existingIncident = await this.db
       .selectFrom('incidents')
@@ -400,6 +392,33 @@ export class MonitorService {
       .executeTakeFirst();
 
     if (existingIncident) return;
+
+    // Check that the last N checks are ALL 'down' consecutively.
+    // Find the most recent 'up' check; if none exists, count ALL checks since the beginning.
+    const mostRecentUp = await this.db
+      .selectFrom('monitor_checks')
+      .select('checked_at')
+      .where('monitor_id', '=', monitorId)
+      .where('status', '=', 'up')
+      .orderBy('checked_at', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+
+    const consecutiveDownsQuery = this.db
+      .selectFrom('monitor_checks')
+      .select(this.db.fn.countAll<number>().as('count'))
+      .where('monitor_id', '=', monitorId)
+      .where('status', '=', 'down');
+
+    if (mostRecentUp) {
+      consecutiveDownsQuery.where('checked_at', '>', mostRecentUp.checked_at);
+    }
+
+    const { count: consecutiveDowns } = await consecutiveDownsQuery
+      .executeTakeFirst()
+      .then((r) => ({ count: Number(r?.count ?? 0) }));
+
+    if (consecutiveDowns < CONSECUTIVE_FAILURES_TO_INCIDENT) return;
 
     // Determine severity based on check type
     const monitor = await this.db
@@ -424,6 +443,72 @@ export class MonitorService {
         notes: `Auto-created after ${CONSECUTIVE_FAILURES_TO_INCIDENT} consecutive failed checks`,
       })
       .execute();
+
+    this.logger.log(
+      `Incident auto-created for monitor ${monitorId} after ${CONSECUTIVE_FAILURES_TO_INCIDENT} consecutive failures`,
+    );
+  }
+
+  /**
+   * Auto-resolve an open incident when CONSECUTIVE_FAILURES_TO_INCIDENT
+   * consecutive checks return 'up'.
+   */
+  private async handleConsecutiveSuccess(monitorId: string) {
+    // Check if there's an unresolved incident for this monitor
+    const openIncident = await this.db
+      .selectFrom('incidents')
+      .select(['id', 'started_at'])
+      .where('monitor_id', '=', monitorId)
+      .where('resolved_at', 'is', null)
+      .executeTakeFirst();
+
+    if (!openIncident) return;
+
+    // Find the most recent 'down' check for this monitor
+    const mostRecentDown = await this.db
+      .selectFrom('monitor_checks')
+      .select('checked_at')
+      .where('monitor_id', '=', monitorId)
+      .where('status', '=', 'down')
+      .orderBy('checked_at', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+
+    // Count how many consecutive 'up' checks since the last 'down' (or since the beginning)
+    const consecutiveUpsQuery = this.db
+      .selectFrom('monitor_checks')
+      .select(this.db.fn.countAll<number>().as('count'))
+      .where('monitor_id', '=', monitorId)
+      .where('status', '=', 'up');
+
+    if (mostRecentDown) {
+      consecutiveUpsQuery.where('checked_at', '>', mostRecentDown.checked_at);
+    }
+
+    const { count: consecutiveUps } = await consecutiveUpsQuery
+      .executeTakeFirst()
+      .then((r) => ({ count: Number(r?.count ?? 0) }));
+
+    if (consecutiveUps < CONSECUTIVE_FAILURES_TO_INCIDENT) return;
+
+    // Resolve the incident
+    const resolvedAt = new Date();
+    const durationSeconds = Math.round(
+      (resolvedAt.getTime() - new Date(openIncident.started_at).getTime()) / 1000,
+    );
+
+    await this.db
+      .updateTable('incidents')
+      .set({
+        resolved_at: resolvedAt,
+        duration_seconds: durationSeconds,
+      })
+      .where('id', '=', openIncident.id)
+      .execute();
+
+    this.logger.log(
+      `Incident ${openIncident.id} auto-resolved after ${CONSECUTIVE_FAILURES_TO_INCIDENT} consecutive successful checks (duration: ${durationSeconds}s)`,
+    );
   }
 
   // ── Check History ──

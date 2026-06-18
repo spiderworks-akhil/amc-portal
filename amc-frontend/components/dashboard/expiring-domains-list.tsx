@@ -18,7 +18,7 @@ export function ExpiringDomainsList({ domains, isLoading }: ExpiringDomainsListP
   const router = useRouter()
 
   return (
-    <Card className="lg:col-span-2">
+    <Card>
       <CardHeader className="flex flex-row items-start justify-between">
         <div>
           <CardTitle className="flex items-center gap-2 text-base">
