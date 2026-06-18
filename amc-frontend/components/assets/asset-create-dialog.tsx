@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -32,6 +32,7 @@ interface AssetCreateDialogProps {
     primary_contact_email?: string
     notes?: string
     client_id?: string
+    createMonitor?: boolean
   }) => void
   isPending: boolean
   types: Array<{ value: string; label: string }>
@@ -91,6 +92,8 @@ export function AssetCreateDialog({
     },
   })
 
+  const [createMonitor, setCreateMonitor] = useState(false)
+
   const selectedClientId = watch("client_id")
   const selectedType = watch("type")
 
@@ -119,6 +122,7 @@ export function AssetCreateDialog({
         primary_contact_email: "",
         notes: "",
       })
+      setCreateMonitor(false)
     }
   }, [open, reset, clientId])
 
@@ -149,6 +153,7 @@ export function AssetCreateDialog({
       primary_contact_name: data.primary_contact_name || undefined,
       primary_contact_email: data.primary_contact_email || undefined,
       notes: data.notes || undefined,
+      createMonitor,
     })
   }
 
@@ -313,6 +318,24 @@ export function AssetCreateDialog({
             )}
           </div>
 
+          {/* Create Monitor Toggle */}
+          {watch("primary_url") && (
+            <label className="flex items-start gap-3 rounded-lg border border-border/60 p-3 cursor-pointer hover:bg-accent/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={createMonitor}
+                onChange={(e) => setCreateMonitor(e.target.checked)}
+                className="mt-0.5 size-4 rounded border-border accent-primary shrink-0"
+              />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium leading-none">Create &amp; Monitor</p>
+                <p className="text-xs text-muted-foreground">
+                  Automatically set up an HTTPS uptime monitor for this asset&apos;s URL.
+                </p>
+              </div>
+            </label>
+          )}
+
           <DrawerFooter className="mt-auto">
             <Button
               type="button"
@@ -324,7 +347,7 @@ export function AssetCreateDialog({
 
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {isPending ? "Creating..." : "Create Asset"}
+              {isPending ? "Creating..." : (createMonitor ? "Create & Monitor" : "Create Asset")}
             </Button>
           </DrawerFooter>
         </form>

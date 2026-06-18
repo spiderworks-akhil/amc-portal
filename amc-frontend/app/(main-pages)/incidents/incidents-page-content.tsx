@@ -248,6 +248,7 @@ export function IncidentsPageContent() {
                     >
                       <TableCell>
                         <Badge
+                          variant="dot"
                           style={{ backgroundColor: severityCfg.color }}
                           className="capitalize flex items-center gap-1"
                         >
