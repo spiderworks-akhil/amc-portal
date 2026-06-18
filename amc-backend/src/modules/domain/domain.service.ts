@@ -335,7 +335,52 @@ export class DomainService {
     return { message: 'Domain deleted successfully' };
   }
 
-  // ── WHOIS / Check ──
+  // ── WHOIS / Check / Refresh ──
+
+  /** Full live refresh: RDAP/WHOIS lookup → update domain record → snapshot */
+  async refreshDomain(id: string) {
+    const domain = await this.checkExists(id);
+
+    try {
+      const live = await this.lookupDomainDetails(domain.fqdn);
+
+      const updateData: Record<string, unknown> = {
+        last_checked_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      if (live.registered_date) updateData.registered_date = new Date(live.registered_date);
+      if (live.expiry_date) updateData.expiry_date = new Date(live.expiry_date);
+      if (live.registrar_id) updateData.registrar_id = live.registrar_id;
+      if (live.nameservers.length > 0) updateData.nameservers = JSON.stringify(live.nameservers);
+
+      await this.db
+        .updateTable('domains')
+        .set(updateData)
+        .where('id', '=', id)
+        .execute();
+
+      this.logger.log(
+        `Domain refresh succeeded for ${domain.fqdn}: ` +
+        `expiry=${live.expiry_date ?? '—'}, registrar=${live.registrar ?? '—'}, ` +
+        `${live.nameservers.length} nameservers`,
+      );
+    } catch (err: unknown) {
+      this.logger.warn(
+        `Domain refresh lookup failed for ${domain.fqdn} (${id}): ` +
+        `${err instanceof Error ? err.message : err}`,
+      );
+      // Still record the attempt
+      await this.db
+        .updateTable('domains')
+        .set({ last_checked_at: new Date() })
+        .where('id', '=', id)
+        .execute();
+    }
+
+    const snapshot = await this.createSnapshot(id);
+    return { message: 'Domain refresh completed', snapshot };
+  }
 
   async triggerCheck(id: string) {
     const domain = await this.checkExists(id);

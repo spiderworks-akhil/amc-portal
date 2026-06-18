@@ -20,6 +20,8 @@ import { QueueService } from './queue.service';
       inject: [ConfigService],
     }),
     BullModule.registerQueue({ name: 'monitor-checks' }),
+    BullModule.registerQueue({ name: 'domain-refresh' }),
+    BullModule.registerQueue({ name: 'ssl-refresh' }),
   ],
   providers: [QueueService],
   exports: [QueueService, BullModule],

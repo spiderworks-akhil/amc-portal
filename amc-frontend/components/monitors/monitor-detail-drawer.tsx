@@ -45,8 +45,8 @@ export function MonitorDetailDrawer({
   const { mutate: triggerCheck, isPending: isChecking } = useTriggerCheck()
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-full max-h-screen overflow-y-auto sm:max-w-lg">
+    <Drawer open={open} onOpenChange={onOpenChange} direction="right" >
+      <DrawerContent className="w-full max-h-screen overflow-y-auto overflow-x-hidden sm:max-w-lg">
         <DrawerHeader>
           <div className="flex items-center justify-between">
             <div>
