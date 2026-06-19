@@ -28,6 +28,7 @@ import { Bar, BarChart, XAxis, YAxis, Cell } from "recharts"
 import { useState } from "react"
 import { format } from "date-fns"
 import type { MonitorCurrentStatus, MonitorCheckType } from "@/types/api"
+import { formatInterval } from "@/lib/format-utils"
 
 const STATUS_CONFIG: Record<MonitorCurrentStatus, { color: "emerald" | "red" | "gray"; label: string }> = {
   up: { color: "emerald", label: "Up" },
@@ -250,11 +251,7 @@ export default function MonitorDetailPage() {
                   <div className="min-w-0">
                     <p className="text-xs text-muted-foreground font-medium">Interval</p>
                     <p className="text-sm">
-                      {monitor.interval_seconds >= 3600
-                        ? `Every ${monitor.interval_seconds / 3600}h`
-                        : monitor.interval_seconds >= 60
-                          ? `Every ${monitor.interval_seconds / 60}m`
-                          : `Every ${monitor.interval_seconds}s`}
+                      {formatInterval(monitor.interval_seconds)}
                     </p>
                   </div>
                 </div>

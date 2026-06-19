@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Loader2, Activity, Play, Clock, Target, Globe, FileText } from "lucide-react"
 import { MonitorCheckHistory } from "./monitor-check-history"
 import type { MonitorCurrentStatus, MonitorCheckType } from "@/types/api"
+import { formatInterval } from "@/lib/format-utils"
 
 interface MonitorDetailDrawerProps {
   open: boolean
@@ -96,11 +97,7 @@ export function MonitorDetailDrawer({
               <div className="rounded-lg border border-border/60 p-3">
                 <p className="text-xs text-muted-foreground">Interval</p>
                 <p className="text-sm font-medium mt-1">
-                  {monitor.interval_seconds >= 3600
-                    ? `${monitor.interval_seconds / 3600}h`
-                    : monitor.interval_seconds >= 60
-                      ? `${monitor.interval_seconds / 60}m`
-                      : `${monitor.interval_seconds}s`}
+                  {formatInterval(monitor.interval_seconds)}
                 </p>
               </div>
               <div className="rounded-lg border border-border/60 p-3">

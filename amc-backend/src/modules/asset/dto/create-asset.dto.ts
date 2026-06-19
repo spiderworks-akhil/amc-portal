@@ -68,4 +68,8 @@ export class CreateAssetDto {
   @IsOptional()
   @MaxLength(5000)
   notes?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  createMonitor?: boolean;
 }

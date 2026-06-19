@@ -8,7 +8,7 @@ import { AssetTable } from "./asset-table"
 import { useAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-assets"
 import { useClients } from "@/hooks/use-clients"
 import { useDebounce } from "@/hooks/use-debounce"
-import { useCreateMonitor } from "@/hooks/use-monitors"
+import type { CreateAssetPayload } from "@/types/api"
 import { SmoothSelect } from "@/components/ui/smooth-select"
 import {
   Pagination,
@@ -89,7 +89,6 @@ export function AssetsPageContent() {
   const { data: clientsData } = useClients({ limit: 100, sort_by: "name", sort_order: "asc" })
   const { mutate: createAsset, isPending: isCreating } = useCreateAsset()
   const { mutate: deleteAsset } = useDeleteAsset()
-  const { mutate: createMonitor, isPending: isCreatingMonitor } = useCreateMonitor()
 
   const updateParams = useCallback(
     (updates: Record<string, string | undefined>) => {
@@ -128,31 +127,11 @@ export function AssetsPageContent() {
     (formData: { client_id?: string; name: string; type: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; notes?: string; createMonitor?: boolean }) => {
       if (!formData.client_id) return
 
-      const { createMonitor: shouldCreateMonitor, ...assetData } = formData
-
-      createAsset(assetData as { client_id: string; name: string; type: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; notes?: string }, {
-        onSuccess: (result) => {
-          const newAssetId = result.data.id
-
-          if (shouldCreateMonitor && formData.primary_url) {
-            createMonitor({
-              asset_id: newAssetId,
-              name: `Monitor: ${formData.name}`,
-              check_type: "https",
-              target: formData.primary_url,
-              interval_seconds: 300,
-              enabled: true,
-            }, {
-              onSuccess: () => setCreateOpen(false),
-              onError: () => setCreateOpen(false), // Still close even if monitor creation fails
-            })
-          } else {
-            setCreateOpen(false)
-          }
-        },
+      createAsset(formData as CreateAssetPayload, {
+        onSuccess: () => setCreateOpen(false),
       })
     },
-    [createAsset, createMonitor]
+    [createAsset]
   )
 
   const handleDelete = useCallback(
@@ -313,7 +292,7 @@ export function AssetsPageContent() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSubmit={handleCreateSubmit}
-        isPending={isCreating || isCreatingMonitor}
+        isPending={isCreating}
         types={ASSET_TYPES}
         clients={clientsData?.data ?? []}
       />

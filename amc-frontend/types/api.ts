@@ -136,6 +136,7 @@ export interface CreateAssetPayload {
   tech_stack?: string[]
   tags?: string[]
   notes?: string
+  createMonitor?: boolean
 }
 
 export interface ListClientsParams {

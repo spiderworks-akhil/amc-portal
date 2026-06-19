@@ -207,6 +207,7 @@ export default function ClientDetailPage() {
       primary_contact_name?: string;
       primary_contact_email?: string;
       notes?: string;
+      createMonitor?: boolean;
     }) => {
       createAsset.mutate(
         { ...data, client_id: id },

@@ -38,6 +38,7 @@ import {
   Activity,
 } from "lucide-react"
 import type { MonitorListItem, MonitorCheckType, MonitorCurrentStatus } from "@/types/api"
+import { formatInterval } from "@/lib/format-utils"
 
 const STATUS_CONFIG: Record<MonitorCurrentStatus, { color: "emerald" | "red" | "gray"; label: string }> = {
   up: { color: "emerald", label: "Up" },
@@ -188,11 +189,7 @@ export function MonitorTable({
                     </TableCell>
                     <TableCell>
                       <span className="text-xs text-muted-foreground">
-                        {monitor.interval_seconds >= 3600
-                          ? `${monitor.interval_seconds / 3600}h`
-                          : monitor.interval_seconds >= 60
-                            ? `${monitor.interval_seconds / 60}m`
-                            : `${monitor.interval_seconds}s`}
+                       {formatInterval(monitor.interval_seconds)}
                       </span>
                     </TableCell>
                     <TableCell>

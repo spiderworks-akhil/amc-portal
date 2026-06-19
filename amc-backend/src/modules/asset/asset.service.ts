@@ -9,6 +9,7 @@ import {
   AssetSortBy,
   SortOrder,
 } from './dto';
+import { MonitorService } from '../monitor/monitor.service';
 
 @Injectable()
 export class AssetService {
@@ -16,6 +17,7 @@ export class AssetService {
 
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
+    private readonly monitorService: MonitorService,
   ) {}
 
   async create(dto: CreateAssetDto, createdBy?: string) {
@@ -37,7 +39,22 @@ export class AssetService {
         created_by_id: createdBy ?? null,
       })
       .returningAll()
-      .executeTakeFirst();
+      .executeTakeFirstOrThrow();
+
+    if (dto.createMonitor && dto.primary_url) {
+      try {
+        await this.monitorService.create({
+          asset_id: asset.id,
+          name: `Monitor: ${dto.name}`,
+          check_type: 'https',
+          target: dto.primary_url,
+          interval_seconds: 300,
+          enabled: true,
+        }, createdBy);
+      } catch (err) {
+        this.logger.error(`Failed to auto-create monitor for asset ${asset.id}`, err);
+      }
+    }
 
     return asset;
   }

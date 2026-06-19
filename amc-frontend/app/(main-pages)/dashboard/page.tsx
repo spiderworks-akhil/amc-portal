@@ -51,24 +51,32 @@ export default function DashboardPage() {
         />
 
         {/* Open Incidents + Recent Incidents List */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <IncidentHealthWidget
-            summary={data?.incidentSummary}
-            isLoading={isLoading}
-          />
-          <RecentIncidentsList
-            summary={data?.incidentSummary}
-            isLoading={isLoading}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+          <div className="col-span-2">
+            <IncidentHealthWidget
+              summary={data?.incidentSummary}
+              isLoading={isLoading}
+            />
+          </div>
+          <div className="col-span-4">
+            <RecentIncidentsList
+              summary={data?.incidentSummary}
+              isLoading={isLoading}
+            />
+          </div>
         </div>
 
         {/* Domain Health + Expiring Domains */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <DomainHealth stats={expiryStats} isLoading={isLoading} />
-          <ExpiringDomainsList
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+         <div className="col-span-3">
+           <DomainHealth stats={expiryStats} isLoading={isLoading} />
+         </div>
+        <div className="col-span-4">
+            <ExpiringDomainsList
             domains={expiringDomains}
             isLoading={isLoading}
           />
+        </div>
         </div>
 
         {/* Contracts + SSL Expiring */}
