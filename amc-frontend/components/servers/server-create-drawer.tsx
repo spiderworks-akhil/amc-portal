@@ -5,9 +5,11 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { format } from "date-fns"
+import { useQueryClient } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import { useDetectServerProvider } from "@/hooks/use-servers"
 import type { DetectProviderResult } from "@/hooks/use-servers"
+import { useCreateProvider } from "@/hooks/use-create-provider"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -98,14 +100,19 @@ export function ServerCreateDrawer({
   })
 
   const detectProvider = useDetectServerProvider()
+  const createProvider = useCreateProvider()
+  const queryClient = useQueryClient()
   const [detectedOrg, setDetectedOrg] = useState<string | null>(null)
   const [detectedRegion, setDetectedRegion] = useState<string | null>(null)
   const [detectedCity, setDetectedCity] = useState<string | null>(null)
   const [detectedCountry, setDetectedCountry] = useState<string | null>(null)
   const [detectingProvider, setDetectingProvider] = useState(false)
+  const [creatingProvider, setCreatingProvider] = useState(false)
+  const [extraProviders, setExtraProviders] = useState<Provider[]>([])
   const userModifiedProvider = useRef(false)
   const userModifiedRegion = useRef(false)
   const userModifiedLabel = useRef(false)
+  const createdOrgsRef = useRef<Set<string>>(new Set())
 
   const watchedIpAddresses = watch("ip_addresses")
   const watchedPanelUrl = watch("panel_url")
@@ -121,11 +128,31 @@ export function ServerCreateDrawer({
 
     if (result.detected && result.organization) {
       setDetectedOrg(result.organization)
-      if (result.provider_id && !userModifiedProvider.current) {
-        setValue("provider_id", result.provider_id, { shouldValidate: true })
-      }
       if (!userModifiedLabel.current) {
         setValue("label", result.organization, { shouldValidate: true })
+      }
+      if (result.provider_id && !userModifiedProvider.current) {
+        setValue("provider_id", result.provider_id, { shouldValidate: true })
+      } else if (!result.provider_id && !createdOrgsRef.current.has(result.organization)) {
+        createdOrgsRef.current.add(result.organization)
+        setCreatingProvider(true)
+        createProvider.mutate(
+          { name: result.organization, type: "hosting" },
+          {
+            onSuccess: (response) => {
+              const newProvider = response.data
+              if (newProvider?.id && !userModifiedProvider.current) {
+                setValue("provider_id", newProvider.id, { shouldValidate: true })
+                setExtraProviders((prev) => [...prev, newProvider as Provider])
+                queryClient.invalidateQueries({ queryKey: ["providers"] })
+              }
+              setCreatingProvider(false)
+            },
+            onError: () => {
+              setCreatingProvider(false)
+            },
+          }
+        )
       }
     }
 
@@ -230,9 +257,12 @@ export function ServerCreateDrawer({
       setDetectedCity(null)
       setDetectedCountry(null)
       setDetectingProvider(false)
+      setCreatingProvider(false)
       userModifiedProvider.current = false
       userModifiedRegion.current = false
       userModifiedLabel.current = false
+      createdOrgsRef.current = new Set()
+      setExtraProviders([])
     }
   }, [open, reset])
 
@@ -261,7 +291,8 @@ export function ServerCreateDrawer({
     reset()
   }
 
-  const providerOptions = providers.map((p) => ({ value: p.id, label: p.name }))
+  const allProviders = [...providers, ...extraProviders]
+  const providerOptions = allProviders.map((p) => ({ value: p.id, label: p.name }))
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
@@ -342,7 +373,13 @@ export function ServerCreateDrawer({
                 Detecting provider from IP...
               </div>
             )}
-            {!detectingProvider && detectedOrg && (
+            {creatingProvider && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="size-3 animate-spin" />
+                Creating provider &quot;{detectedOrg}&quot;...
+              </div>
+            )}
+            {!detectingProvider && !creatingProvider && detectedOrg && (
               <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-500">
                 <Check className="size-3.5" />
                 Detected: {detectedOrg}
