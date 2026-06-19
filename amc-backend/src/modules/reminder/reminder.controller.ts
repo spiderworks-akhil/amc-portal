@@ -56,6 +56,16 @@ export class ReminderController {
     return this.reminderService.update(id, dto);
   }
 
+  @Patch(':id/acknowledge')
+  acknowledge(@Param('id', ParseUUIDPipe) id: string) {
+    return this.reminderService.acknowledge(id);
+  }
+
+  @Patch(':id/escalate')
+  escalate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.reminderService.escalate(id);
+  }
+
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.reminderService.remove(id);

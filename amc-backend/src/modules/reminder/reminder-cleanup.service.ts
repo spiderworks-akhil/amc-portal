@@ -52,14 +52,21 @@ export class ReminderCleanupService {
   }
 
   private async escalateOrphanedReminders(): Promise<number> {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 7);
+    const orphanCutoff = new Date();
+    orphanCutoff.setDate(orphanCutoff.getDate() - 7);
+
+    const sentCutoff = new Date();
+    sentCutoff.setDate(sentCutoff.getDate() - 3);
 
     const result = await this.db
       .updateTable('reminders')
       .set({ status: 'escalated' })
-      .where('status', '=', 'pending')
-      .where('trigger_date', '<', cutoff)
+      .where((eb) =>
+        eb.or([
+          eb('status', '=', 'pending').and('trigger_date', '<', orphanCutoff),
+          eb('status', '=', 'sent').and('sent_at', '<', sentCutoff),
+        ]),
+      )
       .executeTakeFirst();
 
     return Number(result.numUpdatedRows ?? 0);

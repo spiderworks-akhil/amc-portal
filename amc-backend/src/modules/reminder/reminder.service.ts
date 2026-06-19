@@ -130,6 +130,35 @@ export class ReminderService {
     return reminder;
   }
 
+  async acknowledge(id: string) {
+    await this.findOne(id);
+
+    const reminder = await this.db
+      .updateTable('reminders')
+      .set({
+        status: 'acknowledged',
+        acknowledged_at: new Date(),
+      })
+      .where('id', '=', id)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return reminder;
+  }
+
+  async escalate(id: string) {
+    await this.findOne(id);
+
+    const reminder = await this.db
+      .updateTable('reminders')
+      .set({ status: 'escalated' })
+      .where('id', '=', id)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return reminder;
+  }
+
   async remove(id: string) {
     await this.findOne(id);
 
