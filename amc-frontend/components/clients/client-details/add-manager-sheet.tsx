@@ -35,7 +35,7 @@ export function AddManagerSheet({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-full sm:max-w-sm overflow-hidden">
+      <DrawerContent className="w-full sm:max-w-[394px] overflow-hidden">
         <DrawerHeader>
           <DrawerTitle>Add Account Manager</DrawerTitle>
           <DrawerDescription>Search and assign a user as an account manager.</DrawerDescription>

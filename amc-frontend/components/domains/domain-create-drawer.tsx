@@ -170,7 +170,7 @@ export function DomainCreateDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-full sm:max-w-md overflow-y-auto max-h-screen">
+      <DrawerContent className="w-full sm:max-w-[458px] overflow-y-auto max-h-screen">
         <DrawerHeader>
           <DrawerTitle>Create Domain</DrawerTitle>
           <DrawerDescription>Add a new domain and link it to an asset.</DrawerDescription>

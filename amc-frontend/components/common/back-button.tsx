@@ -42,7 +42,8 @@ export function BackButton({
       onClick={handleClick}
     >
       <ArrowLeft className={cn(size === "sm" ? "size-4 mr-1" : "size-4 mr-2")} />
-      {label}
+      {/* {label} */}
+      Go Back
     </Button>
   )
 }

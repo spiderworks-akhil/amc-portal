@@ -231,7 +231,7 @@ export default function ClientDetailPage() {
             The client you&apos;re looking for doesn&apos;t exist or may have
             been removed.
           </p>
-          <BackButton variant="outline" label="Back to Clients" fallbackHref="/clients" />
+          <BackButton variant="outline" label="Back" fallbackHref="/clients" />
         </div>
       </div>
     );
@@ -243,7 +243,7 @@ export default function ClientDetailPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-8">
-        <BackButton label="Back to Clients" fallbackHref="/clients" />
+        <BackButton label="Back" fallbackHref="/clients" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold tracking-tight truncate">

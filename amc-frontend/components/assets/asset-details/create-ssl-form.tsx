@@ -254,7 +254,7 @@ export function CreateSslForm({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-full sm:max-w-md overflow-y-auto max-h-screen">
+      <DrawerContent className="w-full sm:max-w-[458px] overflow-y-auto max-h-screen">
         <DrawerHeader>
           <DrawerTitle>Create SSL Certificate</DrawerTitle>
           <DrawerDescription>Add a new SSL certificate and link it to a domain.</DrawerDescription>

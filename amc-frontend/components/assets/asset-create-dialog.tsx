@@ -159,7 +159,7 @@ export function AssetCreateDialog({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-full max-h-screen overflow-y-auto sm:max-w-md">
+      <DrawerContent className="w-full max-h-screen overflow-y-auto sm:max-w-[458px]">
         <DrawerHeader>
           <DrawerTitle>Create Asset</DrawerTitle>
           <DrawerDescription>

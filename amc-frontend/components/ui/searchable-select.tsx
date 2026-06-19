@@ -39,6 +39,7 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
+  const listRef = React.useRef<HTMLDivElement>(null)
   const selectedOption = options.find((option) => option.value === value)
 
   // Auto-focus search input when popover opens
@@ -119,46 +120,53 @@ export function SearchableSelect({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] border border-input p-0 shadow-md"
+        className="w-[var(--radix-popover-trigger-width)] border border-input p-0 shadow-md overflow-hidden"
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="overflow-hidden rounded-none border-0 bg-transparent p-0">
-          <div className="border-b border-input px-3 py-2">
-            <div className="flex items-center gap-2">
-              <CheckIcon className="size-4 shrink-0 opacity-50" />
-              <input
-                placeholder={searchPlaceholder}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        <div className="border-b border-input px-3 py-2">
+          <div className="flex items-center gap-2">
+            <CheckIcon className="size-4 shrink-0 opacity-50" />
+            <input
+              placeholder={searchPlaceholder}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+        <div
+          ref={listRef}
+          className="max-h-64 overflow-y-auto overflow-x-hidden p-1"
+          onWheel={(e) => {
+            const el = listRef.current
+            if (!el) return
+            e.preventDefault()
+            el.scrollTop += e.deltaY
+          }}
+        >
+          {filteredOptions.length === 0 ? (
+            <div className="py-3 text-center text-sm text-muted-foreground">{emptyText}</div>
+          ) : (
+            filteredOptions.map((option) => (
+              <div
+                key={option.value}
+                onClick={() => handleSelect(option.value)}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                  value === option.value && "bg-accent text-accent-foreground"
+                )}
+              >
+              <CheckIcon
+                className={cn(
+                  "size-4 shrink-0",
+                  value === option.value ? "opacity-100" : "opacity-0"
+                )}
               />
+              <span className="truncate">{option.label}</span>
             </div>
-          </div>
-          <div className="max-h-64 overflow-y-auto p-1">
-            {filteredOptions.length === 0 ? (
-              <div className="py-3 text-center text-sm text-muted-foreground">{emptyText}</div>
-            ) : (
-              filteredOptions.map((option) => (
-                <div
-                  key={option.value}
-                  onClick={() => handleSelect(option.value)}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
-                    value === option.value && "bg-accent text-accent-foreground"
-                  )}
-                >
-                <CheckIcon
-                  className={cn(
-                    "size-4 shrink-0",
-                    value === option.value ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <span className="truncate">{option.label}</span>
-              </div>
-              ))
-            )}
-          </div>
+            ))
+          )}
         </div>
       </PopoverContent>
     </Popover>

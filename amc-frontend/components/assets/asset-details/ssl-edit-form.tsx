@@ -114,7 +114,7 @@ export function SslEditForm({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-full sm:max-w-md overflow-y-auto max-h-screen">
+      <DrawerContent className="w-full sm:max-w-[458px] overflow-y-auto max-h-screen">
         <DrawerHeader>
           <DrawerTitle>Edit SSL Certificate</DrawerTitle>
           <DrawerDescription>Update this certificate&apos;s information.</DrawerDescription>

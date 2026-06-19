@@ -70,7 +70,7 @@ export function ClientEditForm({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-full sm:max-w-md">
+      <DrawerContent className="w-full sm:max-w-[458px]">
         <DrawerHeader>
           <DrawerTitle>Edit Client</DrawerTitle>
           <DrawerDescription>Update this client&apos;s information.</DrawerDescription>

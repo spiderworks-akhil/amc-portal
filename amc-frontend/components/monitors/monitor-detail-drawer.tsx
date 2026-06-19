@@ -47,7 +47,7 @@ export function MonitorDetailDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right" >
-      <DrawerContent className="w-full max-h-screen overflow-y-auto overflow-x-hidden sm:max-w-lg">
+      <DrawerContent className="w-full max-h-screen overflow-y-auto overflow-x-hidden sm:max-w-[522px]">
         <DrawerHeader>
           <div className="flex items-center justify-between">
             <div>

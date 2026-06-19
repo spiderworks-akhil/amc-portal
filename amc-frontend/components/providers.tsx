@@ -7,7 +7,19 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { SessionRefresher } from "@/components/common/session-refresher"
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient())
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            refetchOnWindowFocus: true,
+            refetchOnReconnect: true,
+            retry: 1,
+          },
+        },
+      })
+  )
 
   return (
     <QueryClientProvider client={queryClient}>

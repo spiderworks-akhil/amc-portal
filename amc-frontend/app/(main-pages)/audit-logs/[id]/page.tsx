@@ -164,7 +164,7 @@ export default function AuditLogDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
-      <BackButton label="Back to Audit Logs" fallbackHref="/audit-logs" />
+      <BackButton label="Back" fallbackHref="/audit-logs" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
         <div>

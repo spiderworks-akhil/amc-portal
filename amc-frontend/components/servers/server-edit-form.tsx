@@ -137,7 +137,7 @@ export function ServerEditForm({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-full sm:max-w-md overflow-y-auto max-h-screen">
+      <DrawerContent className="w-full sm:max-w-[458px] overflow-y-auto max-h-screen">
         <DrawerHeader>
           <DrawerTitle>Edit Server</DrawerTitle>
           <DrawerDescription>Update this server&apos;s information.</DrawerDescription>
