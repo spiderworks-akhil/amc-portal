@@ -311,6 +311,7 @@ export class DashboardService {
         'monitors.target as monitor_target',
         'monitors.current_status as monitor_status',
         'assets.name as asset_name',
+        'assets.id as asset_id',
       ])
       .where('incidents.resolved_at', 'is', null)
       .orderBy('incidents.started_at', 'desc')
@@ -343,6 +344,7 @@ export class DashboardService {
           'domains.expiry_date',
           'domains.auto_renew',
           'assets.name as asset_name',
+          'assets.id as asset_id',
           'clients.name as client_name',
           sql`'domain'`.as('item_type'),
           sql`null`.as('extra_info'),
@@ -364,6 +366,7 @@ export class DashboardService {
           'ssl_certificates.valid_to',
           sql`null::boolean`.as('auto_renew'),
           'assets.name as asset_name',
+          'assets.id as asset_id',
           sql`null`.as('client_name'),
           sql`'ssl'`.as('item_type'),
           sql`ssl_certificates.issuer`.as('extra_info'),

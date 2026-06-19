@@ -412,14 +412,88 @@ export class ServerService {
     return undefined;
   }
 
+  /** Convert country code to full country name */
+  private countryCodeToName(code: string): string | undefined {
+    const map: Record<string, string> = {
+      US: 'United States',
+      CA: 'Canada',
+      GB: 'United Kingdom',
+      DE: 'Germany',
+      FR: 'France',
+      NL: 'Netherlands',
+      AU: 'Australia',
+      JP: 'Japan',
+      SG: 'Singapore',
+      IN: 'India',
+      BR: 'Brazil',
+      RU: 'Russia',
+      CN: 'China',
+      HK: 'Hong Kong',
+      KR: 'South Korea',
+      TW: 'Taiwan',
+      SE: 'Sweden',
+      FI: 'Finland',
+      NO: 'Norway',
+      DK: 'Denmark',
+      IE: 'Ireland',
+      IT: 'Italy',
+      ES: 'Spain',
+      CH: 'Switzerland',
+      AT: 'Austria',
+      BE: 'Belgium',
+      PL: 'Poland',
+      CZ: 'Czech Republic',
+      ZA: 'South Africa',
+      AE: 'United Arab Emirates',
+      IL: 'Israel',
+      NZ: 'New Zealand',
+      MX: 'Mexico',
+      AR: 'Argentina',
+      CO: 'Colombia',
+      CL: 'Chile',
+      PT: 'Portugal',
+      GR: 'Greece',
+      HU: 'Hungary',
+      RO: 'Romania',
+      UA: 'Ukraine',
+      TR: 'Turkey',
+      MY: 'Malaysia',
+      ID: 'Indonesia',
+      PH: 'Philippines',
+      TH: 'Thailand',
+      VN: 'Vietnam',
+      EG: 'Egypt',
+      NG: 'Nigeria',
+      KE: 'Kenya',
+    };
+    return map[code.toUpperCase()] ?? undefined;
+  }
+
   /** Extract location info (region, city, country) from IP RDAP response */
   private extractLocationFromRdap(result: unknown): {
     region?: string;
     city?: string;
     country?: string;
   } {
+    // 1. Check top-level country field (present in most RIR responses)
+    const topLevelResult = result as { country?: string } | null;
+    let topLevelCountry: string | undefined;
+    if (topLevelResult?.country) {
+      const code = topLevelResult.country.trim();
+      topLevelCountry = this.countryCodeToName(code) || code;
+    }
+
+    // 2. Check vCard adr fields for detailed location
     const entities = (result as { entities?: Array<{ vcardArray?: [string, Array<[string, unknown, string, string | string[]]>] }> }).entities;
-    if (!entities) return {};
+    if (!entities) {
+      // Fall back to just the top-level country
+      if (topLevelCountry) return { country: topLevelCountry };
+      return {};
+    }
+
+    let vcardCountry: string | undefined;
+    let vcardRegion: string | undefined;
+    let vcardCity: string | undefined;
 
     for (const entity of entities) {
       const vcard = entity.vcardArray?.[1];
@@ -428,15 +502,22 @@ export class ServerService {
         // adr field: ["adr", params, "text", [pobox, ext, street, locality, region, code, country]]
         if (field[0] === 'adr' && Array.isArray(field[3])) {
           const adrParts = field[3] as string[];
-          const city = adrParts[3]?.trim() || undefined;
-          const region = adrParts[4]?.trim() || undefined;
-          const country = adrParts[6]?.trim() || undefined;
-          if (city || region || country) {
-            return { region, city, country };
+          vcardCity = vcardCity || adrParts[3]?.trim() || undefined;
+          vcardRegion = vcardRegion || adrParts[4]?.trim() || undefined;
+          const adrCountry = adrParts[6]?.trim();
+          if (adrCountry) {
+            vcardCountry = this.countryCodeToName(adrCountry) || adrCountry;
           }
         }
       }
     }
+
+    // Prefer vCard data over top-level country (more specific), but use top-level as fallback
+    const country = vcardCountry || topLevelCountry;
+    if (vcardCity || vcardRegion || country) {
+      return { region: vcardRegion, city: vcardCity, country };
+    }
+
     return {};
   }
 

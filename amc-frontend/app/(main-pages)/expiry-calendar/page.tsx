@@ -7,6 +7,7 @@ import { useExpiryCalendar } from "@/hooks/use-dashboard"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import {
   Globe,
   Shield,
@@ -217,7 +218,17 @@ function CalendarItemCard({ item, index }: { item: ExpiryCalendarItem; index: nu
       </p>
 
       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-        {item.asset_name && <span>{item.asset_name}</span>}
+        {item.asset_id && item.asset_name ? (
+          <Link
+            href={`/assets/${item.asset_id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+          >
+            {item.asset_name}
+          </Link>
+        ) : item.asset_name ? (
+          <span>{item.asset_name}</span>
+        ) : null}
 
         {item.client_name && (
           <>
@@ -561,9 +572,17 @@ function CalendarGridView({ items }: { items: ExpiryCalendarItem[] }) {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold truncate">{item.fqdn}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {item.asset_name && (
+                        {item.asset_id && item.asset_name ? (
+                          <Link
+                            href={`/assets/${item.asset_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] text-muted-foreground/70 truncate hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                          >
+                            {item.asset_name}
+                          </Link>
+                        ) : item.asset_name ? (
                           <span className="text-[10px] text-muted-foreground/70 truncate">{item.asset_name}</span>
-                        )}
+                        ) : null}
                         {item.extra_info && (
                           <>
                             <span className="text-[10px] text-muted-foreground/30">·</span>
@@ -677,7 +696,7 @@ export default function ExpiryCalendarPage() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <CalendarDays className="size-7 text-primary" />
+              {/* <CalendarDays className="size-7 text-primary" /> */}
               Expiry Calendar
             </h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-md">

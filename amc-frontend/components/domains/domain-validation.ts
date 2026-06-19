@@ -96,31 +96,11 @@ function domainRefinement(
           path: ["expiry_date"],
         })
       }
-      const tenYearsMs = 10 * 365 * 24 * 60 * 60 * 1000
-      if (expiry.getTime() - registered.getTime() > tenYearsMs) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Domain validity cannot exceed 10 years",
-          path: ["expiry_date"],
-        })
-      }
+
     }
   }
 
-  if (expiry_date) {
-    const expiry = new Date(expiry_date)
-    if (!isNaN(expiry.getTime())) {
-      const tenYearsFromNow = new Date()
-      tenYearsFromNow.setFullYear(tenYearsFromNow.getFullYear() + 10)
-      if (expiry > tenYearsFromNow) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Expiry date cannot be more than 10 years from now",
-          path: ["expiry_date"],
-        })
-      }
-    }
-  }
+
 }
 
 /** Base object fields shared by all create-domain schemas (no asset_id) */

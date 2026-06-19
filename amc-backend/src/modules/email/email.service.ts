@@ -15,8 +15,8 @@ export interface SendEmailResult {
 }
 
 @Injectable()
-export class ReminderEmailService {
-  private readonly logger = new Logger(ReminderEmailService.name);
+export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
 
   constructor(private readonly mailerService: MailerService) {}
 

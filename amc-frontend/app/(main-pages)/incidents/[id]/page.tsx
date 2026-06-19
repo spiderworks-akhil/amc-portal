@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BackButton } from "@/components/common/back-button"
+import Link from "next/link"
 import {
   AlertTriangle,
   AlertCircle,
@@ -150,10 +151,15 @@ export default function IncidentDetailPage() {
                 <Target className="size-3.5 shrink-0" />
                 {incident.monitor_target}
               </span>
-              {incident.asset_name && (
+              {incident.asset_id && incident.asset_name && (
                 <>
                   <span className="text-muted-foreground/40">|</span>
-                  <span>{incident.asset_name}</span>
+                  <Link
+                    href={`/assets/${incident.asset_id}`}
+                    className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                  >
+                    {incident.asset_name}
+                  </Link>
                 </>
               )}
             </div>

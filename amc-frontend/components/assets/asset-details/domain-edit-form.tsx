@@ -150,6 +150,9 @@ export function DomainEditForm({
                 }
                 placeholder="Registered date"
               />
+              {errors.registered_date?.message && (
+                <p className="text-xs text-destructive">{errors.registered_date.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Expiry Date</Label>
@@ -160,6 +163,9 @@ export function DomainEditForm({
                 }
                 placeholder="Expiry date"
               />
+              {errors.expiry_date?.message && (
+                <p className="text-xs text-destructive">{errors.expiry_date.message}</p>
+              )}
             </div>
           </div>
 
@@ -195,6 +201,9 @@ export function DomainEditForm({
             </div>
             <Input id="domain-ns" {...register("nameservers")} placeholder="e.g., ns1.example.com, ns2.example.com" />
             <p className="text-xs text-muted-foreground">Separate multiple nameservers with commas.</p>
+            {errors.nameservers?.message && (
+              <p className="text-xs text-destructive">{errors.nameservers.message}</p>
+            )}
           </div>
 
           {/* Notes */}

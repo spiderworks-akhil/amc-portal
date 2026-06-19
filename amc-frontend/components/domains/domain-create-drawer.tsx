@@ -71,7 +71,8 @@ export function DomainCreateDrawer({
   const [dnsError, setDnsError] = useState<string | null>(null)
   const [rdapLoading, setRdapLoading] = useState(false)
   const [enriched, setEnriched] = useState(false)
-  const userModifiedNs = useRef(false)
+  const [userTouchedNs, setUserTouchedNs] = useState(false)
+  const userTouchedNsRef = useRef(false)
   const userModifiedRegisteredDate = useRef(false)
   const userModifiedExpiryDate = useRef(false)
 
@@ -96,19 +97,21 @@ export function DomainCreateDrawer({
       setDnsError(null)
       setRdapLoading(false)
 
-      // Nameservers
-      if (!userModifiedNs.current && details.nameservers?.length) {
-        setValue("nameservers", details.nameservers.join(", "), { shouldValidate: true })
+      // Nameservers — only auto-populate if user hasn't manually focused/touched the field
+      // Uses ref for stale-closure safety inside the async callback
+      // No shouldValidate — these are optional fields, no need to trigger validation on pre-fill
+      if (!userTouchedNsRef.current && details.nameservers?.length) {
+        setValue("nameservers", details.nameservers.join(", "))
       }
 
       // Registered date
       if (!userModifiedRegisteredDate.current && details.registered_date) {
-        setValue("registered_date", details.registered_date, { shouldValidate: true })
+        setValue("registered_date", details.registered_date)
       }
 
       // Expiry date
       if (!userModifiedExpiryDate.current && details.expiry_date) {
-        setValue("expiry_date", details.expiry_date, { shouldValidate: true })
+        setValue("expiry_date", details.expiry_date)
       }
 
       setEnriched(true)
@@ -138,7 +141,8 @@ export function DomainCreateDrawer({
       setDnsError(null)
       setRdapLoading(false)
       setEnriched(false)
-      userModifiedNs.current = false
+      setUserTouchedNs(false)
+      userTouchedNsRef.current = false
       userModifiedRegisteredDate.current = false
       userModifiedExpiryDate.current = false
     }
@@ -256,6 +260,9 @@ export function DomainCreateDrawer({
                 }}
                 placeholder="Registered date"
               />
+              {errors.registered_date?.message && (
+                <p className="text-xs text-destructive">{errors.registered_date.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Expiry Date</Label>
@@ -267,6 +274,9 @@ export function DomainCreateDrawer({
                 }}
                 placeholder="Expiry date"
               />
+              {errors.expiry_date?.message && (
+                <p className="text-xs text-destructive">{errors.expiry_date.message}</p>
+              )}
             </div>
           </div>
 
@@ -309,9 +319,9 @@ export function DomainCreateDrawer({
                 id="domain-ns"
                 {...register("nameservers")}
                 placeholder="e.g., ns1.example.com, ns2.example.com"
-                onChange={(e) => {
-                  userModifiedNs.current = true
-                  register("nameservers").onChange(e)
+                onFocus={() => {
+                  setUserTouchedNs(true)
+                  userTouchedNsRef.current = true
                 }}
                 className={rdapLoading ? "pr-10" : ""}
               />
@@ -334,6 +344,9 @@ export function DomainCreateDrawer({
             ) : (
               <p className="text-xs text-muted-foreground">Separate multiple nameservers with commas.</p>
             )}
+            {errors.nameservers?.message && (
+              <p className="text-xs text-destructive">{errors.nameservers.message}</p>
+            )}
           </div>
 
           {/* Notes */}
@@ -352,7 +365,7 @@ export function DomainCreateDrawer({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending || dnsStatus === "verifying"}>
               {isPending && <Loader2 className="size-4 animate-spin" />}
               {isPending ? "Creating..." : "Create Domain"}
             </Button>

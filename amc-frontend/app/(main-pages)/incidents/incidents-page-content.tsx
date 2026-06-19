@@ -60,6 +60,7 @@ import {
   Globe,
   Shield,
   Monitor,
+  LayoutDashboard,
 } from "lucide-react";
 import type { IncidentListItem, IncidentSeverity } from "@/types/api";
 
@@ -208,6 +209,7 @@ export function IncidentsPageContent() {
               <TableRow className="bg-muted/30">
                 <TableHead>Severity</TableHead>
                 <TableHead>Monitor</TableHead>
+                <TableHead>Asset</TableHead>
                 <TableHead>Cause</TableHead>
                 <TableHead>Started</TableHead>
                 <TableHead>Duration</TableHead>
@@ -219,7 +221,7 @@ export function IncidentsPageContent() {
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 8 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -229,7 +231,7 @@ export function IncidentsPageContent() {
               ) : data?.data.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="text-center py-12 text-muted-foreground"
                   >
                     No incidents found
@@ -293,6 +295,20 @@ export function IncidentsPageContent() {
                               </span>
                             </div>
                           </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {incident.asset_id && incident.asset_name ? (
+                          <Link
+                            href={`/assets/${incident.asset_id}`}
+                            className="flex items-center gap-2 text-sm hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <LayoutDashboard className="size-3.5 shrink-0 text-muted-foreground" />
+                            <span className="truncate max-w-[130px]">{incident.asset_name}</span>
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell>

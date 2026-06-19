@@ -10,6 +10,7 @@ export class QueueService {
     @InjectQueue('monitor-checks') private readonly monitorQueue: Queue,
     @InjectQueue('domain-refresh') private readonly domainRefreshQueue: Queue,
     @InjectQueue('ssl-refresh') private readonly sslRefreshQueue: Queue,
+    @InjectQueue('incident-notifications') private readonly incidentNotificationQueue: Queue,
   ) {}
 
   // ── Monitor checks ──
@@ -111,6 +112,29 @@ export class QueueService {
       );
     } catch (err) {
       this.logger.error(`Failed to trigger immediate domain refresh ${domainId}: ${err}`);
+    }
+  }
+
+  // ── Incident notifications ──
+
+  async addIncidentNotification(incidentId: string) {
+    try {
+      await this.incidentNotificationQueue.add(
+        'incident-notification',
+        { incidentId },
+        {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
+      );
+      this.logger.log(`Enqueued incident notification for ${incidentId}`);
+    } catch (err) {
+      this.logger.error(`Failed to enqueue incident notification ${incidentId}: ${err}`);
     }
   }
 

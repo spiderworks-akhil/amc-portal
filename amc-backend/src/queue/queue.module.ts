@@ -25,6 +25,7 @@ import { DatabaseModule } from '../db/database.module';
     BullModule.registerQueue({ name: 'monitor-checks' }),
     BullModule.registerQueue({ name: 'domain-refresh' }),
     BullModule.registerQueue({ name: 'ssl-refresh' }),
+    BullModule.registerQueue({ name: 'incident-notifications' }),
   ],
   providers: [QueueService, CronBootstrapService],
   exports: [QueueService, BullModule],

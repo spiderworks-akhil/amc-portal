@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   ClipboardList,
   CalendarDays,
+  Bell,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -60,6 +61,7 @@ const navItems = [
       { title: "Incidents", icon: AlertTriangle, href: "/incidents" },
       { title: "Audit Logs", icon: ClipboardList, href: "/audit-logs" },
       { title: "Expiry Calendar", icon: CalendarDays, href: "/expiry-calendar" },
+      { title: "Notifications", icon: Bell, href: "/reminders" },
     ],
   },
 ]

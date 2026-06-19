@@ -4,7 +4,7 @@ import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
 import { ReminderRulesService } from './reminder-rules/reminder-rules.service';
-import { ReminderEmailService } from './reminder-email.service';
+import { EmailService } from '../email/email.service';
 
 interface ExpiringEntity {
   id: string;
@@ -20,10 +20,10 @@ export class ReminderDispatcherService {
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly rulesService: ReminderRulesService,
-    private readonly emailService: ReminderEmailService,
+    private readonly emailService: EmailService,
   ) {}
 
-  @Cron('0 */6 * * *')
+ @Cron('* * * * *')// Every 6 hours
   async processReminders() {
     this.logger.log('Reminder dispatcher: starting cycle');
 
@@ -49,7 +49,7 @@ export class ReminderDispatcherService {
         await this.rulesService.findActiveByEventType(eventType);
 
       for (const rule of rules) {
-        const triggerDays = JSON.parse(rule.trigger_days as string) as number[];
+        const triggerDays = rule.trigger_days as number[];
 
         for (const days of triggerDays) {
           const targetDate = new Date();
@@ -77,7 +77,7 @@ export class ReminderDispatcherService {
             if (existing) continue;
 
             const channel =
-              (JSON.parse(rule.channels as string) as string[])[0] ?? 'email';
+              (rule.channels as string[])[0] ?? 'email';
 
             await this.db
               .insertInto('reminders')
@@ -363,6 +363,7 @@ export class ReminderDispatcherService {
 
     if (!clientId) return [];
 
+    // Get client contacts with notification enabled
     const contacts = await this.db
       .selectFrom('client_contacts')
       .select(['email', 'should_send_notification'])
@@ -370,8 +371,26 @@ export class ReminderDispatcherService {
       .where('email', 'is not', null)
       .execute();
 
-    return contacts
+    const contactEmails = contacts
       .filter((c) => c.should_send_notification && c.email)
       .map((c) => c.email!);
+
+    // Get account managers for this client
+    const managers = await this.db
+      .selectFrom('client_account_managers')
+      .innerJoin('users', 'users.id', 'client_account_managers.manager_id')
+      .select('users.email')
+      .where('client_account_managers.client_id', '=', clientId)
+      .where('client_account_managers.deleted_at', 'is', null)
+      .where('users.email', 'is not', null)
+      .where('users.is_active', '=', true)
+      .execute();
+
+    const managerEmails = managers
+      .filter((m) => m.email)
+      .map((m) => m.email!);
+
+    // Combine and deduplicate
+    return [...new Set([...contactEmails, ...managerEmails])];
   }
 }

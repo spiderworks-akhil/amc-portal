@@ -434,7 +434,7 @@ export class MonitorService {
       severity = 'minor';
     }
 
-    await this.db
+    const incident = await this.db
       .insertInto('incidents')
       .values({
         monitor_id: monitorId,
@@ -442,11 +442,15 @@ export class MonitorService {
         severity,
         notes: `Auto-created after ${CONSECUTIVE_FAILURES_TO_INCIDENT} consecutive failed checks`,
       })
-      .execute();
+      .returningAll()
+      .executeTakeFirstOrThrow();
 
     this.logger.log(
       `Incident auto-created for monitor ${monitorId} after ${CONSECUTIVE_FAILURES_TO_INCIDENT} consecutive failures`,
     );
+
+    // Enqueue immediate notification
+    this.queueService.addIncidentNotification(incident.id);
   }
 
   /**

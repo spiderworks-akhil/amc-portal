@@ -294,47 +294,67 @@ export class SslService {
 
     // Determine hostname: use common_name if set, otherwise fall back to domain FQDN
     let hostname = certRec.common_name;
+    let fallbackHostname: string | undefined;
     if (!hostname) {
       hostname = await this.getDomainFqdn(certRec.domain_id);
+    } else {
+      fallbackHostname = (await this.getDomainFqdn(certRec.domain_id).catch(() => null)) ?? undefined;
+      // Strip wildcard prefix for TLS connection (can't resolve *.example.com)
+      if (hostname.startsWith('*.')) {
+        hostname = hostname.slice(2);
+      }
     }
 
     // Connect over TLS and read the live certificate
     if (hostname) {
-      try {
-        const liveData = await this.lookupSslCertDetails(hostname);
+      const attemptLookup = async (target: string): Promise<boolean> => {
+        try {
+          const liveData = await this.lookupSslCertDetails(target);
 
-        // Build update with only non-null live data
-        const updateData: Record<string, unknown> = {
-          last_checked_at: new Date(),
-          updated_at: new Date(),
-        };
+          const updateData: Record<string, unknown> = {
+            last_checked_at: new Date(),
+            updated_at: new Date(),
+          };
 
-        if (liveData.issuer !== null) updateData.issuer = liveData.issuer;
-        if (liveData.common_name !== null) updateData.common_name = liveData.common_name;
-        if (liveData.sans.length > 0) updateData.sans = JSON.stringify(liveData.sans);
-        if (liveData.valid_from !== null) updateData.valid_from = new Date(liveData.valid_from);
-        if (liveData.valid_to !== null) updateData.valid_to = new Date(liveData.valid_to);
-        if (liveData.type !== null) updateData.type = liveData.type;
+          if (liveData.issuer !== null) updateData.issuer = liveData.issuer;
+          if (liveData.common_name !== null) updateData.common_name = liveData.common_name;
+          if (liveData.sans.length > 0) updateData.sans = JSON.stringify(liveData.sans);
+          if (liveData.valid_from !== null) updateData.valid_from = new Date(liveData.valid_from);
+          if (liveData.valid_to !== null) updateData.valid_to = new Date(liveData.valid_to);
+          if (liveData.type !== null) updateData.type = liveData.type;
 
-        await this.db
-          .updateTable('ssl_certificates')
-          .set(updateData)
-          .where('id', '=', id)
-          .execute();
+          await this.db
+            .updateTable('ssl_certificates')
+            .set(updateData)
+            .where('id', '=', id)
+            .execute();
 
-        this.logger.log(
-          `SSL check updated certificate ${id} from live TLS data for ${hostname}: ` +
-          `issuer=${liveData.issuer ?? '—'}, ` +
-          `${liveData.sans.length} SANs, ` +
-          `valid_to=${liveData.valid_to ?? '—'}, ` +
-          `type=${liveData.type ?? '—'}`,
-        );
-      } catch (err: unknown) {
+          this.logger.log(
+            `SSL check updated certificate ${id} from live TLS data for ${target}: ` +
+            `issuer=${liveData.issuer ?? '—'}, ` +
+            `${liveData.sans.length} SANs, ` +
+            `valid_to=${liveData.valid_to ?? '—'}, ` +
+            `type=${liveData.type ?? '—'}`,
+          );
+          return true;
+        } catch {
+          return false;
+        }
+      };
+
+      const succeeded = await attemptLookup(hostname);
+
+      if (!succeeded && fallbackHostname && fallbackHostname !== hostname) {
         this.logger.warn(
-          `SSL check TLS lookup failed for certificate ${id} (${hostname}): ` +
-          `${err instanceof Error ? err.message : err}`,
+          `SSL check TLS lookup failed for certificate ${id} (${hostname}), retrying with domain FQDN (${fallbackHostname})`,
         );
-        // Still update last_checked_at to record the attempt
+        await attemptLookup(fallbackHostname);
+      }
+
+      if (!succeeded) {
+        this.logger.warn(
+          `SSL check TLS lookup failed for certificate ${id} (${hostname})`,
+        );
         await this.db
           .updateTable('ssl_certificates')
           .set({ last_checked_at: new Date() })
@@ -449,6 +469,11 @@ export class SslService {
   async lookupSslCertDetails(hostname: string) {
     if (!hostname || hostname.length < 3) {
       throw new BadRequestException('Hostname must be at least 3 characters');
+    }
+
+    // Strip wildcard prefix — can't connect to *.example.com
+    if (hostname.startsWith('*.')) {
+      hostname = hostname.slice(2);
     }
 
     this.logger.log(`Looking up SSL certificate for: ${hostname}`);

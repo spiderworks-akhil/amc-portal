@@ -6,6 +6,7 @@ import { DB } from '../../db/types.generated';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateIncidentDto } from './dto/update-incident.dto';
 import { ListIncidentsDto, IncidentSortBy, SortOrder } from './dto/list-incidents.dto';
+import { QueueService } from '../../queue/queue.service';
 
 @Injectable()
 export class IncidentService {
@@ -13,6 +14,7 @@ export class IncidentService {
 
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
+    private readonly queueService: QueueService,
   ) {}
 
   async create(dto: CreateIncidentDto, createdBy?: string) {
@@ -109,6 +111,7 @@ export class IncidentService {
           'monitors.check_type as monitor_check_type',
           'monitors.current_status as monitor_current_status',
           'assets.name as asset_name',
+          'assets.id as asset_id',
           'domains.fqdn as domain_fqdn',
           'ssl_certificates.common_name as ssl_name',
         ])
@@ -151,6 +154,7 @@ export class IncidentService {
         'monitors.check_type as monitor_check_type',
         'monitors.current_status as monitor_current_status',
         'assets.name as asset_name',
+        'assets.id as asset_id',
         'domains.fqdn as domain_fqdn',
         'ssl_certificates.common_name as ssl_name',
       ])
@@ -268,7 +272,7 @@ export class IncidentService {
 
       if (existing) continue;
 
-      await this.db
+      const incident = await this.db
         .insertInto('incidents')
         .values({
           monitor_id: null,
@@ -279,9 +283,13 @@ export class IncidentService {
           target_type: 'domain',
           target_id: domain.id,
         })
-        .execute();
+        .returningAll()
+        .executeTakeFirstOrThrow();
 
       created++;
+
+      // Enqueue immediate notification
+      this.queueService.addIncidentNotification(incident.id);
     }
 
     this.logger.log(`Expired domain check complete: ${created} incident(s) created`);
@@ -321,7 +329,7 @@ export class IncidentService {
       if (existing) continue;
 
       const hostname = cert.common_name ?? cert.domain_fqdn;
-      await this.db
+      const incident = await this.db
         .insertInto('incidents')
         .values({
           monitor_id: null,
@@ -332,9 +340,13 @@ export class IncidentService {
           target_type: 'ssl',
           target_id: cert.id,
         })
-        .execute();
+        .returningAll()
+        .executeTakeFirstOrThrow();
 
       created++;
+
+      // Enqueue immediate notification
+      this.queueService.addIncidentNotification(incident.id);
     }
 
     this.logger.log(`Expired SSL check complete: ${created} incident(s) created`);

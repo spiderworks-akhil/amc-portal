@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -165,10 +166,15 @@ export function RecentIncidentsList({ summary, isLoading }: RecentIncidentsListP
                         <span>·</span>
                         <Clock className="size-3 shrink-0" />
                         <span className="shrink-0">{timeSince(inc.started_at)}</span>
-                        {inc.asset_name && (
+                        {inc.asset_id && inc.asset_name && (
                           <>
                             <span>·</span>
-                            <span className="truncate max-w-[100px]">{inc.asset_name}</span>
+                            <Link
+                              href={`/assets/${inc.asset_id}`}
+                              className="truncate max-w-[100px] hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                            >
+                              {inc.asset_name}
+                            </Link>
                           </>
                         )}
                       </div>

@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import Link from "next/link"
 import { Loader2, Activity, Play, Clock, Target, Globe, FileText } from "lucide-react"
 import { MonitorCheckHistory } from "./monitor-check-history"
 import type { MonitorCurrentStatus, MonitorCheckType } from "@/types/api"
@@ -133,10 +134,16 @@ export function MonitorDetailDrawer({
             </div>
 
             {/* Asset Info */}
-            {monitor.asset_name && (
+            {monitor.asset_id && monitor.asset_name && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Globe className="size-4" />
-                Asset: {monitor.asset_name}
+                Asset:{' '}
+                <Link
+                  href={`/assets/${monitor.asset_id}`}
+                  className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                >
+                  {monitor.asset_name}
+                </Link>
               </div>
             )}
 

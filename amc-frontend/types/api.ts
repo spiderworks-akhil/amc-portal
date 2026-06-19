@@ -563,6 +563,7 @@ export interface IncidentListItem {
   monitor_check_type: string | null
   monitor_current_status: MonitorCurrentStatus | null
   asset_name: string | null
+  asset_id: string | null
   target_type: string | null
   target_id: string | null
   domain_fqdn: string | null
@@ -604,4 +605,88 @@ export interface ListAuditLogsParams {
   actor_id?: string
   date_from?: string
   date_to?: string
+}
+
+// ── Reminders ──
+
+export type ReminderChannel = "email" | "whatsapp" | "sms" | "slack"
+
+export type ReminderStatus = "pending" | "sent" | "acknowledged" | "escalated"
+
+export type EventType = "domain_expiry" | "ssl_expiry" | "contract_expiry" | "server_expiry" | "incident"
+
+export type TargetType = "domain" | "ssl" | "contract" | "server"
+
+export interface ReminderListItem {
+  id: string
+  rule_id: string | null
+  title: string
+  message: string | null
+  target_type: string
+  target_id: string
+  trigger_date: string
+  channel: ReminderChannel
+  status: ReminderStatus
+  sent_at: string | null
+  acknowledged_at: string | null
+  created_at: string
+}
+
+export interface CreateReminderPayload {
+  title: string
+  message?: string
+  target_type: string
+  target_id: string
+  trigger_date: string
+  channel: string
+  status?: string
+  rule_id?: string
+}
+
+export interface UpdateReminderPayload {
+  title?: string
+  message?: string
+  target_type?: string
+  target_id?: string
+  trigger_date?: string
+  channel?: string
+  status?: string
+  rule_id?: string
+}
+
+export interface ListRemindersParams {
+  page?: number
+  limit?: number
+  status?: string
+  target_type?: string
+}
+
+export interface ReminderRuleListItem {
+  id: string
+  name: string
+  event_type: string
+  trigger_days: number[]
+  channels: string[]
+  recipients: Record<string, unknown> | null
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateReminderRulePayload {
+  name: string
+  event_type: string
+  trigger_days: number[]
+  channels: string[]
+  recipients?: Record<string, unknown>
+  enabled?: boolean
+}
+
+export interface UpdateReminderRulePayload {
+  name?: string
+  event_type?: string
+  trigger_days?: number[]
+  channels?: string[]
+  recipients?: Record<string, unknown>
+  enabled?: boolean
 }

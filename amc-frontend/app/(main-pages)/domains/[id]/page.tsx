@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/r-alert-dialog";
 import { DetailRow, EmptyState } from "@/components/common/detail-row";
 import { BackButton } from "@/components/common/back-button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Globe,
   FileText,
@@ -49,8 +50,26 @@ import {
   Copy,
   Check,
   AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
+
+function getRelativeTime(dateStr: string) {
+  const now = Date.now();
+  const date = new Date(dateStr).getTime();
+  const diffMs = now - date;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.floor(days / 365);
+  return `${years}y ago`;
+}
 
 export default function DomainDetailPage() {
   const params = useParams();
@@ -92,7 +111,7 @@ export default function DomainDetailPage() {
     domain.days_to_expiry !== null &&
     domain.days_to_expiry > 0 &&
     domain.days_to_expiry <= 30;
-  const registrars = providers?.data ?? [];
+const registrars = providers?.data ?? [];
 
   const handleEdit = (data: {
     fqdn: string;
@@ -593,8 +612,8 @@ export default function DomainDetailPage() {
         </CardContent>
       </Card>
 
-      {/* WHOIS Snapshots Section */}
-      <Card className="mb-6">
+      {/* WHOIS Snapshots Section — Log view */}
+      <Card className="mb-6 p-3">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <History className="size-4" />
@@ -606,63 +625,113 @@ export default function DomainDetailPage() {
               : `${domain.snapshots.length} snapshot${domain.snapshots.length > 1 ? "s" : ""} — most recent first`}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {!domain.snapshots?.length ? (
-            <EmptyState
-              icon={<History className="size-8" />}
-              title="No checks yet"
-              description="WHOIS snapshots will be recorded when a domain check is triggered."
-            />
-          ) : (
-            <div className="space-y-3">
-              {domain.snapshots.map((snapshot) => (
-                <div
-                  key={snapshot.id}
-                  className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <Clock className="size-4 text-muted-foreground shrink-0" />
-                        <p className="text-sm font-medium">
-                          Checked {formatDate(snapshot.checked_at)}
-                        </p>
-                      </div>
-                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
-                        {snapshot.registrar && (
-                          <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">
-                              Registrar
-                            </span>
-                            <span>{snapshot.registrar}</span>
-                          </div>
-                        )}
-                        {snapshot.expiry_date && (
-                          <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">
-                              Expiry
-                            </span>
-                            <span>{formatDate(snapshot.expiry_date)}</span>
-                          </div>
-                        )}
-                        {snapshot.nameservers &&
-                          snapshot.nameservers.length > 0 && (
-                            <div>
-                              <span className="block text-[10px] uppercase tracking-wider mb-0.5">
-                                Nameservers
-                              </span>
-                              <span>
-                                {snapshot.nameservers.length} server
-                                {snapshot.nameservers.length > 1 ? "s" : ""}
-                              </span>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="px-6 pb-6 pt-2">
+              <EmptyState
+                icon={<History className="size-8" />}
+                title="No checks yet"
+                description="WHOIS snapshots will be recorded when a domain check is triggered."
+              />
             </div>
+          ) : (
+            <ScrollArea className="max-h-[560px]" type="always">
+              <div className="font-mono text-[11px] leading-relaxed">
+                {/* Column header */}
+                <div className="sticky top-0 z-10 flex items-center gap-3 px-5 py-2 bg-muted/80 backdrop-blur-sm border-b border-border/40 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium">
+                  <span className="w-[120px] shrink-0">Timestamp</span>
+                  <span className="w-[80px] shrink-0">Since</span>
+                  <span className="w-[140px] shrink-0">Registrar</span>
+                  <span className="w-[110px] shrink-0">Expiry</span>
+                  <span className="flex-1 min-w-0">Nameservers</span>
+                </div>
+
+                {/* Log entries */}
+                {domain.snapshots.map((snapshot, idx) => {
+                  const prevSnapshot = idx < domain.snapshots.length - 1
+                    ? domain.snapshots[idx + 1]
+                    : null;
+
+                  const registrarChanged = prevSnapshot && prevSnapshot.registrar !== snapshot.registrar;
+                  const expiryChanged = prevSnapshot && prevSnapshot.expiry_date !== snapshot.expiry_date;
+                  const nsChanged = prevSnapshot && JSON.stringify(prevSnapshot.nameservers) !== JSON.stringify(snapshot.nameservers);
+
+                  const timeSince = getRelativeTime(snapshot.checked_at);
+                  const logDate = new Date(snapshot.checked_at);
+                  const timestamp = logDate.toLocaleString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                  }).replace(',', '');
+
+                  return (
+                    <div
+                      key={snapshot.id}
+                      className={`flex items-start gap-3 px-5 py-2.5 border-b border-border/10 transition-colors ${
+                        idx === 0
+                          ? 'bg-primary/[0.03]'
+                          : idx % 2 === 0
+                            ? 'bg-background'
+                            : 'bg-muted/20'
+                      } hover:bg-accent/20`}
+                    >
+                      {/* Timestamp */}
+                      <span className="w-[120px] shrink-0 text-muted-foreground/70 tabular-nums truncate">
+                        {timestamp}
+                      </span>
+
+                      {/* Relative time */}
+                      <span className={`w-[80px] shrink-0 tabular-nums ${idx === 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/60'}`}>
+                        {timeSince}
+                      </span>
+
+                      {/* Registrar */}
+                      <span className="w-[140px] shrink-0 truncate flex items-center gap-1">
+                        <span className={registrarChanged ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground/80'}>
+                          {snapshot.registrar || (
+                            <span className="text-muted-foreground/30 italic">—</span>
+                          )}
+                        </span>
+                        {registrarChanged && (
+                          <span className="inline-flex items-center justify-center size-3.5 rounded bg-amber-500/15 text-[8px] font-bold text-amber-600 dark:text-amber-400 shrink-0" title={`Changed from "${prevSnapshot?.registrar}"`}>
+                            ~
+                          </span>
+                        )}
+                      </span>
+
+                      {/* Expiry */}
+                      <span className={`w-[110px] shrink-0 tabular-nums truncate ${expiryChanged ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground/80'}`}>
+                        {snapshot.expiry_date ? formatDate(snapshot.expiry_date) : (
+                          <span className="text-muted-foreground/30 italic">—</span>
+                        )}
+                      </span>
+
+                      {/* Nameservers */}
+                      <span className="flex-1 min-w-0 truncate text-muted-foreground/70 flex items-center gap-1">
+                        {snapshot.nameservers && snapshot.nameservers.length > 0
+                          ? snapshot.nameservers.join(', ')
+                          : <span className="text-muted-foreground/30 italic">—</span>
+                        }
+                        {nsChanged && (
+                          <span className="inline-flex items-center justify-center size-3.5 rounded bg-amber-500/15 text-[8px] font-bold text-amber-600 dark:text-amber-400 shrink-0" title="Nameservers changed">
+                            ~
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Footer — entry count */}
+                <div className="flex items-center gap-2 px-5 py-2.5 text-[10px] text-muted-foreground/40 border-t border-border/10">
+                  <span className="size-1.5 rounded-full bg-muted-foreground/30" />
+                  {domain.snapshots.length} entr{domain.snapshots.length === 1 ? 'y' : 'ies'} — oldest at bottom
+                </div>
+              </div>
+            </ScrollArea>
           )}
         </CardContent>
       </Card>

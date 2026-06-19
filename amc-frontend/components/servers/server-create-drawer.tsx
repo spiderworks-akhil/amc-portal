@@ -109,6 +109,7 @@ export function ServerCreateDrawer({
   const [detectingProvider, setDetectingProvider] = useState(false)
   const [creatingProvider, setCreatingProvider] = useState(false)
   const [extraProviders, setExtraProviders] = useState<Provider[]>([])
+  const [detectionMessage, setDetectionMessage] = useState<string | null>(null)
   const userModifiedProvider = useRef(false)
   const userModifiedRegion = useRef(false)
   const userModifiedLabel = useRef(false)
@@ -122,6 +123,8 @@ export function ServerCreateDrawer({
   // Shared detection logic used by both IP and panel URL effects
   const handleDetectionResult = useRef<(result: DetectProviderResult) => void>(() => {})
   handleDetectionResult.current = (result: DetectProviderResult) => {
+    setDetectionMessage(null)
+
     if (result.region) setDetectedRegion(result.region)
     if (result.city) setDetectedCity(result.city)
     if (result.country) setDetectedCountry(result.country)
@@ -154,6 +157,8 @@ export function ServerCreateDrawer({
           }
         )
       }
+    } else if (!result.detected && result.message) {
+      setDetectionMessage(result.message)
     }
 
     if (!userModifiedRegion.current) {
@@ -171,6 +176,7 @@ export function ServerCreateDrawer({
       setDetectedRegion(null)
       setDetectedCity(null)
       setDetectedCountry(null)
+      setDetectionMessage(null)
       return
     }
 
@@ -180,6 +186,7 @@ export function ServerCreateDrawer({
       setDetectedRegion(null)
       setDetectedCity(null)
       setDetectedCountry(null)
+      setDetectionMessage(null)
       return
     }
 
@@ -217,7 +224,8 @@ export function ServerCreateDrawer({
     } catch {
       return
     }
-    if (!hostname || hostname.length < 4 || hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+    if (!hostname || hostname.length < 4 || hostname === "localhost") {
+      setDetectionMessage(null)
       return
     }
 
@@ -258,6 +266,7 @@ export function ServerCreateDrawer({
       setDetectedCountry(null)
       setDetectingProvider(false)
       setCreatingProvider(false)
+      setDetectionMessage(null)
       userModifiedProvider.current = false
       userModifiedRegion.current = false
       userModifiedLabel.current = false
@@ -302,49 +311,8 @@ export function ServerCreateDrawer({
           <DrawerDescription>Add a new hosting server to the inventory.</DrawerDescription>
         </DrawerHeader>
         <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">
-          {/* Provider */}
-          <div className="space-y-2">
-            <Label>
-              Provider <span className="text-destructive">*</span>
-            </Label>
-            <Controller
-              name="provider_id"
-              control={control}
-              render={({ field }) => (
-                <SmoothSelect
-                  options={providerOptions}
-                  value={field.value}
-                  onChange={(value) => {
-                    userModifiedProvider.current = true
-                    setDetectedOrg(null)
-                    field.onChange(value)
-                  }}
-                  placeholder="Select a provider..."
-                  className="w-full"
-                />
-              )}
-            />
-            {errors.provider_id?.message && <p className="text-xs text-destructive">{errors.provider_id.message}</p>}
-          </div>
-
-          {/* Label */}
-          <div className="space-y-2">
-            <Label htmlFor="server-label">
-              Label <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="server-label"
-              {...register("label", {
-                onChange: () => { userModifiedLabel.current = true },
-              })}
-              placeholder="e.g., Production Web Server"
-              autoFocus
-            />
-            {errors.label?.message && <p className="text-xs text-destructive">{errors.label.message}</p>}
-          </div>
-
-          {/* IP Addresses */}
-          <div className="space-y-2">
+            {/* IP Addresses */}
+            <div className="space-y-2">
             <div className="flex items-center gap-1.5">
               <Label htmlFor="server-ips">IP Addresses</Label>
               <TooltipProvider>
@@ -387,6 +355,55 @@ export function ServerCreateDrawer({
             )}
           </div>
 
+              <div className="space-y-2">
+            <Label htmlFor="server-panel">Panel URL</Label>
+            <Input id="server-panel" type="url" {...register("panel_url")} placeholder="https://panel.example.com" />
+            {errors.panel_url?.message && <p className="text-xs text-destructive">{errors.panel_url.message}</p>}
+          </div>
+          {/* Provider */}
+          <div className="space-y-2">
+            <Label>
+              Provider <span className="text-destructive">*</span>
+            </Label>
+            <Controller
+              name="provider_id"
+              control={control}
+              render={({ field }) => (
+                <SmoothSelect
+                  options={providerOptions}
+                  value={field.value}
+                  onChange={(value) => {
+                    userModifiedProvider.current = true
+                    setDetectedOrg(null)
+                    field.onChange(value)
+                  }}
+                  placeholder="Select a provider..."
+                  className="w-full"
+                />
+              )}
+            />
+            {errors.provider_id?.message && <p className="text-xs text-destructive">{errors.provider_id.message}</p>}
+          </div>
+
+          {/* Label */}
+          <div className="space-y-2">
+            <Label htmlFor="server-label">
+              Label <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="server-label"
+              {...register("label", {
+                onChange: () => { userModifiedLabel.current = true },
+              })}
+              placeholder="e.g., Production Web Server"
+              autoFocus
+            />
+            {errors.label?.message && <p className="text-xs text-destructive">{errors.label.message}</p>}
+          </div>
+
+        
+        
+
           {/* Region */}
           <div className="space-y-2">
             <Label htmlFor="server-region">Region</Label>
@@ -403,6 +420,9 @@ export function ServerCreateDrawer({
                 Detected: {[detectedCity, detectedRegion, detectedCountry].filter(Boolean).join(", ")}
               </div>
             )}
+            {!detectingProvider && detectionMessage && !detectedOrg && !detectedRegion && (
+              <p className="text-xs text-muted-foreground">{detectionMessage}</p>
+            )}
           </div>
 
           {/* OS */}
@@ -411,12 +431,7 @@ export function ServerCreateDrawer({
             <Input id="server-os" {...register("operating_system")} placeholder="e.g., Ubuntu 22.04" />
           </div>
 
-          {/* Panel URL */}
-          <div className="space-y-2">
-            <Label htmlFor="server-panel">Panel URL</Label>
-            <Input id="server-panel" type="url" {...register("panel_url")} placeholder="https://panel.example.com" />
-            {errors.panel_url?.message && <p className="text-xs text-destructive">{errors.panel_url.message}</p>}
-          </div>
+      
 
           {/* Two-column: Monthly Cost + Currency */}
           <div className="grid grid-cols-2 gap-4">

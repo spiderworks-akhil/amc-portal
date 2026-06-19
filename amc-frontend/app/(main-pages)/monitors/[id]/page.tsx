@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { MonitorCheckHistory } from "@/components/monitors/monitor-check-history"
 import { MonitorEditDrawer } from "@/components/monitors/monitor-edit-drawer"
 import { BackButton } from "@/components/common/back-button"
+import Link from "next/link"
 import {
   Activity,
   Play,
@@ -122,10 +123,15 @@ export default function MonitorDetailPage() {
               <span className="font-mono text-sm truncate">{monitor.target}</span>
               <span className="text-muted-foreground/50 mx-1">·</span>
               <span>{TYPE_LABELS[monitor.check_type]}</span>
-              {monitor.asset_name && (
+              {monitor.asset_id && monitor.asset_name && (
                 <>
                   <span className="text-muted-foreground/50 mx-1">·</span>
-                  <span>{monitor.asset_name}</span>
+                  <Link
+                    href={`/assets/${monitor.asset_id}`}
+                    className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                  >
+                    {monitor.asset_name}
+                  </Link>
                 </>
               )}
             </p>
@@ -368,9 +374,18 @@ export default function MonitorDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Asset</span>
-                  <span className="text-xs text-muted-foreground truncate max-w-[130px] font-medium">
-                    {monitor.asset_name || "—"}
-                  </span>
+                  {monitor.asset_id && monitor.asset_name ? (
+                    <Link
+                      href={`/assets/${monitor.asset_id}`}
+                      className="text-xs truncate max-w-[130px] font-medium hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                    >
+                      {monitor.asset_name}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-muted-foreground truncate max-w-[130px] font-medium">
+                      {monitor.asset_name || "—"}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Type</span>

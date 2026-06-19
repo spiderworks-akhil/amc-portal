@@ -52,6 +52,7 @@ export interface DashboardIncidentSummary {
     monitor_target: string
     monitor_status: string
     asset_name: string | null
+    asset_id: string | null
   }>
 }
 
@@ -97,6 +98,7 @@ export interface ExpiryCalendarItem {
   date: string | null
   auto_renew: boolean | null
   asset_name: string | null
+  asset_id: string | null
   client_name: string | null
   item_type: 'domain' | 'ssl' | 'contract' | 'server'
   extra_info: string | null

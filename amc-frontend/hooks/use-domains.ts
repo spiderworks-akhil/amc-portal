@@ -67,11 +67,22 @@ export function useCreateDomain() {
       const { data } = await apiClient.post<ApiResponse<DomainListItem>>("/domain", payload)
       return data
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: [DOMAINS_KEY] })
       qc.invalidateQueries({ queryKey: ["assets"] })
+      toast.success(res?.message ?? "Domain created successfully")
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: unknown) => {
+      // Extract the most meaningful error message from various error shapes
+      let message = "Failed to create domain"
+      if (err && typeof err === "object") {
+        const axiosErr = err as { response?: { data?: { message?: string } }; message?: string }
+        message = axiosErr.response?.data?.message
+          ?? axiosErr.message
+          ?? message
+      }
+      toast.error(message)
+    },
   })
 }
 

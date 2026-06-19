@@ -193,7 +193,7 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
             }
           />
         )}
-        <span className="relative z-10">{children}</span>
+        <span className="relative z-10 inline-flex items-center gap-1">{children}</span>
       </motion.span>
     );
   }

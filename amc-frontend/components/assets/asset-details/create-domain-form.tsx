@@ -141,6 +141,8 @@ export function CreateDomainForm({
   }, [open])
 
   const onFormSubmit = (data: AssetDetailDomainFormValues) => {
+    console.log("submittig");
+    
     const ns = data.nameservers
       ? data.nameservers.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined
