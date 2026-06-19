@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MonitorCheckHistory } from "@/components/monitors/monitor-check-history"
 import { MonitorEditDrawer } from "@/components/monitors/monitor-edit-drawer"
+import { BackButton } from "@/components/common/back-button"
 import {
-  ArrowLeft,
   Activity,
   Play,
   Clock,
@@ -96,10 +96,7 @@ export default function MonitorDetailPage() {
           <p className="text-muted-foreground max-w-sm">
             The monitor you&apos;re looking for doesn&apos;t exist or may have been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/monitors")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Monitors
-          </Button>
+          <BackButton variant="outline" label="Back to Monitors" fallbackHref="/monitors" />
         </div>
       </div>
     )
@@ -111,10 +108,7 @@ export default function MonitorDetailPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-6">
-        <Button variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground" onClick={() => router.push("/monitors")}>
-          <ArrowLeft className="size-4 mr-1" />
-          Back to Monitors
-        </Button>
+        <BackButton fallbackHref="/monitors" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">

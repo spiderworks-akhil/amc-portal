@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DetailSkeleton } from "@/components/clients/client-details/detail-skeleton"
 import { formatDate, formatCurrency } from "@/lib/format-utils"
+import { BackButton } from "@/components/common/back-button"
 import {
-  ArrowLeft,
   FileText,
   HardDrive,
   Building2,
@@ -81,10 +81,7 @@ export default function ContractDetailPage() {
           <p className="text-muted-foreground max-w-sm">
             The contract you&apos;re looking for doesn&apos;t exist or may have been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/contracts")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Contracts
-          </Button>
+          <BackButton variant="outline" label="Back to Contracts" fallbackHref="/contracts" />
         </div>
       </div>
     )
@@ -99,10 +96,7 @@ export default function ContractDetailPage() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <div className="mb-6">
-        <Button variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground" onClick={() => router.push("/contracts")}>
-          <ArrowLeft className="size-4 mr-1" />
-          Back to Contracts
-        </Button>
+        <BackButton label="Back to Contracts" fallbackHref="/contracts" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">

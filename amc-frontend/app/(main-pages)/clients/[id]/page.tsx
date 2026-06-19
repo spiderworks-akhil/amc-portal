@@ -44,8 +44,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/r-alert-dialog";
+import { BackButton } from "@/components/common/back-button";
 import {
-  ArrowLeft,
   Building2,
   Mail,
   Phone,
@@ -231,10 +231,7 @@ export default function ClientDetailPage() {
             The client you&apos;re looking for doesn&apos;t exist or may have
             been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/clients")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Clients
-          </Button>
+          <BackButton variant="outline" label="Back to Clients" fallbackHref="/clients" />
         </div>
       </div>
     );
@@ -246,15 +243,7 @@ export default function ClientDetailPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-3 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => router.push("/clients")}
-        >
-          <ArrowLeft className="size-4 mr-1" />
-          Back to Clients
-        </Button>
+        <BackButton label="Back to Clients" fallbackHref="/clients" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold tracking-tight truncate">

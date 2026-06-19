@@ -6,8 +6,8 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { BackButton } from "@/components/common/back-button"
 import {
-  ArrowLeft,
   AlertTriangle,
   AlertCircle,
   Info,
@@ -102,10 +102,7 @@ export default function IncidentDetailPage() {
           <p className="text-muted-foreground max-w-sm">
             The incident you&apos;re looking for doesn&apos;t exist or may have been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/incidents")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Incidents
-          </Button>
+          <BackButton variant="outline" label="Back to Incidents" fallbackHref="/incidents" />
         </div>
       </div>
     )
@@ -123,11 +120,7 @@ export default function IncidentDetailPage() {
   return (
     <div className="container mx-auto px-4 py-4 ">
       {/* Back button */}
-      <Button variant="ghost" size="sm" className="mb-4 -ml-2 text-muted-foreground" onClick={() => router.push("/incidents")}>
-        <ArrowLeft className="size-4 mr-1" />
-        Back to Incidents
-      </Button>
-
+      <BackButton label="Back to Incidents" fallbackHref="/incidents" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
         <div className="min-w-0 flex-1">

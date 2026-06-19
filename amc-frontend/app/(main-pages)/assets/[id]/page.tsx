@@ -27,8 +27,8 @@ import { CreateProviderDialog } from "@/components/providers/create-provider-dia
 import { MonitorCreateDrawer } from "@/components/monitors/monitor-create-drawer"
 import { formatDate, formatCurrency } from "@/lib/format-utils"
 import type { AssetDetail } from "@/types/api"
+import { BackButton } from "@/components/common/back-button"
 import {
-  ArrowLeft,
   Globe,
   ExternalLink,
   Monitor,
@@ -320,10 +320,7 @@ export default function AssetDetailPage() {
           <p className="text-muted-foreground max-w-sm">
             The asset you&apos;re looking for doesn&apos;t exist or may have been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/assets")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Assets
-          </Button>
+          <BackButton variant="outline" label="Back to Assets" fallbackHref="/assets" />
         </div>
       </div>
     )
@@ -333,10 +330,7 @@ export default function AssetDetailPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-6">
-        <Button variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground" onClick={() => router.push("/assets")}>
-          <ArrowLeft className="size-4 mr-1" />
-          Back to Assets
-        </Button>
+        <BackButton label="Back to Assets" fallbackHref="/assets" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">

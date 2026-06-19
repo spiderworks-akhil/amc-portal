@@ -21,8 +21,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/r-alert-dialog"
 import { DetailRow } from "@/components/common/detail-row"
+import { BackButton } from "@/components/common/back-button"
 import {
-  ArrowLeft,
   ShieldCheck,
   Globe,
   Building2,
@@ -73,10 +73,7 @@ export default function SslCertificateDetailPage() {
           <p className="text-muted-foreground max-w-sm">
             The certificate you&apos;re looking for doesn&apos;t exist or may have been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/ssl-certificates")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to SSL Certificates
-          </Button>
+          <BackButton variant="outline" label="Back to SSL Certificates" fallbackHref="/ssl-certificates" />
         </div>
       </div>
     )
@@ -125,15 +122,7 @@ export default function SslCertificateDetailPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-2 -ml-2 text-muted-foreground"
-          onClick={() => router.push("/ssl-certificates")}
-        >
-          <ArrowLeft className="size-4 mr-1" />
-          Back to SSL Certificates
-        </Button>
+        <BackButton label="Back to SSL Certificates" fallbackHref="/ssl-certificates" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 flex-wrap">

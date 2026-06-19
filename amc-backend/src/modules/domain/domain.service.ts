@@ -10,6 +10,7 @@ import { SslService } from '../ssl/ssl.service';
 import { ProviderType } from '../../db/types/enums';
 import * as rdap from 'node-rdap';
 import * as whoiser from 'whoiser';
+import { getDomain } from 'tldts';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql, Transaction } from 'kysely';
 import { DB } from '../../db/types.generated';
@@ -47,6 +48,17 @@ export class DomainService {
     // Strip trailing dot(s)
     cleaned = cleaned.replace(/\.+$/, '');
     return cleaned;
+  }
+
+  /**
+   * Extract the registrable domain (apex) from an FQDN.
+   * e.g. "campaign.ayurbethaniya.org" → "ayurbethaniya.org"
+   * Returns the cleaned FQDN itself if extraction fails.
+   */
+  private extractRegistrableDomain(fqdn: string): string {
+    const cleaned = this.cleanFqdn(fqdn);
+    const domain = getDomain(cleaned, { mixedInputs: true });
+    return domain ?? cleaned;
   }
 
   async create(dto: CreateDomainDto, createdBy?: string) {
@@ -786,6 +798,9 @@ export class DomainService {
     const cleanedFqdn = this.cleanFqdn(fqdn);
     await this.verifyDomainExists(cleanedFqdn);
 
+    // RDAP/WHOIS only work on registrable domains (apex), not subdomains
+    const registrableDomain = this.extractRegistrableDomain(cleanedFqdn);
+
     let registeredDate: string | undefined;
     let expiryDate: string | undefined;
     let registrar: string | undefined;
@@ -793,38 +808,38 @@ export class DomainService {
 
     // 1. Try RDAP (node-rdap handles TLD-specific bootstrapping)
     try {
-      const rdapResult = await this.lookupRdap(cleanedFqdn);
+      const rdapResult = await this.lookupRdap(registrableDomain);
       registeredDate = rdapResult.registeredDate;
       expiryDate = rdapResult.expiryDate;
       registrar = rdapResult.registrar;
       nameservers = rdapResult.nameservers;
 
       this.logger.log(
-        `RDAP lookup succeeded for ${cleanedFqdn}: registered=${registeredDate ?? '—'}, ` +
+        `RDAP lookup succeeded for ${registrableDomain} (from ${cleanedFqdn}): registered=${registeredDate ?? '—'}, ` +
           `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
           `${nameservers.length} nameservers`,
       );
     } catch (rdapErr: unknown) {
       this.logger.warn(
-        `RDAP lookup failed for ${cleanedFqdn}: ${rdapErr instanceof Error ? rdapErr.message : rdapErr}`,
+        `RDAP lookup failed for ${registrableDomain} (from ${cleanedFqdn}): ${rdapErr instanceof Error ? rdapErr.message : rdapErr}`,
       );
 
       // 2. Fallback: WHOIS via whoiser
       try {
-        const whoisResult = await this.lookupWhois(cleanedFqdn);
+        const whoisResult = await this.lookupWhois(registrableDomain);
         registeredDate = whoisResult.registeredDate;
         expiryDate = whoisResult.expiryDate;
         registrar = whoisResult.registrar;
         nameservers = whoisResult.nameservers;
 
         this.logger.log(
-          `WHOIS fallback succeeded for ${cleanedFqdn}: registered=${registeredDate ?? '—'}, ` +
+          `WHOIS fallback succeeded for ${registrableDomain} (from ${cleanedFqdn}): registered=${registeredDate ?? '—'}, ` +
             `expiry=${expiryDate ?? '—'}, registrar=${registrar ?? '—'}, ` +
             `${nameservers.length} nameservers`,
         );
       } catch (whoisErr: unknown) {
         this.logger.warn(
-          `WHOIS fallback also failed for ${cleanedFqdn}: ${whoisErr instanceof Error ? whoisErr.message : whoisErr}`,
+          `WHOIS fallback also failed for ${registrableDomain} (from ${cleanedFqdn}): ${whoisErr instanceof Error ? whoisErr.message : whoisErr}`,
         );
 
         // 3. Final fallback: DNS NS resolution
@@ -911,16 +926,17 @@ export class DomainService {
 
   /** Try RDAP → WHOIS to detect a domain's registrar and link it */
   private async detectAndLinkRegistrar(domainId: string, fqdn: string) {
+    const registrableDomain = this.extractRegistrableDomain(fqdn);
     let registrarName: string | undefined;
 
     // 1. Try RDAP
     try {
-      const rdapResult = await this.lookupRdap(fqdn);
+      const rdapResult = await this.lookupRdap(registrableDomain);
       registrarName = rdapResult.registrar;
     } catch {
       // 2. Fallback to WHOIS
       try {
-        const whoisResult = await this.lookupWhois(fqdn);
+        const whoisResult = await this.lookupWhois(registrableDomain);
         registrarName = whoisResult.registrar;
       } catch {
         // Both failed — nothing to enrich

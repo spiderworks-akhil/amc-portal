@@ -7,6 +7,7 @@ import { useProviders } from "@/hooks/use-providers"
 import { formatDate, formatCurrency } from "@/lib/format-utils"
 import { ServerEditForm } from "@/components/servers/server-edit-form"
 import { DetailRow, EmptyState } from "@/components/common/detail-row"
+import { BackButton } from "@/components/common/back-button"
 
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,7 +24,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/r-alert-dialog"
 import {
-  ArrowLeft,
   Server,
   Globe,
   ExternalLink,
@@ -76,10 +76,7 @@ export default function ServerDetailPage() {
           <p className="text-muted-foreground max-w-sm">
             The server you&apos;re looking for doesn&apos;t exist or may have been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/servers")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Servers
-          </Button>
+          <BackButton variant="outline" label="Back to Servers" fallbackHref="/servers" />
         </div>
       </div>
     )
@@ -134,15 +131,7 @@ export default function ServerDetailPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-2 -ml-2 text-muted-foreground"
-          onClick={() => router.push("/servers")}
-        >
-          <ArrowLeft className="size-4 mr-1" />
-          Back to Servers
-        </Button>
+        <BackButton label="Back to Servers" fallbackHref="/servers" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 flex-wrap">

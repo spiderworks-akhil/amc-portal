@@ -32,8 +32,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/r-alert-dialog";
 import { DetailRow, EmptyState } from "@/components/common/detail-row";
+import { BackButton } from "@/components/common/back-button";
 import {
-  ArrowLeft,
   Globe,
   FileText,
   Building2,
@@ -80,10 +80,7 @@ export default function DomainDetailPage() {
             The domain you&apos;re looking for doesn&apos;t exist or may have
             been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/domains")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Domains
-          </Button>
+          <BackButton variant="outline" label="Back to Domains" fallbackHref="/domains" />
         </div>
       </div>
     );
@@ -137,15 +134,7 @@ export default function DomainDetailPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-2 -ml-2 text-muted-foreground"
-          onClick={() => router.push("/domains")}
-        >
-          <ArrowLeft className="size-4 mr-1" />
-          Back to Domains
-        </Button>
+        <BackButton label="Back to Domains" fallbackHref="/domains" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 flex-wrap">

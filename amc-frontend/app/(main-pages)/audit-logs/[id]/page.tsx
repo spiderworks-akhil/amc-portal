@@ -6,6 +6,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { BackButton } from "@/components/common/back-button"
 import {
   ArrowLeft,
   AlertTriangle,
@@ -151,10 +152,7 @@ export default function AuditLogDetailPage() {
           <p className="text-muted-foreground max-w-sm">
             This audit log entry doesn&apos;t exist or may have been removed.
           </p>
-          <Button variant="outline" onClick={() => router.push("/audit-logs")}>
-            <ArrowLeft className="size-4 mr-2" />
-            Back to Audit Logs
-          </Button>
+          <BackButton variant="outline" label="Back to Audit Logs" fallbackHref="/audit-logs" />
         </div>
       </div>
     )
@@ -166,11 +164,7 @@ export default function AuditLogDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
-      <Button variant="ghost" size="sm" className="mb-4 -ml-2 text-muted-foreground" onClick={() => router.push("/audit-logs")}>
-        <ArrowLeft className="size-4 mr-1" />
-        Back to Audit Logs
-      </Button>
-
+      <BackButton label="Back to Audit Logs" fallbackHref="/audit-logs" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
         <div>
