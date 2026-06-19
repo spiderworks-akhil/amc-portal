@@ -53,7 +53,7 @@ export function ExpiringDomainsList({ domains, isLoading }: ExpiringDomainsListP
           </div>
         ) : (
           <div className="space-y-1">
-            {domains.slice(0, 10).map((domain) => {
+            {domains.slice(0, 5).map((domain) => {
               const isExpired = domain.days_to_expiry !== null && domain.days_to_expiry <= 0
               const isCritical = domain.days_to_expiry !== null && domain.days_to_expiry > 0 && domain.days_to_expiry <= 7
 
@@ -98,10 +98,10 @@ export function ExpiringDomainsList({ domains, isLoading }: ExpiringDomainsListP
                 </div>
               )
             })}
-            {domains.length > 10 && (
+            {domains.length > 5 && (
               <div className="pt-2 text-center">
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => router.push("/domains")}>
-                  View {domains.length - 10} more <ArrowRight className="size-3.5 ml-1" />
+                  View {domains.length - 5} more <ArrowRight className="size-3.5 ml-1" />
                 </Button>
               </div>
             )}

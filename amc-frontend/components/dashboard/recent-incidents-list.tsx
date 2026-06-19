@@ -110,7 +110,7 @@ export function RecentIncidentsList({ summary, isLoading }: RecentIncidentsListP
         ) : (
           <TooltipProvider>
             <div className="space-y-1">
-              {incidents.map((inc) => {
+              {incidents.slice(0, 5).map((inc) => {
                 const style = severityStyles[inc.severity] || severityStyles.info
                 return (
                   <div
@@ -185,6 +185,13 @@ export function RecentIncidentsList({ summary, isLoading }: RecentIncidentsListP
                   </div>
                 )
               })}
+            {incidents.length > 5 && (
+              <div className="pt-2 text-center">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => router.push("/incidents?status=open")}>
+                  View {incidents.length - 5} more <ArrowRight className="size-3.5 ml-1" />
+                </Button>
+              </div>
+            )}
             </div>
           </TooltipProvider>
         )}

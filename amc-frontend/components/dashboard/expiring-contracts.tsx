@@ -53,7 +53,7 @@ export function ExpiringContracts({ contracts, isLoading }: ExpiringContractsPro
           </div>
         ) : (
           <div className="space-y-1">
-            {contracts.map((contract) => {
+            {contracts.slice(0, 5).map((contract) => {
               const isUrgent = contract.days_to_renewal !== null && contract.days_to_renewal <= 30
               const isExpired = contract.days_to_renewal !== null && contract.days_to_renewal <= 0
 
@@ -94,6 +94,13 @@ export function ExpiringContracts({ contracts, isLoading }: ExpiringContractsPro
                 </div>
               )
             })}
+            {contracts.length > 5 && (
+              <div className="pt-2 text-center">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => router.push("/contracts")}>
+                  View {contracts.length - 5} more <ArrowRight className="size-3.5 ml-1" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

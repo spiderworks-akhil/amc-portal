@@ -53,7 +53,7 @@ export function ExpiringSsl({ certs, isLoading }: ExpiringSslProps) {
           </div>
         ) : (
           <div className="space-y-1">
-            {certs.map((cert) => {
+            {certs.slice(0, 5).map((cert) => {
               const isExpired = cert.days_to_expiry !== null && cert.days_to_expiry <= 0
               const isUrgent = cert.days_to_expiry !== null && cert.days_to_expiry > 0 && cert.days_to_expiry <= 30
 
@@ -95,6 +95,13 @@ export function ExpiringSsl({ certs, isLoading }: ExpiringSslProps) {
                 </div>
               )
             })}
+            {certs.length > 5 && (
+              <div className="pt-2 text-center">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => router.push("/ssl-certificates")}>
+                  View {certs.length - 5} more <ArrowRight className="size-3.5 ml-1" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

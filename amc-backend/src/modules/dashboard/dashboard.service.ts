@@ -170,7 +170,7 @@ export class DashboardService {
       }
     }
 
-    return query.orderBy('domains.expiry_date', 'asc').execute();
+    return query.orderBy('domains.expiry_date', 'asc').limit(5).execute();
   }
 
   private async getExpiringContracts(now: Date, threshold: Date) {
@@ -195,6 +195,7 @@ export class DashboardService {
       .where('contracts.deleted_at', 'is', null)
       .where('contracts.end_date', '<=', threshold)
       .orderBy('contracts.end_date', 'asc')
+      .limit(5)
       .execute();
   }
 
@@ -215,6 +216,7 @@ export class DashboardService {
       ])
       .where('ssl_certificates.valid_to', '<=', threshold)
       .orderBy('ssl_certificates.valid_to', 'asc')
+      .limit(5)
       .execute();
   }
 
@@ -237,7 +239,7 @@ export class DashboardService {
       .where('domains.expiry_date', 'is not', null)
       .where('domains.expiry_date', '<', now)
       .orderBy('domains.expiry_date', 'desc')
-      .limit(10)
+      .limit(5)
       .execute();
   }
 
@@ -258,7 +260,7 @@ export class DashboardService {
       ])
       .where('ssl_certificates.valid_to', '<', now)
       .orderBy('ssl_certificates.valid_to', 'desc')
-      .limit(10)
+      .limit(5)
       .execute();
   }
 
