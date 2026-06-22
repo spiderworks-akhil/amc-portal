@@ -98,7 +98,7 @@ export class QueueService {
   // ── Reminder sending (every minute) ──
 
   async scheduleReminderSending(cron?: string) {
-    const pattern = cron ?? '* * * * *';
+    const pattern = cron ?? '* */3 * * *';
     try {
       await this.reminderSendingQueue.add(
         'reminder-sending',

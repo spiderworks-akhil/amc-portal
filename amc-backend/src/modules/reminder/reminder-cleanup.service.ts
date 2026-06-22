@@ -14,15 +14,17 @@ export class ReminderCleanupService {
 
   @Cron('0 3 * * 0')
   async cleanup() {
-    this.logger.log('Cleanup job: starting');
+    this.logger.log('Reminder cleanup job: starting');
 
-    const deletedHistory = await this.cleanNotificationHistory();
-    const deletedReminders = await this.cleanSentReminders();
-    const escalated = await this.escalateOrphanedReminders();
+    const sent = await this.cleanSentReminders();
+    const acknowledged = await this.cleanAcknowledgedReminders();
+    const escalated = await this.cleanEscalatedReminders();
+    const orphaned = await this.escalateOrphanedReminders();
+    const history = await this.cleanNotificationHistory();
 
     this.logger.log(
-      `Cleanup job: complete — ${deletedHistory} history entries purged, ` +
-      `${deletedReminders} old reminders deleted, ${escalated} orphaned reminders escalated`,
+      `Reminder cleanup: complete — sent=${sent} acknowledged=${acknowledged} ` +
+      `escalated=${escalated} orphaned=${orphaned} history=${history}`,
     );
   }
 
@@ -46,6 +48,38 @@ export class ReminderCleanupService {
       .deleteFrom('reminders')
       .where('status', '=', 'sent')
       .where('sent_at', '<', cutoff)
+      .executeTakeFirst();
+
+    return Number(result.numDeletedRows ?? 0);
+  }
+
+  /**
+   * Acknowledged reminders older than 90 days — no longer actionable.
+   */
+  private async cleanAcknowledgedReminders(): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+
+    const result = await this.db
+      .deleteFrom('reminders')
+      .where('status', '=', 'acknowledged')
+      .where('acknowledged_at', '<', cutoff)
+      .executeTakeFirst();
+
+    return Number(result.numDeletedRows ?? 0);
+  }
+
+  /**
+   * Escalated reminders older than 90 days — flagged issues past their shelf life.
+   */
+  private async cleanEscalatedReminders(): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+
+    const result = await this.db
+      .deleteFrom('reminders')
+      .where('status', '=', 'escalated')
+      .where('created_at', '<', cutoff)
       .executeTakeFirst();
 
     return Number(result.numDeletedRows ?? 0);
