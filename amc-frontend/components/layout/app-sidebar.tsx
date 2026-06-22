@@ -49,6 +49,7 @@ const navItems = [
       { title: "Clients", icon: Users, href: "/clients" },
       { title: "Assets", icon: HardDrive, href: "/assets" },
       { title: "Contracts", icon: FileText, href: "/contracts" },
+       { title: "Expiry Calendar", icon: CalendarDays, href: "/expiry-calendar" },
     ],
   },
   {
@@ -60,8 +61,7 @@ const navItems = [
       { title: "Monitors", icon: Activity, href: "/monitors" },
       { title: "Incidents", icon: AlertTriangle, href: "/incidents" },
       { title: "Audit Logs", icon: ClipboardList, href: "/audit-logs" },
-      { title: "Expiry Calendar", icon: CalendarDays, href: "/expiry-calendar" },
-      { title: "Notifications", icon: Bell, href: "/reminders" },
+      // { title: "Notifications", icon: Bell, href: "/reminders" },
     ],
   },
   // {

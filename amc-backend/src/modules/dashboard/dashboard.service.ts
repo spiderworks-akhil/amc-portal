@@ -1,15 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
+import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
+
+  // Cache TTLs in seconds
+  private static readonly OVERVIEW_TTL = 300; // 5 min
+  private static readonly SUMMARY_TTL = 600; // 10 min
+  private static readonly CALENDAR_TTL = 600; // 10 min
+
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
+    private readonly redis: RedisService,
   ) {}
 
   async getOverview(managerId?: string) {
+    const cacheKey = RedisService.cacheKey('dashboard:overview', managerId || '__global__');
+
+    const cached = await this.redis.cacheGet<Record<string, unknown>>(cacheKey);
+    if (cached) return cached;
+
     const now = new Date();
     const sevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -40,7 +54,7 @@ export class DashboardService {
       this.getIncidentSummary(),
     ]);
 
-    return {
+    const result = {
       summary,
       domainExpiryStats,
       expiringDomains,
@@ -52,9 +66,27 @@ export class DashboardService {
       monitorSummary,
       incidentSummary,
     };
+
+    // Cache in background — don't block the response
+    this.redis.cacheSet(cacheKey, result, DashboardService.OVERVIEW_TTL).catch(
+      (err) => this.logger.warn(`Failed to cache overview: ${err.message}`),
+    );
+
+    return result;
   }
 
   async getSummary() {
+    const cacheKey = RedisService.cacheKey('dashboard:summary');
+
+    const cached = await this.redis.cacheGet<{
+      totalClients: number;
+      totalAssets: number;
+      totalContracts: number;
+      activeContracts: number;
+      totalDomains: number;
+    }>(cacheKey);
+    if (cached) return cached;
+
     const [clientsResult, assetsResult, totalContractsResult, activeContractsResult, domainsResult] =
       await Promise.all([
         this.db
@@ -85,13 +117,19 @@ export class DashboardService {
           .executeTakeFirst(),
       ]);
 
-    return {
+    const summary = {
       totalClients: Number(clientsResult?.clientCount ?? 0),
       totalAssets: Number(assetsResult?.assetCount ?? 0),
       totalContracts: Number(totalContractsResult?.totalContractCount ?? 0),
       activeContracts: Number(activeContractsResult?.activeContractCount ?? 0),
       totalDomains: Number(domainsResult?.domainCount ?? 0),
     };
+
+    this.redis.cacheSet(cacheKey, summary, DashboardService.SUMMARY_TTL).catch(
+      (err) => this.logger.warn(`Failed to cache summary: ${err.message}`),
+    );
+
+    return summary;
   }
 
   private async getDomainExpiryStats(
@@ -331,6 +369,11 @@ export class DashboardService {
   }
 
   async getExpiryCalendar() {
+    const cacheKey = RedisService.cacheKey('dashboard:expiry-calendar');
+
+    const cached = await this.redis.cacheGet<Record<string, unknown>>(cacheKey);
+    if (cached) return cached;
+
     const now = new Date();
     const sixMonths = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
 
@@ -468,7 +511,7 @@ export class DashboardService {
       grouped[key].push(item);
     }
 
-    return {
+    const calendar = {
       total: allItems.length,
       months: Object.entries(grouped).map(([key, items]) => ({
         key,
@@ -476,6 +519,12 @@ export class DashboardService {
         items,
       })),
     };
+
+    this.redis.cacheSet(cacheKey, calendar, DashboardService.CALENDAR_TTL).catch(
+      (err) => this.logger.warn(`Failed to cache calendar: ${err.message}`),
+    );
+
+    return calendar;
   }
 
   private async getMonitorSummary() {

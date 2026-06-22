@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { Suspense, useCallback, useState } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuditLogs } from "@/hooks/use-audit-logs"
@@ -41,6 +41,7 @@ import {
   Archive,
   RotateCcw,
 } from "lucide-react"
+import Loading from "@/components/common/loader"
 
 const ENTITY_TYPE_OPTIONS = [
   { value: "all", label: "All Entities" },
@@ -129,6 +130,7 @@ export default function AuditLogsPage() {
   const total = data?.meta.total ?? 0
 
   return (
+    <Suspense fallback={<Loading />}>
     <div className="container mx-auto max-w-7xl">
       <div className="space-y-6">
         {/* Header */}
@@ -317,5 +319,6 @@ export default function AuditLogsPage() {
         )}
       </div>
     </div>
+    </Suspense>
   )
 }

@@ -271,6 +271,6 @@ const CHECK_TYPE_OPTIONS = [
   { value: "http", label: "HTTP" },
   { value: "https", label: "HTTPS" },
   { value: "tcp", label: "TCP" },
-  { value: "ping", label: "Ping" },
+  // { value: "ping", label: "Ping" },
   { value: "keyword", label: "Keyword" },
 ]

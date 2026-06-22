@@ -77,9 +77,8 @@ export function NotificationBell() {
             </span>
           )}
         </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        className="w-[380px] max-h-[480px]"
+      </DropdownMenuTrigger>        <DropdownMenuContent
+        className="w-[380px] max-h-[480px] overflow-visible"
         align="end"
         sideOffset={8}
       >
@@ -103,7 +102,10 @@ export function NotificationBell() {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <div className="overflow-y-auto max-h-[380px]">
+        <div
+          style={{ maxHeight: '380px', overflowY: 'auto' }}
+          onWheel={(e) => e.stopPropagation()}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -145,7 +147,7 @@ export function NotificationBell() {
                       )}
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] text-muted-foreground/60">
-                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                         {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                         </span>
                         {notification.link && (
                           <ExternalLink className="h-3 w-3 text-muted-foreground/40" />

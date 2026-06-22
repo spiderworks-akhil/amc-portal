@@ -27,6 +27,7 @@ import { MonitorModule } from './modules/monitor/monitor.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthModule } from './modules/health/health.module';
 import { CleanupModule } from './modules/cleanup/cleanup.module';
+import { CacheInvalidationInterceptor } from './common/interceptors/cache-invalidation.interceptor';
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { CleanupModule } from './modules/cleanup/cleanup.module';
     AppService,
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: CacheInvalidationInterceptor },
   ],
 })
 export class AppModule {}

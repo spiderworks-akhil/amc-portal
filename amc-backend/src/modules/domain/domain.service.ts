@@ -465,7 +465,6 @@ export class DomainService {
   }
 
   async triggerCheck(id: string) {
-    // Delegates to refreshDomain which does the full live RDAP/WHOIS lookup → update → snapshot
     const result = await this.refreshDomain(id);
     return { message: 'Domain check completed', snapshot: result.snapshot };
   }
