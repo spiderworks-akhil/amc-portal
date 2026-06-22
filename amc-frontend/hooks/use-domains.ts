@@ -116,3 +116,19 @@ export function useDeleteDomain() {
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+/** Trigger a manual WHOIS/RDAP lookup for a domain */
+export function useTriggerDomainCheck() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<ApiResponse<{ message: string }>>(`/domain/${id}/check`)
+      return data
+    },
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: [DOMAINS_KEY] })
+      toast.success(res?.message ?? "Domain check completed")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}

@@ -6,6 +6,7 @@ import {
   useDomain,
   useUpdateDomain,
   useDeleteDomain,
+  useTriggerDomainCheck,
 } from "@/hooks/use-domains";
 import { useProviders } from "@/hooks/use-providers";
 import { formatDate } from "@/lib/format-utils";
@@ -615,15 +616,20 @@ const registrars = providers?.data ?? [];
       {/* WHOIS Snapshots Section — Log view */}
       <Card className="mb-6 p-3">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="size-4" />
-            WHOIS History
-          </CardTitle>
-          <CardDescription>
-            {!domain.snapshots?.length
-              ? "No WHOIS checks recorded yet"
-              : `${domain.snapshots.length} snapshot${domain.snapshots.length > 1 ? "s" : ""} — most recent first`}
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <History className="size-4" />
+                WHOIS History
+              </CardTitle>
+              <CardDescription>
+                {!domain.snapshots?.length
+                  ? "No WHOIS checks recorded yet"
+                  : `${domain.snapshots.length} snapshot${domain.snapshots.length > 1 ? "s" : ""} — most recent first`}
+              </CardDescription>
+            </div>
+            <DomainCheckButton domainId={domain.id} />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {!domain.snapshots?.length ? (
@@ -778,4 +784,19 @@ const registrars = providers?.data ?? [];
   );
 }
 
+function DomainCheckButton({ domainId }: { domainId: string }) {
+  const checkMutation = useTriggerDomainCheck()
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => checkMutation.mutate(domainId)}
+      disabled={checkMutation.isPending}
+    >
+      <RefreshCw className={`size-3.5 mr-1.5 ${checkMutation.isPending ? 'animate-spin' : ''}`} />
+      {checkMutation.isPending ? "Checking..." : "Check Now"}
+    </Button>
+  )
+}
 

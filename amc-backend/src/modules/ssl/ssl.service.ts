@@ -58,7 +58,7 @@ export class SslService {
     await this.createSnapshot(cert.id);
 
     // Schedule periodic SSL refresh via BullMQ
-    await this.queueService.scheduleSslRefresh(cert.id, this.configService.get('SSL_REFRESH_CRON', '0 0 * * *'));
+    await this.queueService.scheduleSslRefresh(cert.id, this.configService.get('SSL_REFRESH_CRON', '0 */6 * * *'));
 
     return cert;
   }

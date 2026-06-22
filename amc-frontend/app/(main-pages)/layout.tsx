@@ -20,7 +20,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <Separator orientation="vertical" className="h-5" />
             <HeaderBreadcrumb />
           </div>
-          <div className="ml-auto flex items-center gap-1.5 bg-gray-300">
+          <div className="ml-auto flex items-center gap-1.5">
             <NotificationBell/>
           </div>
         </header>

@@ -131,7 +131,7 @@ export class DomainService {
     try {
       await this.queueService.scheduleDomainRefresh(
         result.domain.id,
-        this.configService.get('DOMAIN_REFRESH_CRON', '0 0 * * *'),
+        this.configService.get('DOMAIN_REFRESH_CRON', '0 */6 * * *'),
       );
     } catch (err) {
       this.logger.error(
@@ -465,25 +465,9 @@ export class DomainService {
   }
 
   async triggerCheck(id: string) {
-    const domain = await this.checkExists(id);
-
-    // Placeholder for actual WHOIS lookup — in production this would call
-    // a WHOIS/RDAP service and update the domain record.
-    // For now, we just record a snapshot with existing data.
-    const snapshot = await this.createSnapshot(id);
-
-    await this.db
-      .updateTable('domains')
-      .set({ last_checked_at: new Date() })
-      .where('id', '=', id)
-      .execute();
-
-    this.logger.log(`Domain check triggered for ${domain.fqdn} (${id})`);
-
-    return {
-      message: 'Domain check completed',
-      snapshot,
-    };
+    // Delegates to refreshDomain which does the full live RDAP/WHOIS lookup → update → snapshot
+    const result = await this.refreshDomain(id);
+    return { message: 'Domain check completed', snapshot: result.snapshot };
   }
 
   async listSnapshots(domainId: string) {

@@ -5,6 +5,7 @@ import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
 import { ReminderRulesService } from './reminder-rules/reminder-rules.service';
 import { EmailService } from '../email/email.service';
+import { buildReminderHtml } from '../email/email-templates';
 import { NotificationsService } from '../notifications/notifications.service';
 
 interface ExpiringEntity {
@@ -128,10 +129,40 @@ export class ReminderDispatcherService {
         continue;
       }
 
+      // Look up the actual entity expiry date to compute accurate days remaining
+      const entityInfo = await this.lookupEntityExpiry(
+        reminder.target_type,
+        reminder.target_id,
+      );
+
+      if (!entityInfo) {
+        this.logger.warn(
+          `Entity ${reminder.target_type}/${reminder.target_id} not found for reminder ${reminder.id}, marking as sent`,
+        );
+        await this.markSent(reminder.id, []);
+        sent++;
+        continue;
+      }
+
+      const daysRemaining = Math.max(1, Math.ceil((entityInfo.expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+      const targetLabel = entityInfo.label;
+      const expiryDateStr = entityInfo.expiryDate.toISOString().split('T')[0];
+
+      const emailHtml = buildReminderHtml({
+        title: reminder.title,
+        message: reminder.message ?? 'Reminder notification.',
+        targetLabel,
+        targetType: reminder.target_type,
+        expiryDate: expiryDateStr,
+        daysRemaining,
+        portalUrl: `${process.env.PORTAL_URL || 'http://localhost:3000'}/${reminder.target_type}s/${reminder.target_id}`,
+      });
+
       const result = await this.emailService.send({
         to: recipients,
         subject: `[Reminder] ${reminder.title}`,
         text: reminder.message ?? undefined,
+        html: emailHtml,
       });
 
       if (result.success) {
@@ -374,6 +405,85 @@ export class ReminderDispatcherService {
       link: `/${reminder.target_type}s/${reminder.target_id}`,
       severity: 'warning',
     });
+  }
+
+  private async lookupEntityExpiry(
+    targetType: string,
+    targetId: string,
+  ): Promise<{ expiryDate: Date; label: string } | null> {
+    switch (targetType) {
+      case 'domain': {
+        const row = await this.db
+          .selectFrom('domains')
+          .innerJoin('assets', 'assets.id', 'domains.asset_id')
+          .select([
+            'domains.expiry_date',
+            'domains.fqdn',
+            'assets.name as asset_name',
+          ])
+          .where('domains.id', '=', targetId)
+          .executeTakeFirst();
+        if (!row?.expiry_date) return null;
+        return {
+          expiryDate: row.expiry_date,
+          label: `Domain ${row.fqdn}${row.asset_name ? ` (${row.asset_name})` : ''}`,
+        };
+      }
+      case 'ssl': {
+        const row = await this.db
+          .selectFrom('ssl_certificates')
+          .leftJoin('domains', 'domains.id', 'ssl_certificates.domain_id')
+          .leftJoin('assets', 'assets.id', 'ssl_certificates.asset_id')
+          .select([
+            'ssl_certificates.valid_to',
+            'ssl_certificates.common_name',
+            'domains.fqdn as domain_fqdn',
+            'assets.name as asset_name',
+          ])
+          .where('ssl_certificates.id', '=', targetId)
+          .executeTakeFirst();
+        if (!row?.valid_to) return null;
+        return {
+          expiryDate: row.valid_to,
+          label: `SSL ${row.common_name ?? row.domain_fqdn ?? 'Unknown'}${row.asset_name ? ` (${row.asset_name})` : ''}`,
+        };
+      }
+      case 'contract': {
+        const row = await this.db
+          .selectFrom('contracts')
+          .innerJoin('clients', 'clients.id', 'contracts.client_id')
+          .select([
+            'contracts.end_date',
+            'clients.name as client_name',
+          ])
+          .where('contracts.id', '=', targetId)
+          .executeTakeFirst();
+        if (!row) return null;
+        return {
+          expiryDate: row.end_date,
+          label: `Contract #${targetId.slice(0, 8)}${row.client_name ? ` (${row.client_name})` : ''}`,
+        };
+      }
+      case 'server': {
+        const row = await this.db
+          .selectFrom('servers')
+          .leftJoin('service_providers', 'service_providers.id', 'servers.provider_id')
+          .select([
+            'servers.renewal_date',
+            'servers.label',
+            'service_providers.name as provider_name',
+          ])
+          .where('servers.id', '=', targetId)
+          .executeTakeFirst();
+        if (!row?.renewal_date) return null;
+        return {
+          expiryDate: row.renewal_date,
+          label: `Server ${row.label}${row.provider_name ? ` (${row.provider_name})` : ''}`,
+        };
+      }
+      default:
+        return null;
+    }
   }
 
   private async findEntityContacts(

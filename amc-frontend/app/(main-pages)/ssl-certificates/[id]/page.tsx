@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useSslCertificate, useUpdateSsl, useDeleteSsl } from "@/hooks/use-ssl"
+import { useSslCertificate, useUpdateSsl, useDeleteSsl, useTriggerSslCheck } from "@/hooks/use-ssl"
 import { formatDate } from "@/lib/format-utils"
 import { SslEditForm } from "@/components/assets/asset-details/ssl-edit-form"
 
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/r-alert-dialog"
 import { DetailRow } from "@/components/common/detail-row"
 import { BackButton } from "@/components/common/back-button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   ShieldCheck,
   Globe,
@@ -36,9 +37,27 @@ import {
   Check,
   AlertTriangle,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react"
 import { SslWarningBadges } from "@/components/ssl-certificates/ssl-warning-badge"
 import { toast } from "sonner"
+
+function getRelativeTime(dateStr: string) {
+  const now = Date.now()
+  const date = new Date(dateStr).getTime()
+  const diffMs = now - date
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 1) return "Just now"
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}d ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `${months}mo ago`
+  const years = Math.floor(days / 365)
+  return `${years}y ago`
+}
 
 const SSL_TYPE_LABELS: Record<string, string> = {
   dv: "Domain Validation (DV)",
@@ -413,65 +432,124 @@ export default function SslCertificateDetailPage() {
       </div>
 
       {/* Check History */}
-      <Card className="mb-6">
+      <Card className="mb-6 p-3">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="size-4" />
-            Check History
-          </CardTitle>
-          <CardDescription>
-            {!cert.snapshots?.length
-              ? "No checks recorded yet"
-              : `${cert.snapshots.length} snapshot${cert.snapshots.length > 1 ? "s" : ""} — most recent first`}
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <History className="size-4" />
+                Check History
+              </CardTitle>
+              <CardDescription>
+                {!cert.snapshots?.length
+                  ? "No checks recorded yet"
+                  : `${cert.snapshots.length} snapshot${cert.snapshots.length > 1 ? "s" : ""} — most recent first`}
+              </CardDescription>
+            </div>
+            <SslCheckButton certId={cert.id} />
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {!cert.snapshots?.length ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <History className="size-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">No checks yet</p>
-              <p className="text-xs mt-1">Snapshots will be recorded when a TLS check is triggered.</p>
+            <div className="px-6 pb-6 pt-2">
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <History className="size-10 mb-3 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground">No checks yet</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Snapshots will be recorded when a TLS check is triggered.</p>
+              </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              {cert.snapshots.map((snapshot) => (
-                <div
-                  key={snapshot.id}
-                  className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <Clock className="size-4 text-muted-foreground shrink-0" />
-                        <p className="text-sm font-medium">
-                          Checked {formatDate(snapshot.checked_at)}
-                        </p>
-                      </div>
-                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-muted-foreground">
-                        {snapshot.issuer && (
-                          <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">Issuer</span>
-                            <span>{snapshot.issuer}</span>
-                          </div>
-                        )}
-                        {snapshot.valid_from && (
-                          <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">Valid From</span>
-                            <span>{formatDate(snapshot.valid_from)}</span>
-                          </div>
-                        )}
-                        {snapshot.valid_to && (
-                          <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-0.5">Valid To</span>
-                            <span>{formatDate(snapshot.valid_to)}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            <ScrollArea className="max-h-[560px]" type="always">
+              <div className="font-mono text-[11px] leading-relaxed">
+                {/* Column header */}
+                <div className="sticky top-0 z-10 flex items-center gap-3 px-5 py-2 bg-muted/80 backdrop-blur-sm border-b border-border/40 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium">
+                  <span className="w-[120px] shrink-0">Timestamp</span>
+                  <span className="w-[80px] shrink-0">Since</span>
+                  <span className="w-[150px] shrink-0">Issuer</span>
+                  <span className="w-[110px] shrink-0">Valid From</span>
+                  <span className="w-[110px] shrink-0">Valid To</span>
                 </div>
-              ))}
-            </div>
+
+                {/* Log entries */}
+                {cert.snapshots.map((snapshot, idx) => {
+                  const prevSnapshot = idx < cert.snapshots.length - 1
+                    ? cert.snapshots[idx + 1]
+                    : null
+
+                  const issuerChanged = prevSnapshot && prevSnapshot.issuer !== snapshot.issuer
+                  const vfChanged = prevSnapshot && prevSnapshot.valid_from !== snapshot.valid_from
+                  const vtChanged = prevSnapshot && prevSnapshot.valid_to !== snapshot.valid_to
+
+                  const timeSince = getRelativeTime(snapshot.checked_at)
+                  const logDate = new Date(snapshot.checked_at)
+                  const timestamp = logDate.toLocaleString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                  }).replace(',', '')
+
+                  return (
+                    <div
+                      key={snapshot.id}
+                      className={`flex items-start gap-3 px-5 py-2.5 border-b border-border/10 transition-colors ${
+                        idx === 0
+                          ? 'bg-primary/[0.03]'
+                          : idx % 2 === 0
+                            ? 'bg-background'
+                            : 'bg-muted/20'
+                      } hover:bg-accent/20`}
+                    >
+                      {/* Timestamp */}
+                      <span className="w-[120px] shrink-0 text-muted-foreground/70 tabular-nums truncate">
+                        {timestamp}
+                      </span>
+
+                      {/* Relative time */}
+                      <span className={`w-[80px] shrink-0 tabular-nums ${idx === 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/60'}`}>
+                        {timeSince}
+                      </span>
+
+                      {/* Issuer */}
+                      <span className="w-[150px] shrink-0 truncate flex items-center gap-1">
+                        <span className={issuerChanged ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground/80'}>
+                          {snapshot.issuer || (
+                            <span className="text-muted-foreground/30 italic">—</span>
+                          )}
+                        </span>
+                        {issuerChanged && (
+                          <span className="inline-flex items-center justify-center size-3.5 rounded bg-amber-500/15 text-[8px] font-bold text-amber-600 dark:text-amber-400 shrink-0" title={`Changed from "${prevSnapshot?.issuer}"`}>
+                            ~
+                          </span>
+                        )}
+                      </span>
+
+                      {/* Valid From */}
+                      <span className={`w-[110px] shrink-0 tabular-nums truncate ${vfChanged ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground/80'}`}>
+                        {snapshot.valid_from ? formatDate(snapshot.valid_from) : (
+                          <span className="text-muted-foreground/30 italic">—</span>
+                        )}
+                      </span>
+
+                      {/* Valid To */}
+                      <span className={`w-[110px] shrink-0 tabular-nums truncate ${vtChanged ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground/80'}`}>
+                        {snapshot.valid_to ? formatDate(snapshot.valid_to) : (
+                          <span className="text-muted-foreground/30 italic">—</span>
+                        )}
+                      </span>
+                    </div>
+                  )
+                })}
+
+                {/* Footer — entry count */}
+                <div className="flex items-center gap-2 px-5 py-2.5 text-[10px] text-muted-foreground/40 border-t border-border/10">
+                  <span className="size-1.5 rounded-full bg-muted-foreground/30" />
+                  {cert.snapshots.length} entr{cert.snapshots.length === 1 ? 'y' : 'ies'} — oldest at bottom
+                </div>
+              </div>
+            </ScrollArea>
           )}
         </CardContent>
       </Card>
@@ -516,4 +594,19 @@ export default function SslCertificateDetailPage() {
   )
 }
 
+function SslCheckButton({ certId }: { certId: string }) {
+  const checkMutation = useTriggerSslCheck()
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => checkMutation.mutate(certId)}
+      disabled={checkMutation.isPending}
+    >
+      <RefreshCw className={`size-3.5 mr-1.5 ${checkMutation.isPending ? 'animate-spin' : ''}`} />
+      {checkMutation.isPending ? "Checking..." : "Check Now"}
+    </Button>
+  )
+}
 

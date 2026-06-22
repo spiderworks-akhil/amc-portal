@@ -128,7 +128,6 @@
 - [x] Full CRUD for both providers and servers
 - [x] Track cost, renewal date, specs, IPs
 - [x] Frontend: full servers list + detail + edit
-- [ ] **→ NEXT TASK** Frontend: providers list + detail + edit pages
 
 ### 1.7 Domains module (auto-tracking)
 - [x] Full CRUD + WHOIS/RDAP auto-fill + snapshot history

@@ -89,3 +89,19 @@ export function useDeleteSsl() {
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+/** Trigger a manual TLS check for an SSL certificate */
+export function useTriggerSslCheck() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<ApiResponse<{ message: string }>>(`/ssl/${id}/check`)
+      return data
+    },
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: [SSL_KEY] })
+      toast.success(res?.message ?? "SSL check completed")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}

@@ -32,7 +32,7 @@ export class CronBootstrapService implements OnApplicationBootstrap {
         return;
       }
 
-      const cronPattern = this.configService.get('DOMAIN_REFRESH_CRON', '0 0 * * *');
+      const cronPattern = this.configService.get('DOMAIN_REFRESH_CRON', '0 */6 * * *');
       let scheduled = 0;
 
       for (const domain of domains) {
@@ -64,7 +64,7 @@ export class CronBootstrapService implements OnApplicationBootstrap {
         return;
       }
 
-      const cronPattern = this.configService.get('SSL_REFRESH_CRON', '0 0 * * *');
+      const cronPattern = this.configService.get('SSL_REFRESH_CRON', '0 */6 * * *');
       let scheduled = 0;
 
       for (const cert of certs) {

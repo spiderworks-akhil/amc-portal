@@ -65,19 +65,18 @@ export function NotificationBell() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
+        <button
+          type="button"
+          className="relative flex size-9 items-center justify-center rounded-md text-foreground/75 hover:text-foreground hover:bg-accent transition-colors outline-none"
           aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="size-5" />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+            <span className="absolute top-0 right-0 flex h-4 min-w-[12px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
-        </Button>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="w-[380px] max-h-[480px]"
