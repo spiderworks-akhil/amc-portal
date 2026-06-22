@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { KyselyModule } from "nestjs-kysely";
 import { Pool, type PoolConfig } from "pg";
 import { PostgresDialect } from "kysely";
+import { DatabaseService } from "./database.service";
 
 @Module({
   imports: [
@@ -25,13 +26,9 @@ import { PostgresDialect } from "kysely";
           idleTimeoutMillis: config.get<number>("DB_IDLE_TIMEOUT") ?? 30_000,
 
           // ── Connection recycling ──
-          // After 7500 queries, the connection is discarded and a fresh one
-          // is created.  This prevents memory leaks from accumulated
-          // prepared-statements and client-side cursor state.
           maxUses: config.get<number>("DB_POOL_MAX_USES") ?? 7_500,
 
           // ── Monitoring ──
-          // Shows up in pg_stat_activity for easier debugging
           application_name: config.get("DB_APPLICATION_NAME") ?? "amc-portal",
         };
 
@@ -43,6 +40,7 @@ import { PostgresDialect } from "kysely";
       },
     }),
   ],
-  exports: [KyselyModule],
+  providers: [DatabaseService],
+  exports: [KyselyModule, DatabaseService],
 })
 export class DatabaseModule {}

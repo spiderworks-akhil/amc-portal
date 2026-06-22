@@ -32,6 +32,9 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AllExceptionsFilter());
 
+  // Enable graceful shutdown on SIGTERM/SIGINT
+  app.enableShutdownHooks();
+
   const port = config.get("PORT", 5000);
   await app.listen(port);
 }
