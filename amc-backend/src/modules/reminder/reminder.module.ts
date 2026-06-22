@@ -7,10 +7,18 @@ import { ReminderDispatcherService } from './reminder-dispatcher.service';
 import { ReminderCleanupService } from './reminder-cleanup.service';
 import { ReminderRulesModule } from './reminder-rules/reminder-rules.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ReminderCreationProcessor } from '../../jobs/reminder-creation.processor';
+import { ReminderSendingProcessor } from '../../jobs/reminder-sending.processor';
 
 @Module({
   controllers: [ReminderController],
-  providers: [ReminderService, ReminderDispatcherService, ReminderCleanupService],
+  providers: [
+    ReminderService,
+    ReminderDispatcherService,
+    ReminderCleanupService,
+    ReminderCreationProcessor,
+    ReminderSendingProcessor,
+  ],
   imports: [
     ReminderRulesModule,
     ScheduleModule.forRoot(),

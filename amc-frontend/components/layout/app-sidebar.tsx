@@ -64,6 +64,12 @@ const navItems = [
       { title: "Notifications", icon: Bell, href: "/reminders" },
     ],
   },
+  // {
+  //   group: "Admin",
+  //   items: [
+  //     { title: "Queues", icon: Activity, href: "/admin/queues" },
+  //   ],
+  // },
 ]
 
 export function AppSidebar() {
@@ -90,7 +96,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="bg-none">
+      <SidebarContent>
         {navItems.map((group) => (
           <SidebarGroup key={group.group}>
             <SidebarGroupLabel>{group.group}</SidebarGroupLabel>
@@ -101,7 +107,7 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                        <Link href={item.href} className="bg-none">
+                        <Link href={item.href} className={isActive ? "bg-accent text-accent-foreground" : ""} >
                           <item.icon />
                           <span>{item.title}</span>
                         </Link>

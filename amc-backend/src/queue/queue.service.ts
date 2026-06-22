@@ -6,12 +6,117 @@ import { Queue } from 'bullmq';
 export class QueueService {
   private readonly logger = new Logger(QueueService.name);
 
+  /** All registered queues, keyed by name */
+  readonly queues: Record<string, Queue> = {};
+
   constructor(
     @InjectQueue('monitor-checks') private readonly monitorQueue: Queue,
     @InjectQueue('domain-refresh') private readonly domainRefreshQueue: Queue,
     @InjectQueue('ssl-refresh') private readonly sslRefreshQueue: Queue,
     @InjectQueue('incident-notifications') private readonly incidentNotificationQueue: Queue,
-  ) {}
+    @InjectQueue('reminder-creation') private readonly reminderCreationQueue: Queue,
+    @InjectQueue('reminder-sending') private readonly reminderSendingQueue: Queue,
+  ) {
+    this.queues['monitor-checks'] = this.monitorQueue;
+    this.queues['domain-refresh'] = this.domainRefreshQueue;
+    this.queues['ssl-refresh'] = this.sslRefreshQueue;
+    this.queues['incident-notifications'] = this.incidentNotificationQueue;
+    this.queues['reminder-creation'] = this.reminderCreationQueue;
+    this.queues['reminder-sending'] = this.reminderSendingQueue;
+  }
+
+  // ── Dashboard / Stats ──
+
+  /**
+   * Returns aggregated job counts for all registered queues.
+   * Each queue returns { wait, active, completed, failed, delayed, paused } counts.
+   */
+  async getQueueStats() {
+    const entries = await Promise.all(
+      Object.entries(this.queues).map(async ([name, queue]) => {
+        const [counts, schedulers] = await Promise.all([
+          queue.getJobCounts(),
+          queue.getJobSchedulers(),
+        ]);
+        return {
+          name,
+          counts: {
+            waiting: counts.wait ?? 0,
+            active: counts.active ?? 0,
+            completed: counts.completed ?? 0,
+            failed: counts.failed ?? 0,
+            delayed: counts.delayed ?? 0,
+            paused: counts.paused ?? 0,
+          },
+          schedulers: schedulers.map((s) => ({
+            id: s.id,
+            pattern: s.pattern ?? s.every ? `every ${s.every}ms` : null,
+            next: s.next ? new Date(s.next).toISOString() : null,
+          })),
+        };
+      }),
+    );
+
+    const totalFailed = entries.reduce((sum, q) => sum + q.counts.failed, 0);
+    const totalPending = entries.reduce(
+      (sum, q) => sum + q.counts.waiting + q.counts.delayed + q.counts.active,
+      0,
+    );
+
+    return {
+      queues: entries,
+      summary: {
+        totalQueues: entries.length,
+        totalFailed,
+        totalPending,
+        hasFailures: totalFailed > 0,
+      },
+    };
+  }
+
+  // ── Reminder creation (every 6 hours) ──
+
+  async scheduleReminderCreation(cron?: string) {
+    const pattern = cron ?? '0 */6 * * *';
+    try {
+      await this.reminderCreationQueue.add(
+        'reminder-creation',
+        {},
+        {
+          jobId: 'reminder-creation-schedule',
+          repeat: { pattern },
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
+      );
+      this.logger.log(`Scheduled reminder creation job with cron "${pattern}"`);
+    } catch (err) {
+      this.logger.error(`Failed to schedule reminder creation: ${err}`);
+    }
+  }
+
+  // ── Reminder sending (every minute) ──
+
+  async scheduleReminderSending(cron?: string) {
+    const pattern = cron ?? '* * * * *';
+    try {
+      await this.reminderSendingQueue.add(
+        'reminder-sending',
+        {},
+        {
+          jobId: 'reminder-sending-schedule',
+          repeat: { pattern },
+          removeOnComplete: true,
+          removeOnFail: false,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+        },
+      );
+      this.logger.log(`Scheduled reminder sending job with cron "${pattern}" with 3 retry attempts`);
+    } catch (err) {
+      this.logger.error(`Failed to schedule reminder sending: ${err}`);
+    }
+  }
 
   // ── Monitor checks ──
 

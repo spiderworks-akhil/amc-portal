@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueService } from './queue.service';
+import { QueueController } from './queue.controller';
 import { CronBootstrapService } from './cron-bootstrap.service';
 import { DatabaseModule } from '../db/database.module';
 
@@ -26,7 +27,10 @@ import { DatabaseModule } from '../db/database.module';
     BullModule.registerQueue({ name: 'domain-refresh' }),
     BullModule.registerQueue({ name: 'ssl-refresh' }),
     BullModule.registerQueue({ name: 'incident-notifications' }),
+    BullModule.registerQueue({ name: 'reminder-creation' }),
+    BullModule.registerQueue({ name: 'reminder-sending' }),
   ],
+  controllers: [QueueController],
   providers: [QueueService, CronBootstrapService],
   exports: [QueueService, BullModule],
 })

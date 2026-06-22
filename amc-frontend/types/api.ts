@@ -692,3 +692,30 @@ export interface UpdateReminderRulePayload {
   recipients?: Record<string, unknown>
   enabled?: boolean
 }
+
+// ── Queue Stats ──
+
+export interface QueueStats {
+  queues: Array<{
+    name: string
+    counts: {
+      waiting: number
+      active: number
+      completed: number
+      failed: number
+      delayed: number
+      paused: number
+    }
+    schedulers: Array<{
+      id: string
+      pattern: string | null
+      next: string | null
+    }>
+  }>
+  summary: {
+    totalQueues: number
+    totalFailed: number
+    totalPending: number
+    hasFailures: boolean
+  }
+}

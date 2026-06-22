@@ -18,6 +18,17 @@ export class CronBootstrapService implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     await this.scheduleExistingDomains();
     await this.scheduleExistingSslCertificates();
+    await this.scheduleReminderJobs();
+  }
+
+  private async scheduleReminderJobs() {
+    try {
+      await this.queueService.scheduleReminderCreation();
+      await this.queueService.scheduleReminderSending();
+      this.logger.log('Scheduled reminder creation (every 6h) and sending (every 1min) jobs');
+    } catch (err) {
+      this.logger.error(`Failed to schedule reminder jobs: ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   private async scheduleExistingDomains() {
