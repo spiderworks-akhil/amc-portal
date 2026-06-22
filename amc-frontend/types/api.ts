@@ -161,6 +161,7 @@ export interface ListAssetsParams {
 export interface AssetDetail extends AssetListItem {
   notes?: string | null
   tech_stack?: string[] | null
+  account_managers: AccountManager[]
   servers: Array<{
     id: string
     label: string
@@ -499,6 +500,7 @@ export interface MonitorDetail extends MonitorListItem {
   expected_status_code: number | null
   expected_keyword: string | null
   recent_checks: MonitorCheck[]
+  account_managers: AccountManager[]
 }
 
 export interface MonitorCheck {

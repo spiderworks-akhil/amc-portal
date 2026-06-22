@@ -5,6 +5,7 @@ import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
 import { ReminderRulesService } from './reminder-rules/reminder-rules.service';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface ExpiringEntity {
   id: string;
@@ -21,6 +22,7 @@ export class ReminderDispatcherService {
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly rulesService: ReminderRulesService,
     private readonly emailService: EmailService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
  @Cron('* * * * *')// Every 6 hours
@@ -134,6 +136,9 @@ export class ReminderDispatcherService {
 
       if (result.success) {
         await this.markSent(reminder.id, recipients, result.providerMessageId);
+
+        // Push in-app notification to account managers
+        await this.notifyManagersForReminder(reminder);
       } else {
         await this.db
           .updateTable('reminders')
@@ -317,6 +322,58 @@ export class ReminderDispatcherService {
     if (contacts.length > 0) return contacts;
 
     return [];
+  }
+
+  private async notifyManagersForReminder(reminder: {
+    title: string;
+    message: string | null;
+    target_type: string;
+    target_id: string;
+  }) {
+    let clientId: string | null = null;
+
+    switch (reminder.target_type) {
+      case 'domain': {
+        const row = await this.db
+          .selectFrom('domains')
+          .innerJoin('assets', 'assets.id', 'domains.asset_id')
+          .select('assets.client_id')
+          .where('domains.id', '=', reminder.target_id)
+          .executeTakeFirst();
+        clientId = row?.client_id ?? null;
+        break;
+      }
+      case 'ssl': {
+        const row = await this.db
+          .selectFrom('ssl_certificates')
+          .innerJoin('domains', 'domains.id', 'ssl_certificates.domain_id')
+          .innerJoin('assets', 'assets.id', 'domains.asset_id')
+          .select('assets.client_id')
+          .where('ssl_certificates.id', '=', reminder.target_id)
+          .executeTakeFirst();
+        clientId = row?.client_id ?? null;
+        break;
+      }
+      case 'contract': {
+        const row = await this.db
+          .selectFrom('contracts')
+          .select('client_id')
+          .where('contracts.id', '=', reminder.target_id)
+          .executeTakeFirst();
+        clientId = row?.client_id ?? null;
+        break;
+      }
+    }
+
+    if (!clientId) return;
+
+    await this.notificationsService.notifyClientManagers(clientId, {
+      type: reminder.target_type,
+      title: reminder.title,
+      message: reminder.message ?? undefined,
+      link: `/${reminder.target_type}s/${reminder.target_id}`,
+      severity: 'warning',
+    });
   }
 
   private async findEntityContacts(

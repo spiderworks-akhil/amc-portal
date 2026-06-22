@@ -8,6 +8,7 @@ import { IncidentService } from './incident.service';
 import { IncidentNotificationService } from './incident-notification.service';
 import { IncidentController } from './incident.controller';
 import { IncidentNotificationProcessor } from '../../jobs/incident-notification.processor';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { IncidentNotificationProcessor } from '../../jobs/incident-notification.
     QueueModule,
     BullModule.registerQueue({ name: 'incident-notifications' }),
     EmailModule,
+    NotificationsModule,
   ],
   controllers: [IncidentController],
   providers: [IncidentService, IncidentNotificationService, IncidentNotificationProcessor],

@@ -181,6 +181,18 @@ export interface DomainSnapshots {
   registrar: string | null;
 }
 
+export interface InAppNotifications {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  is_read: Generated<boolean>;
+  link: string | null;
+  message: string | null;
+  severity: Generated<string>;
+  title: string;
+  type: string;
+  user_id: string;
+}
+
 export interface Incidents {
   acknowledged_by: string | null;
   cause: string | null;
@@ -364,6 +376,7 @@ export interface DB {
   contracts: Contracts;
   domain_snapshots: DomainSnapshots;
   domains: Domains;
+  in_app_notifications: InAppNotifications;
   incidents: Incidents;
   monitor_checks: MonitorChecks;
   monitors: Monitors;

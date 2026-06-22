@@ -144,21 +144,39 @@ export class MonitorService {
       .selectAll('monitors')
       .select([
         'assets.name as asset_name',
+        'assets.client_id',
       ])
       .where('monitors.id', '=', id)
       .executeTakeFirst();
 
     if (!monitor) throw new NotFoundException(`Monitor ${id} not found`);
 
-    const recentChecks = await this.db
-      .selectFrom('monitor_checks')
-      .selectAll()
-      .where('monitor_id', '=', id)
-      .orderBy('checked_at', 'desc')
-      .limit(50)
-      .execute();
+    const [recentChecks, accountManagers] = await Promise.all([
+      this.db
+        .selectFrom('monitor_checks')
+        .selectAll()
+        .where('monitor_id', '=', id)
+        .orderBy('checked_at', 'desc')
+        .limit(50)
+        .execute(),
+      monitor.client_id
+        ? this.db
+            .selectFrom('client_account_managers')
+            .innerJoin('users', 'users.id', 'client_account_managers.manager_id')
+            .select([
+              'users.id',
+              'users.name',
+              'users.email',
+            ])
+            .where('client_account_managers.client_id', '=', monitor.client_id)
+            .where('client_account_managers.deleted_at', 'is', null)
+            .where('users.is_active', '=', true)
+            .execute()
+        : Promise.resolve([] as { id: string; name: string; email: string }[]),
+    ]);
 
-    return { ...monitor, recent_checks: recentChecks };
+    const { client_id, ...monitorData } = monitor;
+    return { ...monitorData, recent_checks: recentChecks, account_managers: accountManagers };
   }
 
   async update(id: string, dto: UpdateMonitorDto) {

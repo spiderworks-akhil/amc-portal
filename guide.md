@@ -1,6 +1,6 @@
-# AMC Management CRM — Build Guide (Audited 2026-06-18)
+# AMC Management CRM — Build Guide (Audited 2026-06-22)
 
-> ⚠️ **This document was audited and rewritten on 2026-06-18.** The previous version had several outdated statuses. Below is the current state.
+> ⚠️ **This document was re-audited on 2026-06-22.** Several modules previously marked as stubs or incomplete have since been fully implemented. Below is the current verified state.
 
 > Based on `index.html` (Requirement Sheet v1).
 > Stack: **NestJS + Kysely + PostgreSQL** | **Next.js (App Router) + Tailwind + shadcn/ui** | **Redis + BullMQ**
@@ -9,61 +9,59 @@
 ## Immediate Next Tasks (priority order)
 
 ### 1. Build Providers List + Detail Pages (Frontend)
-**Status:** Backend CRUD is 100% complete. Sidebar links to `/providers` but no page exists. Only a `create-provider-dialog.tsx` component exists. This is the **highest-impact** feature to build next because:
+**Status:** Backend CRUD is 100% complete (272 lines, batch enrichment with domain/server counts, conflict checks). Frontend has only a `create-provider-dialog.tsx` component used within servers/assets pages. No dedicated list/detail pages exist. The sidebar does **not** currently link to `/providers`. This is the highest-impact feature because:
 - Backend is done — just needs list page, detail page, create/edit form
-- Unblocks server-provider context (servers reference providers)
 - Use the same patterns as Clients/Contracts/Servers pages
 - **Files to create:** `app/(main-pages)/providers/page.tsx`, `components/providers/providers-page-content.tsx`, `components/providers/providers-grid.tsx`, `components/providers/provider-card.tsx`, `components/providers/provider-detail.tsx`
 
-### 2. Add Create/Edit Contract Form
-**Status:** Backend CRUD is done. Contracts list + detail pages exist. But there's no create/edit form — users can't create or update contracts from the UI. The contract detail page needs an edit button + drawer (similar to the domain/SSL/server detail page pattern).
+### 2. Add Health Endpoint
+**Status:** No `/health` endpoint exists. The app has no way to check DB/Redis connectivity status without calling actual data endpoints. Build a simple health check that pings PostgreSQL via Kysely and Redis via the existing Redis module. Return `{ status, db, redis, timestamp }`.
 
-### 3. Add Standalone Domain Create Form
-**Status:** Backend `POST /domain` exists. The domain list page exists. But there's no "Add Domain" button/form. Users can only add domains through the asset detail page's create-domain-form component. Need a standalone domain creation flow (enter FQDN → auto-fill via the existing `/domain/verify-fqdn` endpoint).
+### 3. Add Date Range Filter to SSL List Page
+**Status:** Domains page has date range filtering. The SSL list page only has search + type dropdown. Add a date range picker (from/to expiry date) similar to the domains page pattern.
 
-### 4. Fix Stub Modules: Audit Log & Reminders
-**Status:** Both modules have `+id` UUID coercion bugs (service uses `+id` instead of `ParseUUIDPipe`) and services return placeholder strings. Either implement real logic or remove the modules.
-
-### 5. Add SSL Warning Badges
-**Status:** SSL list/detail pages exist but don't show warning badges for self-signed certificates, hostname mismatches, or expired certs. The backend `days_to_expiry` computation exists — just need frontend badge rendering.
+### 4. Add Auto-Renew Toggle to SSL List Filter
+**Status:** SSL list page lacks an auto-renew toggle filter (domains page has one). Add a toggle to filter SSL certs by auto-renew status.
 
 ---
 
 ## Quick Wins (can be done in parallel with above)
 
-- **Clean up `console.log` in `components/ui/smooth-select.tsx`** line 43
-- **Fix pre-existing `calendar.tsx` TS error** (line 181: `'caption' does not exist in type 'Partial<ClassNames>'`)
-- **Add date range filter to SSL list page** (domains page already has one)
-- **Add auto-renew toggle to SSL list filter** (like domains page has)
-- **Fix audit-log & reminder controllers** — replace `+id` with `ParseUUIDPipe`
 - **Add health endpoint** (`/health`) — check DB + Redis connectivity
+- **Add auto-renew toggle to SSL list filter** (like domains page has)
+- **Add date range filter to SSL list page** (domains page already has one)
+- **Fix root `GET /`** — replace `"Hello World!"` placeholder with a useful redirect or health summary
 
 ---
 
 ## What's Done ✅
 
 | Module | Backend | Frontend |
-|---|---|---|
+|---|---|---|---|
 | Auth | ✅ Exchange/refresh/me/logout | ✅ Login via credentials |
 | Users | ✅ Service with DB queries | ✅ List page |
 | Clients | ✅ CRUD + contacts + managers | ✅ List + detail + edit |
 | Assets | ✅ CRUD + types + tags | ✅ List + detail + edit |
-| Contracts | ✅ CRUD + renewals + status | ✅ List + detail (no create/edit form) |
-| Domains | ✅ CRUD + WHOIS/RDAP + status filter + snapshots | ✅ List + detail + edit + status filters + RBAC banner |
-| SSL | ✅ CRUD + TLS check + expiry stats + snapshots | ✅ List + detail + edit |
+| Contracts | ✅ CRUD + renewals + status | ✅ List + detail + **create/edit drawers** |
+| Domains | ✅ CRUD + WHOIS/RDAP + status filter + snapshots | ✅ List + detail + edit + status filters + RBAC banner + **create drawer** |
+| SSL | ✅ CRUD + TLS check + expiry stats + snapshots | ✅ List + detail + edit + **warning badges** |
 | Servers | ✅ CRUD + providers + cost tracking | ✅ List + detail + edit |
-| Providers | ✅ CRUD | ⚠️ Only create dialog — **no list/detail pages** |
+| Providers | ✅ CRUD (272 lines, batch enrichment) | ⚠️ Create dialog only — **no list/detail pages** |
 | Monitors | ✅ CRUD + HTTP/TCP/ping/keyword checks + incident auto-create/resolve + BullMQ scheduling | ✅ List + detail + check history + create/edit drawers |
 | Incidents | ✅ CRUD + cron jobs for expired domain/SSL + check-expired endpoint | ✅ List (filterable/paginated) + detail with timeline |
 | Dashboard | ✅ Consolidated `/dashboard/overview` endpoint + RBAC | ✅ Component-based (10+ files) |
+| Audit Log | ✅ Full CRUD + filtering + pagination | ✅ List + detail pages |
+| Reminders | ✅ Full CRUD + rules + dispatcher + cleanup cron | ✅ List page (labeled Notifications) |
+| Notifications | ✅ SSE real-time in-app (RxJS) | ✅ Bell icon / reminder page |
+| Email | ✅ Nodemailer sending service | N/A |
 | Redis | ✅ Client module + service + controller | N/A |
 | BullMQ | ✅ 3 queues + cron bootstrap + queue service | N/A |
 | Jobs/Workers | ✅ domain-refresh, ssl-refresh, monitor-check processors | N/A |
-| Reminders | ⚠️ Stub service (`+id` bug) | ❌ Not started |
-| Audit Log | ⚠️ Stub service (`+id` bug) | ❌ Not started |
+| Expiry Calendar | N/A | ✅ Full calendar page |
 | Reports | ❌ Not started | ❌ Not started |
 | Client Portal | ❌ Not started | ❌ Not started |
 | CSV Import | ❌ Not started | ❌ Not started |
+| Health Endpoint | ❌ Not started | ❌ Not started |
 
 ---
 
@@ -123,25 +121,26 @@
 ### 1.5 Contracts (AMC) module
 - [x] Full CRUD with billing cycles, status auto-transition, renewal history
 - [x] Frontend: list page (renewal pipeline view) + detail page
-- [ ] **→ NEXT TASK** Create/edit contract form (multi-select assets)
-- [ ] Renewal calendar block (show upcoming renewals)
+- [x] Create/edit contract form (multi-select assets) via drawers
+- [ ] Renewal calendar block (show upcoming renewals in calendar view)
 
 ### 1.6 Service Providers + Servers module
 - [x] Full CRUD for both providers and servers
 - [x] Track cost, renewal date, specs, IPs
 - [x] Frontend: full servers list + detail + edit
+- [ ] **→ NEXT TASK** Frontend: providers list + detail + edit pages
 
 ### 1.7 Domains module (auto-tracking)
 - [x] Full CRUD + WHOIS/RDAP auto-fill + snapshot history
 - [x] Status filter (expired/expiring_soon/active) + RBAC filtering
 - [x] Full frontend: list with expiry countdown + detail with edit
-- [ ] Standalone domain create form (enter FQDN → auto-fill)
+- [x] Standalone domain create form (enter FQDN → auto-fill) via drawer
 - [ ] Daily batch WHOIS worker (individual cron scheduling exists but no bulk daily run)
 
 ### 1.8 SSL module (auto-tracking)
 - [x] Full CRUD + TLS check + snapshot history + expiry stats
 - [x] Full frontend: list + detail + edit
-- [ ] Warning badges (self-signed, host mismatch, expired)
+- [x] Warning badges (self-signed, host mismatch, expired)
 - [ ] Daily batch TLS worker (individual cron scheduling exists but no bulk daily run)
 
 ### 1.9 Monitoring + Incidents module
@@ -156,9 +155,13 @@
 - [x] Manual "Check Expired" endpoint + button in incidents list page
 
 ### 1.10 Reminders + Notifications module
-- [ ] Backend is a stub (placeholder strings, `+id` bug in controller)
-- [ ] No frontend pages
-- [ ] No notification sending implemented
+- [x] Full backend CRUD (service, controller, DTOs)
+- [x] Reminder rules CRUD (ReminderRulesService + controller)
+- [x] Dispatcher service — cron that creates pending reminders from rules and sends due reminders
+- [x] Cleanup service — weekly cron purging old sent reminders and escalated orphaned ones
+- [x] In-app SSE notifications (real-time via RxJS)
+- [x] Frontend list page (accessible via sidebar "Notifications")
+- [ ] Email sending integration for reminders
 
 ### 1.11 Dashboard + Reports module
 - [x] Consolidated `/dashboard/overview` endpoint (single API call replaces 6)
@@ -172,8 +175,8 @@
 - [ ] PDF report generation
 
 ### 1.12 Audit Log module
-- [x] Backend is a stub (placeholder strings, `+id` bug in controller)
-- [x] No frontend pages
+- [x] Full backend CRUD (create, paginated list with filters, get by ID, recent)
+- [x] Frontend list + detail pages (entity type filtering, pagination, before/after values displayed)
 
 ### 1.13 CSV Import
 - [ ] Not started
@@ -213,7 +216,7 @@
 | **Security** | JWT, rate limiting. Helmet/CORS configured. |
 | **DB indexing** | Present on key columns: `expiry_date`, `status`, `client_id`, `asset_id`, `monitor_id` |
 | **Idempotency** | Incident dedup by consecutive failures. Job dedup via job IDs. |
-| **Monitoring** | No health endpoint yet. |
+| **Monitoring** | No health endpoint yet (**→ quick win**). |
 
 ---
 
@@ -222,9 +225,9 @@
 ```
 amc-backend/
 ├── src/
-│   ├── modules/            # 14 modules (auth, users, clients, assets, contracts,
+│   ├── modules/            # 16 modules (auth, users, clients, assets, contracts,
 │   │                       #   providers, servers, domains, ssl, monitor, incident,
-│   │                       #   dashboard, audit-log, reminder)
+│   │                       #   dashboard, audit-log, reminder, notification, email)
 │   ├── common/             # guards, decorators, interceptors, pipes
 │   ├── db/                 # Kysely migrations (11), types.generated.ts, database.module
 │   ├── jobs/               # BullMQ processors (3)
@@ -235,10 +238,11 @@ amc-backend/
 amc-frontend/
 ├── app/
 │   ├── (auth)/login/       # Login page
-│   ├── (main-pages)/       # 9 route groups (assets, clients, contracts, dashboard,
-│   │                       #   domains, incidents, monitors, servers, ssl-certificates)
+│   ├── (main-pages)/       # 13 route groups (assets, audit-logs, clients, contracts,
+│   │                       #   dashboard, domains, expiry-calendar, incidents, monitors,
+│   │                       #   reminders, servers, ssl-certificates)
 │   └── api/                # API proxy routes
-├── components/             # 18+ component categories (dashboard, ui, domains, etc.)
+├── components/             # 20+ component categories (dashboard, ui, domains, etc.)
 ├── hooks/                  # 13 TanStack Query hooks
 ├── lib/                    # api-client.ts, auth.ts, format-utils.ts, utils.ts
 └── types/                  # api.ts (all frontend TypeScript interfaces)

@@ -3,6 +3,7 @@ import { InjectKysely } from 'nestjs-kysely';
 import { Kysely } from 'kysely';
 import { DB } from '../../db/types.generated';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class IncidentNotificationService {
@@ -11,6 +12,7 @@ export class IncidentNotificationService {
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly emailService: EmailService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -119,19 +121,29 @@ export class IncidentNotificationService {
       if (m.email) recipientEmails.add(m.email);
     }
 
-    if (recipientEmails.size === 0) {
-      this.logger.log(
-        `No recipients found for incident ${incidentId} — skipping notification`,
-      );
-      return;
-    }
-
     const severityLabel = (incident.severity ?? 'unknown').toUpperCase();
     const cause = incident.cause ?? 'Monitor Down';
     const startedAt = incident.started_at
       ? new Date(incident.started_at).toISOString().replace('T', ' ').slice(0, 19)
       : 'N/A';
     const notes = incident.notes ?? '';
+
+    // Push in-app notifications to account managers (always, regardless of email recipients)
+    this.logger.log(`Pushing in-app notification for incident ${incidentId} to account managers`);
+    await this.notificationsService.notifyClientManagers(clientId, {
+      type: 'incident',
+      title: `${severityLabel} Incident — ${cause}`,
+      message: `An incident has been created for ${targetLabel || 'N/A'}. Started: ${startedAt}.`,
+      link: `/incidents/${incidentId}`,
+      severity: incident.severity === 'critical' || incident.severity === 'major' ? 'critical' : 'warning',
+    });
+
+    if (recipientEmails.size === 0) {
+      this.logger.log(
+        `No recipients found for incident ${incidentId} — skipping email notification`,
+      );
+      return;
+    }
 
     const subject = `[AMC Portal] ${severityLabel} Incident — ${cause}`;
 

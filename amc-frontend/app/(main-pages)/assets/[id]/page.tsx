@@ -51,7 +51,11 @@ import {
   Cpu,
   Pencil,
   Activity,
+  Users,
 } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { getInitials } from "@/lib/utils"
+import type { AccountManager } from "@/types/api"
 import { AssetEditForm } from "@/components/assets/asset-details/asset-edit-form"
 import Link from "next/link"
 
@@ -635,7 +639,7 @@ export default function AssetDetailPage() {
         </div>
 
         {/* Right: Monitoring & Quick Info */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg leading-none">
@@ -673,6 +677,43 @@ export default function AssetDetailPage() {
                 </Badge>
               </div>
              
+            </CardContent>
+          </Card>
+
+          {/* Account Managers Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                <Users className="size-3.5 text-muted-foreground" />
+                Account Managers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {asset.account_managers.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  <Users className="size-6 mx-auto mb-1.5 opacity-30" />
+                  <p className="text-xs">No managers assigned to this client</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {asset.account_managers.map((manager: AccountManager) => (
+                    <div
+                      key={manager.id}
+                      className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
+                    >
+                      <Avatar className="size-7">
+                        <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                          {getInitials(manager.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium truncate">{manager.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{manager.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

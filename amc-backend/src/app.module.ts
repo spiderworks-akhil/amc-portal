@@ -24,6 +24,7 @@ import { ReminderModule } from './modules/reminder/reminder.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
 import { MonitorModule } from './modules/monitor/monitor.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { MonitorModule } from './modules/monitor/monitor.module';
     QueueModule,
     RedisModule,
     MonitorModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
