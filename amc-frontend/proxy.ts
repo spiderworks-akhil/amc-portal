@@ -3,27 +3,14 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  const isPublic =
-    pathname === '/login' ||
-    pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/_next/static') ||
-    pathname.startsWith('/_next/image') ||
-    pathname === '/favicon.ico'
-
-  if (isPublic) {
-    return NextResponse.next()
-  }
-
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   })
 
   if (!token) {
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('callbackUrl', pathname)
+    loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -32,6 +19,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // Protect all app routes except:
+    // - /api/*              (backend handles its own auth via JWT guard)
+    // - /login              (sign-in page)
+    // - /_next/*            (Next.js internals)
+    // - favicon.ico         (browser icon)
+    '/((?!api|login|_next/static|_next/image|favicon.ico).*)',
   ],
 }

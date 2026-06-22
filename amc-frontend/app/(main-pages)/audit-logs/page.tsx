@@ -90,6 +90,14 @@ const ENTITY_TYPE_ICONS: Record<string, typeof FileText> = {
 }
 
 export default function AuditLogsPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <AuditLogsContent />
+    </Suspense>
+  )
+}
+
+function AuditLogsContent() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -130,7 +138,6 @@ export default function AuditLogsPage() {
   const total = data?.meta.total ?? 0
 
   return (
-    <Suspense fallback={<Loading />}>
     <div className="container mx-auto max-w-7xl">
       <div className="space-y-6">
         {/* Header */}
@@ -319,6 +326,5 @@ export default function AuditLogsPage() {
         )}
       </div>
     </div>
-    </Suspense>
   )
 }
