@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum IncidentSortBy {
@@ -21,6 +21,7 @@ export class ListIncidentsDto {
 
   @Type(() => Number)
   @Min(1)
+  @Max(100)
   @IsOptional()
   limit?: number = 50;
 

@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProviderType } from 'src/db/types/enums';
 
@@ -21,6 +21,7 @@ export class ListProvidersDto {
 
   @Type(() => Number)
   @Min(1)
+  @Max(100)
   @IsOptional()
   limit?: number = 50;
 

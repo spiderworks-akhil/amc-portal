@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -30,6 +31,7 @@ export class ListSslDto {
 
   @Type(() => Number)
   @Min(1)
+  @Max(100)
   @IsOptional()
   limit?: number = 50;
 

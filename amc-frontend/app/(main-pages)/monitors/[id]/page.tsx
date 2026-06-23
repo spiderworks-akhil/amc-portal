@@ -399,7 +399,42 @@ export default function MonitorDetailPage() {
               </div>
             </CardContent>
           </Card>
-
+       {/* Account Managers Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                <Users className="size-3.5 text-muted-foreground" />
+                Account Managers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {monitor.account_managers.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  <Users className="size-6 mx-auto mb-1.5 opacity-30" />
+                  <p className="text-xs">No managers assigned to this client</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {monitor.account_managers.map((manager: AccountManager) => (
+                    <div
+                      key={manager.id}
+                      className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
+                    >
+                      <Avatar className="size-7">
+                        <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                          {getInitials(manager.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium truncate">{manager.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{manager.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
           {/* Check Distribution Mini Card */}
           {(() => {
             const checks = checksData?.data ?? []
@@ -497,42 +532,7 @@ export default function MonitorDetailPage() {
             )
           })()}
 
-          {/* Account Managers Card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <Users className="size-3.5 text-muted-foreground" />
-                Account Managers
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {monitor.account_managers.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  <Users className="size-6 mx-auto mb-1.5 opacity-30" />
-                  <p className="text-xs">No managers assigned to this client</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {monitor.account_managers.map((manager: AccountManager) => (
-                    <div
-                      key={manager.id}
-                      className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
-                    >
-                      <Avatar className="size-7">
-                        <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                          {getInitials(manager.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium truncate">{manager.name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{manager.email}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+   
         </div>
       </div>
 
