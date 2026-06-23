@@ -33,7 +33,6 @@ import {
   MoreVertical,
   Pencil,
   Trash2,
-  ExternalLink,
   Globe,
 } from "lucide-react"
 import type { AssetListItem } from "@/types/api"
@@ -115,7 +114,6 @@ export function AssetTable({
               <TableHead>Type</TableHead>
               <SortHeader label="Status" field="status" currentField={sortField} order={sortOrder} onSort={onSort} />
               <SortHeader label="Client" field="client_name" currentField={sortField} order={sortOrder} onSort={onSort} />
-              <TableHead>URL</TableHead>
               <TableHead>Contact</TableHead>
               <SortHeader label="Created" field="created_at" currentField={sortField} order={sortOrder} onSort={onSort} />
               <TableHead className="w-12 text-right">Actions</TableHead>
@@ -134,7 +132,7 @@ export function AssetTable({
               ))
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                   No assets found
                 </TableCell>
               </TableRow>
@@ -165,22 +163,6 @@ export function AssetTable({
                   </TableCell>
                   <TableCell>
                     <span className="text-sm">{asset.client_name}</span>
-                  </TableCell>
-                  <TableCell>
-                    {asset.primary_url ? (
-                      <a
-                        href={asset.primary_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate max-w-[160px] transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="size-3 shrink-0" />
-                        <span className="truncate">{(() => { try { return new URL(asset.primary_url).hostname } catch { return asset.primary_url } })()}</span>
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground/50">—</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     {asset.primary_contact_name ? (

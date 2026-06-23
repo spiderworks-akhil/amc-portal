@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -15,11 +15,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Loader2, Server, CheckIcon, ChevronDownIcon, XIcon } from "lucide-react"
 import { SearchableSelect } from "@/components/ui/searchable-select"
 import type { ClientListItem, Contact as ContactType } from "@/types/api"
 import { SmoothSelect } from "../ui/smooth-select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useClient } from "@/hooks/use-clients"
+import { useServers } from "@/hooks/use-servers"
+import { cn } from "@/lib/utils"
 
 interface AssetCreateDialogProps {
   open: boolean
@@ -27,12 +30,11 @@ interface AssetCreateDialogProps {
   onSubmit: (data: {
     name: string
     type: string
-    primary_url?: string
     primary_contact_name?: string
     primary_contact_email?: string
     notes?: string
     client_id?: string
-    createMonitor?: boolean
+    server_ids?: string[]
   }) => void
   isPending: boolean
   types: Array<{ value: string; label: string }>
@@ -48,7 +50,6 @@ const assetSchema = z.object({
   client_id: z.string().optional(),
   name: z.string().min(1, "Asset name is required").max(255),
   type: z.string().min(1, "Asset type is required"),
-  primary_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
   primary_contact_name: z.string().max(255).optional(),
   primary_contact_email: z.string().email("Must be a valid email").or(z.literal("")).optional(),
   notes: z.string().max(5000).optional(),
@@ -85,14 +86,28 @@ export function AssetCreateDialog({
       client_id: clientId ?? "",
       name: "",
       type: "",
-      primary_url: "",
       primary_contact_name: "",
       primary_contact_email: "",
       notes: "",
     },
   })
+  const [selectedServerIds, setSelectedServerIds] = useState<string[]>([])
+  const [serverSearch, setServerSearch] = useState("")
+  const [serverPopoverOpen, setServerPopoverOpen] = useState(false)
+  const { data: serversData, isLoading: serversLoading } = useServers()
 
-  const [createMonitor, setCreateMonitor] = useState(false)
+  const serverOptions = useMemo(() => {
+    const allServers = serversData?.data ?? []
+    if (!serverSearch) return allServers
+    const q = serverSearch.toLowerCase()
+    return allServers.filter((s) => s.label.toLowerCase().includes(q))
+  }, [serversData, serverSearch])
+
+  const toggleServer = (serverId: string) => {
+    setSelectedServerIds((prev) =>
+      prev.includes(serverId) ? prev.filter((id) => id !== serverId) : [...prev, serverId]
+    )
+  }
 
   const selectedClientId = watch("client_id")
   const selectedType = watch("type")
@@ -117,12 +132,12 @@ export function AssetCreateDialog({
         client_id: clientId ?? "",
         name: "",
         type: "",
-        primary_url: "",
         primary_contact_name: "",
         primary_contact_email: "",
         notes: "",
       })
-      setCreateMonitor(false)
+      setSelectedServerIds([])
+      setServerSearch("")
     }
   }, [open, reset, clientId])
 
@@ -149,11 +164,10 @@ export function AssetCreateDialog({
       client_id: clientId ?? (data.client_id || undefined),
       name: data.name,
       type: data.type,
-      primary_url: data.primary_url || undefined,
       primary_contact_name: data.primary_contact_name || undefined,
       primary_contact_email: data.primary_contact_email || undefined,
       notes: data.notes || undefined,
-      createMonitor,
+      server_ids: selectedServerIds.length > 0 ? selectedServerIds : undefined,
     })
   }
 
@@ -248,24 +262,6 @@ export function AssetCreateDialog({
             )}
           </div>
 
-          {/* Primary URL */}
-          <div className="space-y-2">
-            <Label htmlFor="asset-url">Primary URL</Label>
-
-            <Input
-              id="asset-url"
-              type="url"
-              {...register("primary_url")}
-              placeholder="https://example.com"
-            />
-
-            {errors.primary_url?.message && (
-              <p className="text-xs text-destructive">
-                {errors.primary_url.message}
-              </p>
-            )}
-          </div>
-
           {/* Primary Contact */}
           <div className="space-y-2">
             <Label>Primary Contact</Label>
@@ -299,6 +295,92 @@ export function AssetCreateDialog({
             )}
           </div>
 
+          {/* Servers */}
+          <div className="space-y-2">
+            <Label>Servers</Label>
+            <Popover open={serverPopoverOpen} onOpenChange={setServerPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  role="combobox"
+                  aria-expanded={serverPopoverOpen}
+                  className={cn(
+                    "flex h-10 w-full items-center gap-2 rounded-lg border border-input px-3 text-sm transition-colors",
+                    "hover:border-ring/40",
+                    "focus:border-ring focus:ring-1 focus:ring-ring/25 focus:outline-none",
+                    selectedServerIds.length === 0 && "text-muted-foreground",
+                  )}
+                >
+                  <Server className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {selectedServerIds.length === 0
+                      ? "Select servers..."
+                      : `${selectedServerIds.length} server${selectedServerIds.length !== 1 ? "s" : ""} selected`
+                    }
+                  </span>
+                  {selectedServerIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedServerIds([])
+                      }}
+                      className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      aria-label="Clear selection"
+                    >
+                      <XIcon className="size-3.5" />
+                    </button>
+                  )}
+                  <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform", serverPopoverOpen && "rotate-180")} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[var(--radix-popover-trigger-width)] border border-input p-0 shadow-md overflow-hidden"
+                align="start"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <div className="border-b border-input px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <CheckIcon className="size-4 shrink-0 opacity-50" />
+                    <input
+                      placeholder="Search servers..."
+                      value={serverSearch}
+                      onChange={(e) => setServerSearch(e.target.value)}
+                      className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+                <div className="max-h-64 overflow-y-auto p-1">
+                  {serversLoading ? (
+                    <div className="py-3 text-center text-sm text-muted-foreground">Loading servers...</div>
+                  ) : serverOptions.length === 0 ? (
+                    <div className="py-3 text-center text-sm text-muted-foreground">No servers found.</div>
+                  ) : (
+                    serverOptions.map((server) => {
+                      const isSelected = selectedServerIds.includes(server.id)
+                      return (
+                        <div
+                          key={server.id}
+                          onClick={() => toggleServer(server.id)}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                            isSelected && "bg-accent text-accent-foreground",
+                          )}
+                        >
+                          <CheckIcon className={cn("size-4 shrink-0", isSelected ? "opacity-100" : "opacity-0")} />
+                          <span className="truncate">{server.label}</span>
+                          {server.region && (
+                            <span className="text-xs text-muted-foreground ml-auto shrink-0">{server.region}</span>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           {/* Notes */}
           <div className="space-y-2">
             <Label htmlFor="asset-notes">Notes</Label>
@@ -318,24 +400,6 @@ export function AssetCreateDialog({
             )}
           </div>
 
-          {/* Create Monitor Toggle */}
-          {watch("primary_url") && (
-            <label className="flex items-start gap-3 rounded-lg border border-border/60 p-3 cursor-pointer hover:bg-accent/50 transition-colors">
-              <input
-                type="checkbox"
-                checked={createMonitor}
-                onChange={(e) => setCreateMonitor(e.target.checked)}
-                className="mt-0.5 size-4 rounded border-border accent-primary shrink-0"
-              />
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium leading-none">Create &amp; Monitor</p>
-                <p className="text-xs text-muted-foreground">
-                  Automatically set up an HTTPS uptime monitor for this asset&apos;s URL.
-                </p>
-              </div>
-            </label>
-          )}
-
           <DrawerFooter className="mt-auto">
             <Button
               type="button"
@@ -347,7 +411,7 @@ export function AssetCreateDialog({
 
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {isPending ? "Creating..." : (createMonitor ? "Create & Monitor" : "Create Asset")}
+              {isPending ? "Creating..." : "Create Asset"}
             </Button>
           </DrawerFooter>
         </form>

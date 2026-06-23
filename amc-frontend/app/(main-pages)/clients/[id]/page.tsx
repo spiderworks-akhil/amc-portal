@@ -62,7 +62,6 @@ import {
   Pencil,
   Star,
   Monitor,
-  Globe,
   Archive,
   ExternalLink,
   Bell,
@@ -76,6 +75,7 @@ import { ShowContactForm } from "@/components/clients/client-details/contact-for
 import { ClientEditForm } from "@/components/clients/client-details/client-edit-form";
 import { AddManagerSheet } from "@/components/clients/client-details/add-manager-sheet";
 import { AssetCreateDialog } from "@/components/assets/asset-create-dialog";
+import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline";
 
 const ASSET_TYPES = [
   { value: "website", label: "Website" },
@@ -203,11 +203,10 @@ export default function ClientDetailPage() {
     (data: {
       name: string;
       type: string;
-      primary_url?: string;
       primary_contact_name?: string;
       primary_contact_email?: string;
       notes?: string;
-      createMonitor?: boolean;
+      server_ids?: string[];
     }) => {
       createAsset.mutate(
         { ...data, client_id: id },
@@ -645,18 +644,7 @@ export default function ClientDetailPage() {
                       {asset.status}
                     </span>
                   </div>
-                  {asset.primary_url && (
-                    <a
-                      href={asset.primary_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary truncate transition-colors"
-                    >
-                      <Globe className="size-3 shrink-0" />
-                      <span className="truncate">{asset.primary_url}</span>
-                    </a>
-                  )}
+
                   <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                     {asset.monitoring_enabled && (
                       <span className="flex items-center gap-1">
@@ -706,6 +694,11 @@ export default function ClientDetailPage() {
         isPending={updateClient.isPending}
         client={client}
       />
+
+      {/* Activity Timeline */}
+      <div className="mt-6">
+        <NotesTimeline noteableType="client" noteableId={id} />
+      </div>
 
       {/* Create Asset Sheet */}
       <AssetCreateDialog

@@ -16,11 +16,6 @@ export class UpdateAssetDto {
   name?: string;
 
   @IsString()
-  @IsOptional()
-  @MaxLength(2048)
-  primary_url?: string;
-
-  @IsString()
   @IsIn(ASSET_STATUSES)
   @IsOptional()
   status?: string;

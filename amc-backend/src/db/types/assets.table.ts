@@ -10,8 +10,6 @@ export interface Assets {
 
   name: string;
 
-  primary_url: string | null;
-
   status: AssetStatus;
 
   primary_contact_name: string | null;

@@ -22,6 +22,7 @@ import {
   History,
   Pencil,
 } from "lucide-react"
+import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline"
 import { ContractEditDrawer } from "@/components/contracts/contract-edit-drawer"
 
 const CONTRACT_STATUS_COLORS: Record<string, "emerald" | "amber" | "red" | "blue" | "gray"> = {
@@ -272,6 +273,11 @@ export default function ContractDetailPage() {
         contract={contract}
       />
 
+      {/* Activity Timeline */}
+      <div className="mb-6">
+        <NotesTimeline noteableType="contract" noteableId={id} />
+      </div>
+
       {/* Linked Assets Section */}
       <Card className="mb-6">
         <CardHeader>
@@ -321,17 +327,7 @@ export default function ContractDetailPage() {
                     >
                       {asset.status}
                     </Badge>
-                    {asset.primary_url && (
-                      <a
-                        href={asset.primary_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="size-3" />
-                      </a>
-                    )}
+
                   </div>
                 </div>
               ))}

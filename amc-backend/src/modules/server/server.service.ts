@@ -205,7 +205,6 @@ export class ServerService {
       .select([
         'assets.id',
         'assets.name',
-        'assets.primary_url',
         'assets.status',
         'assets.type as type_name',
       ])
@@ -303,7 +302,6 @@ export class ServerService {
       .select([
         'assets.id',
         'assets.name',
-        'assets.primary_url',
         'assets.status',
         'assets.primary_contact_name',
         'assets.primary_contact_email',

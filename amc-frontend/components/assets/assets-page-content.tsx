@@ -124,7 +124,7 @@ export function AssetsPageContent() {
   )
 
   const handleCreateSubmit = useCallback(
-    (formData: { client_id?: string; name: string; type: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; notes?: string; createMonitor?: boolean }) => {
+    (formData: { client_id?: string; name: string; type: string; primary_contact_name?: string; primary_contact_email?: string; notes?: string }) => {
       if (!formData.client_id) return
 
       createAsset(formData as CreateAssetPayload, {

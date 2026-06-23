@@ -28,11 +28,6 @@ export class CreateAssetDto {
   type: AssetType;
 
   @IsString()
-  @IsOptional()
-  @MaxLength(2048)
-  primary_url?: string;
-
-  @IsString()
   @IsIn(ASSET_STATUSES)
   @IsOptional()
   status?: string;
@@ -69,7 +64,8 @@ export class CreateAssetDto {
   @MaxLength(5000)
   notes?: string;
 
-  @IsBoolean()
+  @IsArray()
+  @IsUUID('4', { each: true })
   @IsOptional()
-  createMonitor?: boolean;
+  server_ids?: string[];
 }

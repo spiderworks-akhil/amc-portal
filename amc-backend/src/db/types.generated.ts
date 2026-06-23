@@ -39,13 +39,17 @@ export interface Assets {
   notes: string | null;
   primary_contact_email: string | null;
   primary_contact_name: string | null;
-  primary_url: string | null;
   status: Generated<string>;
   tags: Generated<Json>;
   tech_stack: Json | null;
   type: Generated<string>;
   updated_at: Generated<Timestamp>;
   updated_by_id: string | null;
+}
+
+export interface AssetScopes {
+  asset_id: string;
+  scope_id: string;
 }
 
 export interface AssetServers {
@@ -237,6 +241,16 @@ export interface Monitors {
   updated_by_id: string | null;
 }
 
+export interface Notes {
+  content: string;
+  created_at: Generated<Timestamp>;
+  created_by_id: string | null;
+  id: Generated<string>;
+  noteable_id: string;
+  noteable_type: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface NotificationHistory {
   channel: string;
   delivered_at: Timestamp | null;
@@ -281,6 +295,16 @@ export interface RevokedTokens {
   expires_at: Timestamp;
   jti: string;
   user_id: string;
+}
+
+export interface Scopes {
+  color: Generated<string>;
+  created_at: Generated<Timestamp>;
+  created_by_id: string | null;
+  description: string | null;
+  id: Generated<string>;
+  name: string;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface Servers {
@@ -364,6 +388,7 @@ export interface Users {
 }
 
 export interface DB {
+  asset_scopes: AssetScopes;
   asset_servers: AssetServers;
   assets: Assets;
   audit_logs: AuditLogs;
@@ -380,10 +405,12 @@ export interface DB {
   incidents: Incidents;
   monitor_checks: MonitorChecks;
   monitors: Monitors;
+  notes: Notes;
   notification_history: NotificationHistory;
   reminder_rules: ReminderRules;
   reminders: Reminders;
   revoked_tokens: RevokedTokens;
+  scopes: Scopes;
   servers: Servers;
   service_providers: ServiceProviders;
   ssl_certificates: SslCertificates;

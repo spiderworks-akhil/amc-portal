@@ -15,7 +15,6 @@ import type { Contact as ContactType } from "@/types/api"
 
 const assetSchema = z.object({
   name: z.string().min(1, "Asset name is required"),
-  primary_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   primary_contact_name: z.string().optional(),
   primary_contact_email: z.string().email("Invalid email").optional().or(z.literal("")),
   status: z.string().optional(),
@@ -34,16 +33,15 @@ export function AssetEditForm({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: { name: string; primary_url?: string; primary_contact_name?: string; primary_contact_email?: string; status?: string; monitoring_enabled?: boolean; notes?: string }) => void
+  onSubmit: (data: { name: string; primary_contact_name?: string; primary_contact_email?: string; status?: string; monitoring_enabled?: boolean; notes?: string }) => void
   isPending: boolean
-  asset: { name: string; primary_url?: string | null; primary_contact_name?: string | null; primary_contact_email?: string | null; status?: string | null; monitoring_enabled?: boolean | null; notes?: string | null }
+  asset: { name: string; primary_contact_name?: string | null; primary_contact_email?: string | null; status?: string | null; monitoring_enabled?: boolean | null; notes?: string | null }
   contacts: ContactType[]
 }) {
   const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
     defaultValues: {
       name: asset.name ?? "",
-      primary_url: asset.primary_url ?? "",
       primary_contact_name: asset.primary_contact_name ?? "",
       primary_contact_email: asset.primary_contact_email ?? "",
       status: asset.status ?? "live",
@@ -60,7 +58,6 @@ export function AssetEditForm({
   useEffect(() => {
     if (open) reset({
       name: asset.name ?? "",
-      primary_url: asset.primary_url ?? "",
       primary_contact_name: asset.primary_contact_name ?? "",
       primary_contact_email: asset.primary_contact_email ?? "",
       status: asset.status ?? "live",
@@ -72,7 +69,6 @@ export function AssetEditForm({
   const onFormSubmit = (data: AssetFormValues) => {
     onSubmit({
       name: data.name.trim(),
-      primary_url: data.primary_url?.trim() || undefined,
       primary_contact_name: data.primary_contact_name?.trim() || undefined,
       primary_contact_email: data.primary_contact_email?.trim() || undefined,
       status: data.status || undefined,
@@ -95,11 +91,6 @@ export function AssetEditForm({
             </Label>
             <Input id="asset-name" {...register("name")} placeholder="Client Website" autoFocus />
             {errors.name?.message && <p className="text-xs text-destructive">{errors.name.message}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="asset-url">Primary URL</Label>
-            <Input id="asset-url" type="url" {...register("primary_url")} placeholder="https://example.com" />
-            {errors.primary_url?.message && <p className="text-xs text-destructive">{errors.primary_url.message}</p>}
           </div>
           <div className="space-y-2">
   <Label>Primary Contact</Label>

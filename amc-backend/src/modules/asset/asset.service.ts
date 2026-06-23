@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
@@ -9,15 +9,11 @@ import {
   AssetSortBy,
   SortOrder,
 } from './dto';
-import { MonitorService } from '../monitor/monitor.service';
 
 @Injectable()
 export class AssetService {
-  private readonly logger = new Logger(AssetService.name);
-
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
-    private readonly monitorService: MonitorService,
   ) {}
 
   async create(dto: CreateAssetDto, createdBy?: string) {
@@ -27,7 +23,6 @@ export class AssetService {
         name: dto.name,
         client_id: dto.client_id,
         type: dto.type,
-        primary_url: dto.primary_url ?? null,
         status: dto.status ?? 'live',
         primary_contact_name: dto.primary_contact_name ?? null,
         primary_contact_email: dto.primary_contact_email ?? null,
@@ -41,19 +36,15 @@ export class AssetService {
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    if (dto.createMonitor && dto.primary_url) {
-      try {
-        await this.monitorService.create({
+    if (dto.server_ids?.length) {
+      await this.db
+        .insertInto('asset_servers')
+        .values(dto.server_ids.map((serverId) => ({
+          server_id: serverId,
           asset_id: asset.id,
-          name: `Monitor: ${dto.name}`,
-          check_type: 'https',
-          target: dto.primary_url,
-          interval_seconds: 300,
-          enabled: true,
-        }, createdBy);
-      } catch (err) {
-        this.logger.error(`Failed to auto-create monitor for asset ${asset.id}`, err);
-      }
+        })))
+        .onConflict((oc) => oc.columns(['server_id', 'asset_id']).doNothing())
+        .execute();
     }
 
     return asset;
@@ -81,7 +72,6 @@ export class AssetService {
       const pattern = `%${search}%`;
       query = query.where((eb) => eb.or([
         eb('assets.name', 'ilike', pattern),
-        eb('assets.primary_url', 'ilike', pattern),
         eb('assets.primary_contact_name', 'ilike', pattern),
         eb('assets.primary_contact_email', 'ilike', pattern),
         eb('assets.type', 'ilike', pattern),
@@ -120,7 +110,6 @@ export class AssetService {
         .select([
           'assets.id',
           'assets.name',
-          'assets.primary_url',
           'assets.status',
           'assets.type',
           'assets.client_id',
@@ -242,7 +231,6 @@ export class AssetService {
     const updateData: Record<string, unknown> = { updated_at: new Date() };
 
     if (dto.name !== undefined) updateData.name = dto.name;
-    if (dto.primary_url !== undefined) updateData.primary_url = dto.primary_url;
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.primary_contact_name !== undefined) updateData.primary_contact_name = dto.primary_contact_name;
     if (dto.primary_contact_email !== undefined) updateData.primary_contact_email = dto.primary_contact_email;

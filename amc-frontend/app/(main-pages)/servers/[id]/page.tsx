@@ -40,6 +40,7 @@ import {
   Copy,
   Check,
 } from "lucide-react"
+import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline"
 import { toast } from "sonner"
 
 const ASSET_STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
@@ -363,6 +364,11 @@ export default function ServerDetailPage() {
         </div>
       </div>
 
+      {/* Activity Timeline */}
+      <div className="mb-6">
+        <NotesTimeline noteableType="server" noteableId={id} />
+      </div>
+
       {/* Linked Assets Section */}
       <Card className="mb-6">
         <CardHeader>
@@ -412,17 +418,7 @@ export default function ServerDetailPage() {
                     >
                       {asset.status}
                     </Badge>
-                    {asset.primary_url && (
-                      <a
-                        href={asset.primary_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="size-3" />
-                      </a>
-                    )}
+
                   </div>
                 </div>
               ))}

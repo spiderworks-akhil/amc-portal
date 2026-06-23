@@ -111,7 +111,6 @@ export interface SyncSummary {
 export interface AssetListItem {
   id: string
   name: string
-  primary_url?: string | null
   status: string
   type: string
   client_id: string
@@ -128,7 +127,6 @@ export interface CreateAssetPayload {
   name: string
   client_id: string
   type: string
-  primary_url?: string
   status?: string
   primary_contact_name?: string
   primary_contact_email?: string
@@ -136,7 +134,7 @@ export interface CreateAssetPayload {
   tech_stack?: string[]
   tags?: string[]
   notes?: string
-  createMonitor?: boolean
+  server_ids?: string[]
 }
 
 export interface ListClientsParams {
@@ -194,6 +192,7 @@ export interface AssetDetail extends AssetListItem {
     last_checked_at?: string | null
     domain_fqdn?: string | null
   }>
+  scopes: Scope[]
 }
 
 export interface ContractListItem {
@@ -237,7 +236,6 @@ export interface ContractDetail {
   assets: Array<{
     id: string
     name: string
-    primary_url?: string | null
     status: string
     type_name: string
   }>
@@ -357,7 +355,6 @@ export interface ServerDetail extends ServerListItem {
   assets: Array<{
     id: string
     name: string
-    primary_url?: string | null
     status: string
     type_name: string
   }>
@@ -453,7 +450,6 @@ export interface UpdateContractPayload {
 
 export interface UpdateAssetPayload {
   name?: string
-  primary_url?: string
   status?: string
   primary_contact_name?: string
   primary_contact_email?: string
@@ -691,6 +687,30 @@ export interface UpdateReminderRulePayload {
   channels?: string[]
   recipients?: Record<string, unknown>
   enabled?: boolean
+}
+
+// ── Scopes ──
+
+export interface Scope {
+  id: string
+  name: string
+  description: string | null
+  color: string
+  asset_count?: number
+  created_by_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Note {
+  id: string
+  noteable_type: string
+  noteable_id: string
+  content: string
+  created_by_id: string | null
+  created_at: string
+  updated_at: string
+  author: { id: string; name: string; email: string } | null
 }
 
 // ── Users ──
