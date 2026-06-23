@@ -31,4 +31,8 @@ export class CreateClientDto {
   @IsString()
   @IsOptional()
   notes?: string;
+  
+  @IsString()
+  external_id?: string;
+
 }

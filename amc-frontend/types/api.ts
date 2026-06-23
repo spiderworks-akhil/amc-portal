@@ -693,6 +693,27 @@ export interface UpdateReminderRulePayload {
   enabled?: boolean
 }
 
+// ── Users ──
+
+export interface UserListItem {
+  id: string
+  name: string
+  email: string
+  role: string
+  is_active: boolean
+  last_login_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ListUsersParams {
+  page?: number
+  limit?: number
+  search?: string
+  sort_by?: string
+  sort_order?: "asc" | "desc"
+}
+
 // ── Queue Stats ──
 
 export interface QueueStats {

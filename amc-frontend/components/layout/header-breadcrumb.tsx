@@ -17,6 +17,7 @@ const pageTitles: Record<string, { label: string; icon?: React.ElementType }> = 
   "/audit-logs": { label: "Audit Logs" },
   "/expiry-calendar": { label: "Expiry Calendar" },
   "/reminders": { label: "Notifications" },
+  "/users": { label: "Users" },
 }
 
 export function HeaderBreadcrumb() {

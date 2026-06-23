@@ -3,6 +3,7 @@
 import {
   LayoutDashboard,
   Users,
+  User,
   HardDrive,
   FileText,
   Globe,
@@ -49,6 +50,7 @@ const navItems = [
       { title: "Clients", icon: Users, href: "/clients" },
       { title: "Assets", icon: HardDrive, href: "/assets" },
       { title: "Contracts", icon: FileText, href: "/contracts" },
+      { title: "Users", icon: User, href: "/users" },
        { title: "Expiry Calendar", icon: CalendarDays, href: "/expiry-calendar" },
     ],
   },

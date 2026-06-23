@@ -35,16 +35,16 @@ export class ClientController {
   }
 
 
-  @Post('sync')
-  @HttpCode(HttpStatus.OK)
-  @ResponseMessage('Clients synced successfully')
-  async syncClients(@Req() req: Request) {
-    const token = this.extractToken(req);
-    if (!token) {
-      throw new UnauthorizedException('No authentication token found');
-    }
-    return this.clientService.importClientsFromApi(token);
-  }
+  // @Post('sync')
+  // @HttpCode(HttpStatus.OK)
+  // @ResponseMessage('Clients synced successfully')
+  // async syncClients(@Req() req: Request) {
+  //   const token = this.extractToken(req);
+  //   if (!token) {
+  //     throw new UnauthorizedException('No authentication token found');
+  //   }
+  //   return this.clientService.importClientsFromApi(token);
+  // }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)

@@ -265,87 +265,87 @@ export class ClientService {
     return { message: 'Contact deleted successfully' };
   }
 
-  async importClientsFromApi(token: string) {
-    const allExternalClients = await this.fetchAllExternalClients(token);
+  // async importClientsFromApi(token: string) {
+  //   const allExternalClients = await this.fetchAllExternalClients(token);
 
-    if (allExternalClients.length === 0) {
-      this.logger.warn('No clients returned from external API. Skipping sync.');
-      return {
-        message: 'No clients returned from external API. Sync skipped.',
-        summary: { imported: 0, updated: 0, softDeleted: 0, skipped: 0 },
-      };
-    }
+  //   if (allExternalClients.length === 0) {
+  //     this.logger.warn('No clients returned from external API. Skipping sync.');
+  //     return {
+  //       message: 'No clients returned from external API. Sync skipped.',
+  //       summary: { imported: 0, updated: 0, softDeleted: 0, skipped: 0 },
+  //     };
+  //   }
 
-    const externalIds = new Set(allExternalClients.map((c) => String(c.id)));
+  //   const externalIds = new Set(allExternalClients.map((c) => String(c.id)));
 
-    const result = await this.db.transaction().execute(async (trx) => {
-      let imported = 0;
-      let updated = 0;
-      let skipped = 0;
+  //   const result = await this.db.transaction().execute(async (trx) => {
+  //     let imported = 0;
+  //     let updated = 0;
+  //     let skipped = 0;
 
-      for (const client of allExternalClients) {
-        try {
-          const externalId = String(client.id);
-          const now = new Date();
-          const createdAt = this.isValidDate(client.created_at) ? new Date(client.created_at) : now;
-          const updatedAt = this.isValidDate(client.updated_at) ? new Date(client.updated_at) : now;
+  //     for (const client of allExternalClients) {
+  //       try {
+  //         const externalId = String(client.id);
+  //         const now = new Date();
+  //         const createdAt = this.isValidDate(client.created_at) ? new Date(client.created_at) : now;
+  //         const updatedAt = this.isValidDate(client.updated_at) ? new Date(client.updated_at) : now;
 
-          const existing = await trx
-            .selectFrom('clients')
-            .select(['id'])
-            .where('external_id', '=', externalId)
-            .executeTakeFirst();
+  //         const existing = await trx
+  //           .selectFrom('clients')
+  //           .select(['id'])
+  //           .where('external_id', '=', externalId)
+  //           .executeTakeFirst();
 
-          if (existing) {
-            await trx
-              .updateTable('clients')
-              .set({
-                name: client.client_name,
-                is_active: client.is_active ?? true,
-                updated_at: updatedAt,
-              })
-              .where('id', '=', existing.id)
-              .execute();
-            updated++;
-          } else {
-            await trx
-              .insertInto('clients')
-              .values({
-                external_id: externalId,
-                name: client.client_name,
-                is_active: client.is_active ?? true,
-                created_at: createdAt,
-                updated_at: updatedAt,
-              })
-              .execute();
-            imported++;
-          }
-        } catch (error) {
-          this.logger.error(`Failed to upsert client with external ID ${client?.id}`, error.data);
-          skipped++;
-        }
-      }
+  //         if (existing) {
+  //           await trx
+  //             .updateTable('clients')
+  //             .set({
+  //               name: client.client_name,
+  //               is_active: client.is_active ?? true,
+  //               updated_at: updatedAt,
+  //             })
+  //             .where('id', '=', existing.id)
+  //             .execute();
+  //           updated++;
+  //         } else {
+  //           await trx
+  //             .insertInto('clients')
+  //             .values({
+  //               external_id: externalId,
+  //               name: client.client_name,
+  //               is_active: client.is_active ?? true,
+  //               created_at: createdAt,
+  //               updated_at: updatedAt,
+  //             })
+  //             .execute();
+  //           imported++;
+  //         }
+  //       } catch (error) {
+  //         this.logger.error(`Failed to upsert client with external ID ${client?.id}`, error.data);
+  //         skipped++;
+  //       }
+  //     }
 
-      const softDeleted = await this.reconcileDeletedClients(trx, externalIds, new Date());
+  //     const softDeleted = await this.reconcileDeletedClients(trx, externalIds, new Date());
 
-      return { imported, updated, skipped, softDeleted };
-    });
+  //     return { imported, updated, skipped, softDeleted };
+  //   });
 
-    this.logger.log(
-      `Client reconciliation complete. Imported: ${result.imported}, Updated: ${result.updated}, Soft-deleted: ${result.softDeleted}, Skipped: ${result.skipped}`,
-    );
+  //   this.logger.log(
+  //     `Client reconciliation complete. Imported: ${result.imported}, Updated: ${result.updated}, Soft-deleted: ${result.softDeleted}, Skipped: ${result.skipped}`,
+  //   );
 
-    return {
-      message: 'Client reconciliation completed.',
-      summary: {
-        totalFetched: allExternalClients.length,
-        imported: result.imported,
-        updated: result.updated,
-        softDeleted: result.softDeleted,
-        skipped: result.skipped,
-      },
-    };
-  }
+  //   return {
+  //     message: 'Client reconciliation completed.',
+  //     summary: {
+  //       totalFetched: allExternalClients.length,
+  //       imported: result.imported,
+  //       updated: result.updated,
+  //       softDeleted: result.softDeleted,
+  //       skipped: result.skipped,
+  //     },
+  //   };
+  // }
 
   private async fetchAllExternalClients(token: string): Promise<any[]> {
     const allClients: any[] = [];

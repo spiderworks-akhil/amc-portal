@@ -97,7 +97,7 @@ function LoginContent() {
     const authUrl =
       process.env.NEXT_PUBLIC_AUTH_URL || "https://access.spiderworks.org";
     const currentUrl = `${window.location.origin}/login`;
-    window.location.href = `${authUrl}/login?type=WORKS&url=${encodeURIComponent(currentUrl)}`;
+    window.location.href = `${authUrl}/login?type=AMC_SW&url=${encodeURIComponent(currentUrl)}`;
   };
 
   if (status === "loading" || loading) {
