@@ -25,7 +25,11 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Numeric = ColumnType<string, number | string, number | string>;
 
+export type OwnerEnum = "client" | "SpiderWorks" | "thirdparty";
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export type UserRole = "admin" | "user";
 
 export interface Assets {
   client_id: string;
@@ -144,13 +148,17 @@ export interface Contracts {
   deleted_at: Timestamp | null;
   end_date: Timestamp;
   id: Generated<string>;
-  notes: string | null;
+  label: string | null;
   renewal_date: Timestamp;
-  scope: string | null;
   start_date: Timestamp;
   status: Generated<string>;
   updated_at: Generated<Timestamp>;
   updated_by_id: string | null;
+}
+
+export interface ContractScopes {
+  contract_id: string;
+  scope_id: string;
 }
 
 export interface Domains {
@@ -317,9 +325,11 @@ export interface Servers {
   monthly_cost: Numeric | null;
   notes: string | null;
   operating_system: string | null;
+  owner: Generated<OwnerEnum>;
   panel_url: string | null;
   provider_id: string;
   region: string | null;
+  remarks: string | null;
   renewal_date: Timestamp | null;
   updated_at: Generated<Timestamp>;
   updated_by_id: string | null;
@@ -383,7 +393,7 @@ export interface Users {
   notification_prefs: Json | null;
   password_hash: string | null;
   remote_user_id: Int8 | null;
-  role: Generated<string>;
+  role: Generated<UserRole>;
   updated_at: Generated<Timestamp>;
 }
 
@@ -398,6 +408,7 @@ export interface DB {
   clients: Clients;
   contract_assets: ContractAssets;
   contract_renewals: ContractRenewals;
+  contract_scopes: ContractScopes;
   contracts: Contracts;
   domain_snapshots: DomainSnapshots;
   domains: Domains;

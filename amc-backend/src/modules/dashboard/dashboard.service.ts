@@ -225,7 +225,6 @@ export class DashboardService {
         'contracts.amount',
         'contracts.currency',
         'contracts.auto_renew',
-        'contracts.scope',
         'contracts.status',
         'clients.name as client_name',
         'clients.email as client_email',

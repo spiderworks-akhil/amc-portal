@@ -1,18 +1,21 @@
 import { Kysely, sql } from "kysely";
 
 export async function up(db: Kysely<unknown>): Promise<void> {
-  // Add enum type
+  // Create enums
   await sql`
     CREATE TYPE user_role AS ENUM ('user', 'admin')
   `.execute(db);
 
-  // Add is_active column
-  await db.schema
-    .alterTable("users")
-    .addColumn("is_active", "boolean", (col) => col.defaultTo(true))
-    .execute();
+  await sql`
+    CREATE TYPE owner_enum AS ENUM ('SpiderWorks', 'client', 'thirdparty')
+  `.execute(db);
 
-  // Convert role column to enum
+  // Convert users.role to enum
+  await sql`
+    ALTER TABLE users
+    ALTER COLUMN role DROP DEFAULT
+  `.execute(db);
+
   await sql`
     ALTER TABLE users
     ALTER COLUMN role TYPE user_role
@@ -24,40 +27,85 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     )
   `.execute(db);
 
-  // Set default value
   await sql`
     ALTER TABLE users
-    ALTER COLUMN role SET DEFAULT 'user'
+    ALTER COLUMN role SET DEFAULT 'user'::user_role
   `.execute(db);
+
+  // Add owner column to servers
   await db.schema
-  .alterTable("contracts")
+    .alterTable("servers")
+    .addColumn("owner", sql`owner_enum`, (col) =>
+      col.notNull().defaultTo("client"),
+    )
+    .addColumn("remarks", "varchar(255)")
+    .execute();
+
+  // Contracts changes
+  await db.schema
+    .alterTable("contracts")
     .addColumn("label", "varchar(255)")
     .dropColumn("notes")
-    .dropColumn('scopes')
+    .dropColumn("scope")
     .execute();
-     await db.schema
+
+  // Assets changes
+  await db.schema
     .alterTable("assets")
     .dropColumn("primary_url")
     .execute();
+
+  // Create contract_scopes junction table
+  await db.schema
+    .createTable("contract_scopes")
+    .addColumn("contract_id", "uuid", (col) =>
+      col.notNull().references("contracts.id").onDelete("cascade"),
+    )
+    .addColumn("scope_id", "uuid", (col) =>
+      col.notNull().references("scopes.id").onDelete("cascade"),
+    )
+    .addPrimaryKeyConstraint("contract_scopes_pk", ["contract_id", "scope_id"])
+    .execute();
 }
 
-
 export async function down(db: Kysely<unknown>): Promise<void> {
+  // Drop contract_scopes junction table
+  await db.schema.dropTable("contract_scopes").execute();
+
+  // Revert servers changes
   await db.schema
-    .alterTable("users")
-    .dropColumn("is_active")
+    .alterTable("servers")
+    .dropColumn("owner")
+    .dropColumn("remarks")
     .execute();
 
-  await sql`
-    ALTER TABLE users
-    ALTER COLUMN role TYPE text
-  `.execute(db);
-
-  await sql`
-    DROP TYPE user_role
-  `.execute(db);
+  // Revert assets changes
   await db.schema
     .alterTable("assets")
     .addColumn("primary_url", "text")
     .execute();
+
+  // Revert contracts changes
+  await db.schema
+    .alterTable("contracts")
+    .dropColumn("label")
+    .addColumn("notes", "text")
+    .addColumn("scopes", "text")
+    .execute();
+
+  // Revert users.role
+  await sql`
+    ALTER TABLE users
+    ALTER COLUMN role DROP DEFAULT
+  `.execute(db);
+
+  await sql`
+    ALTER TABLE users
+    ALTER COLUMN role TYPE text
+    USING role::text
+  `.execute(db);
+
+  // Drop enums
+  await sql`DROP TYPE owner_enum`.execute(db);
+  await sql`DROP TYPE user_role`.execute(db);
 }

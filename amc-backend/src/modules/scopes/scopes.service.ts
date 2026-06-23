@@ -140,6 +140,49 @@ export class ScopesService {
       .execute();
   }
 
+  // ── Contract linking ──
+
+  async addScopesToContract(contractId: string, dto: LinkScopesDto) {
+    const rows = dto.scope_ids.map((scope_id) => ({
+      contract_id: contractId,
+      scope_id,
+    }));
+
+    const result = await this.db
+      .insertInto('contract_scopes')
+      .values(rows)
+      .onConflict((oc) =>
+        oc.columns(['contract_id', 'scope_id']).doNothing(),
+      )
+      .execute();
+
+    return {
+      linked: Number(result[0]?.numInsertedOrUpdatedRows ?? 0),
+    };
+  }
+
+  async removeScopesFromContract(contractId: string, dto: LinkScopesDto) {
+    const result = await this.db
+      .deleteFrom('contract_scopes')
+      .where('contract_id', '=', contractId)
+      .where('scope_id', 'in', dto.scope_ids)
+      .execute();
+
+    return {
+      unlinked: Number(result[0]?.numDeletedRows ?? 0),
+    };
+  }
+
+  async listScopesForContract(contractId: string) {
+    return this.db
+      .selectFrom('contract_scopes')
+      .innerJoin('scopes', 'scopes.id', 'contract_scopes.scope_id')
+      .selectAll('scopes')
+      .where('contract_scopes.contract_id', '=', contractId)
+      .orderBy('scopes.name', 'asc')
+      .execute();
+  }
+
   // ── Helpers ──
 
   private async checkExists(id: string) {

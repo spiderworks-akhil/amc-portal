@@ -42,7 +42,6 @@ export class ContractService {
         amount: String(dto.amount),
         currency: dto.currency ?? 'USD',
         auto_renew: dto.auto_renew ?? false,
-        scope: dto.scope ?? null,
         status: dto.status ?? 'active',
         created_by_id: createdBy ?? null,
       })
@@ -85,7 +84,6 @@ export class ContractService {
         eb.or([
           eb('contracts.contract_number', 'ilike', pattern),
           eb('clients.name', 'ilike', pattern),
-          eb('contracts.scope', 'ilike', pattern),
         ]),
       );
     }
@@ -170,7 +168,6 @@ export class ContractService {
           'contracts.amount',
           'contracts.currency',
           'contracts.auto_renew',
-          'contracts.scope',
           'contracts.status',
           'contracts.created_at',
           'contracts.updated_at',

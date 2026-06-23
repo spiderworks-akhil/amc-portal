@@ -34,7 +34,7 @@ async function main() {
       name: "Admin",
       email: "admin@amc.local",
       password_hash: "$2b$10$placeholder",
-      role: "staff",
+      role: "user",
       is_active: true,
       remote_user_id: BigInt(1),
     })

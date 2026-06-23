@@ -86,6 +86,38 @@ export class ScopesController {
     return this.scopesService.removeScopesFromAsset(assetId, dto);
   }
 
+  // ── Contract linking ──
+
+  @Post('contract/:contractId')
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Scopes linked to contract successfully')
+  @AuditLog({ entityType: 'scope' })
+  async addScopesToContract(
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+    @Body() dto: LinkScopesDto,
+  ) {
+    return this.scopesService.addScopesToContract(contractId, dto);
+  }
+
+  @Delete('contract/:contractId')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Scopes unlinked from contract successfully')
+  @AuditLog({ entityType: 'scope' })
+  async removeScopesFromContract(
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+    @Body() dto: LinkScopesDto,
+  ) {
+    return this.scopesService.removeScopesFromContract(contractId, dto);
+  }
+
+  @Get('contract/:contractId')
+  @HttpCode(HttpStatus.OK)
+  async listScopesForContract(
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+  ) {
+    return this.scopesService.listScopesForContract(contractId);
+  }
+
   @Get('asset/:assetId')
   @HttpCode(HttpStatus.OK)
   async listScopesForAsset(@Param('assetId', ParseUUIDPipe) assetId: string) {

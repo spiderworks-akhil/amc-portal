@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { Textarea } from "@/components/ui"
 
 interface ScopesSectionProps {
   assetId: string
@@ -263,13 +264,13 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Tags className="size-4 text-primary" />
-              Classification
+              Scopes
             </CardTitle>
             <CardDescription>
               {isLoading
-                ? "Loading classification..."
+                ? "Loading scopes..."
                 : selectedScopes.length === 0
-                  ? "No scopes assigned — add classification tags to organize this asset"
+                  ? "No scopes assigned — add scopes"
                   : `${selectedScopes.length} scope${selectedScopes.length !== 1 ? "s" : ""} assigned`
               }
             </CardDescription>
@@ -318,7 +319,7 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <Tags className="size-4 text-primary" />
-              Manage Classification
+             Add Scopes
             </DialogTitle>
             <DialogDescription>
               Assign or remove scopes to categorize this asset. Scopes make it easy to filter and group assets across the platform.
@@ -365,8 +366,8 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
               </button>
               {showCreate && (
                 <div className="px-3 pb-4 pt-1 space-y-3 border-t border-dashed border-border/40">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
+                  <div className="grid grid-cols-6 gap-3 w-full">
+                    <div className="col-span-3">
                       <Label htmlFor="scope-name" className="text-xs font-medium">Name</Label>
                       <Input
                         id="scope-name"
@@ -377,9 +378,9 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
                         autoFocus
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="col-span-3">
                       <Label htmlFor="scope-desc" className="text-xs font-medium">Description</Label>
-                      <Input
+                      <Textarea
                         id="scope-desc"
                         value={newDescription}
                         onChange={(e) => setNewDescription(e.target.value)}

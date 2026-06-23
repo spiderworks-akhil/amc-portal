@@ -44,7 +44,7 @@ export class AuthService {
         remote_user_id: BigInt(decoded.id),
         name: decoded.name || "Unknown",
         email: decoded.email || null,
-        role: "staff",
+        role: "user",
         is_active: true,
       })
       .onConflict((oc) =>
