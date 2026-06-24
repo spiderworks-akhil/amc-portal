@@ -125,20 +125,7 @@ export function DomainEditForm({
             {errors.fqdn?.message && <p className="text-xs text-destructive">{errors.fqdn.message}</p>}
           </div>
 
-          {/* Registrar */}
-          <div className="space-y-2">
-            <Label>Registrar</Label>
-            <SmoothSelect
-              options={registrars.length === 0 ? [] : registrars.map((r) => ({ value: r.id, label: r.name }))}
-              value={watch("registrar_id")}
-              onChange={(value) =>
-                setValue("registrar_id", value, { shouldValidate: true })
-              }
-              placeholder="Select registrar..."
-              className="w-full"
-            />
-          </div>
-
+  
           {/* Two-column: Registered Date + Expiry Date */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

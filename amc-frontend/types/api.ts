@@ -57,6 +57,32 @@ export interface Contact {
   created_at: string
 }
 
+export interface ExternalClientAccount {
+  id: string
+  client_name: string
+  registered_name: string | null
+  website: string | null
+  phone: string | null
+  email: string | null
+  contact_name: string | null
+  address: string | null
+  country_id: string | null
+  country: string | null
+  is_active: boolean
+  ready_to_delete: boolean
+  status: string
+  logo_file_name: string | null
+  invoice_follow_up_days: number
+  repeat_follow_up_days: number
+  posted_date: string
+  organization_id: string
+  created_by: string | null
+  updated_by: string | null
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
 export interface CreateClientPayload {
   name: string
   company?: string
@@ -65,6 +91,9 @@ export interface CreateClientPayload {
   address?: string
   is_active?: boolean
   notes?: string
+  remarks?: string
+  custom_fields?: Record<string, unknown>
+  external_id: string
 }
 
 export interface UpdateClientPayload {
@@ -106,6 +135,7 @@ export interface SyncSummary {
   updated: number
   softDeleted: number
   skipped: number
+  contactsSynced?: number
 }
 
 export interface AssetListItem {
@@ -261,6 +291,7 @@ export interface CreateServerPayload {
   currency?: string
   renewal_date?: string
   notes?: string
+  owner?: "SpiderWorks" | "client" | "thirdparty"
 }
 
 export interface CreateContractPayload {
@@ -289,6 +320,7 @@ export interface ServerListItem {
   currency?: string | null
   renewal_date?: string | null
   notes?: string | null
+  owner: "SpiderWorks" | "client" | "thirdparty"
   created_at: string
   updated_at: string
   asset_count: number
@@ -471,6 +503,7 @@ export interface UpdateServerPayload {
   currency?: string
   renewal_date?: string
   notes?: string
+  owner?: "SpiderWorks" | "client" | "thirdparty"
 }
 
 export type MonitorCheckType = "http" | "https" | "tcp" | "ping" | "keyword"

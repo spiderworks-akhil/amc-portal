@@ -1,10 +1,16 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely } from 'kysely';
 import { firstValueFrom } from 'rxjs';
 import { DB } from 'src/db/types.generated';
+import { RedisService } from '../../redis/redis.service';
 import {
   ManagerIdsDto,
   ListClientsDto,
@@ -21,10 +27,13 @@ export class ClientService {
   private readonly logger = new Logger(ClientService.name);
   private readonly EXTERNAL_CLIENTS_API_URL: string;
 
+  private static readonly EXTERNAL_CLIENTS_TTL = 300; // 5 minutes
+
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly redis: RedisService,
   ) {
     this.EXTERNAL_CLIENTS_API_URL = this.configService.get<string>(
       'EXTERNAL_CLIENTS_API_URL',
@@ -33,7 +42,13 @@ export class ClientService {
   }
 
   async listClients(dto: ListClientsDto) {
-    const { page = 1, limit = 50, search, sort_by = ClientSortBy.NAME, sort_order = SortOrder.ASC } = dto;
+    const {
+      page = 1,
+      limit = 50,
+      search,
+      sort_by = ClientSortBy.NAME,
+      sort_order = SortOrder.ASC,
+    } = dto;
     const offset = (page - 1) * limit;
 
     let query = this.db
@@ -43,11 +58,13 @@ export class ClientService {
 
     if (search) {
       const pattern = `%${search}%`;
-      query = query.where((eb) => eb.or([
-        eb('name', 'ilike', pattern),
-        eb('company', 'ilike', pattern),
-        eb('email', 'ilike', pattern),
-      ]));
+      query = query.where((eb) =>
+        eb.or([
+          eb('name', 'ilike', pattern),
+          eb('company', 'ilike', pattern),
+          eb('email', 'ilike', pattern),
+        ]),
+      );
     }
 
     const [{ total }, data] = await Promise.all([
@@ -78,10 +95,7 @@ export class ClientService {
         this.db
           .selectFrom('client_account_managers')
           .innerJoin('users', 'users.id', 'client_account_managers.manager_id')
-          .select([
-            'client_account_managers.client_id',
-            'users.name',
-          ])
+          .select(['client_account_managers.client_id', 'users.name'])
           .where('client_account_managers.client_id', 'in', clientIds)
           .where('client_account_managers.deleted_at', 'is', null)
           .execute(),
@@ -108,7 +122,11 @@ export class ClientService {
         if (entry.names.length < 3) entry.names.push(m.name);
       }
 
-      const assetMap = new Map(assetCounts.map((row) => [row.client_id, Number(row.asset_count ?? 0)] as const));
+      const assetMap = new Map(
+        assetCounts.map(
+          (row) => [row.client_id, Number(row.asset_count ?? 0)] as const,
+        ),
+      );
 
       enriched = data.map((c) => ({
         ...c,
@@ -138,11 +156,7 @@ export class ClientService {
       this.db
         .selectFrom('client_account_managers')
         .innerJoin('users', 'users.id', 'client_account_managers.manager_id')
-        .select([
-          'users.id',
-          'users.name',
-          'users.email',
-        ])
+        .select(['users.id', 'users.name', 'users.email'])
         .where('client_account_managers.client_id', '=', id)
         .where('client_account_managers.deleted_at', 'is', null)
         .execute(),
@@ -156,22 +170,35 @@ export class ClientService {
     return { ...client, accountManagers, contacts };
   }
 
-  async createClient(dto: CreateClientDto) {
+  async createClient(dto: CreateClientDto, userId: string) {
+    const existing = await this.db
+      .selectFrom('clients')
+      .select(['id'])
+      .where('external_id', '=', dto.external_id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    if (existing) {
+      throw new BadRequestException(
+        `Client with external ID "${dto.external_id}" already exists`,
+      );
+    }
+
     const client = await this.db
       .insertInto('clients')
-      .values(dto)
+      .values({ ...dto, created_by: userId, updated_by: userId })
       .returningAll()
       .executeTakeFirst();
 
     return client;
   }
 
-  async updateClient(id: string, dto: UpdateClientDto) {
+  async updateClient(id: string, dto: UpdateClientDto, userId: string) {
     await this.checkExists(id);
 
     const client = await this.db
       .updateTable('clients')
-      .set({ ...dto, updated_at: new Date() })
+      .set({ ...dto, updated_by: userId, updated_at: new Date() })
       .where('id', '=', id)
       .returningAll()
       .executeTakeFirst();
@@ -194,7 +221,10 @@ export class ClientService {
   async addAccountManagers(clientId: string, dto: ManagerIdsDto) {
     await this.checkExists(clientId);
 
-    const rows = dto.manager_ids.map((manager_id) => ({ client_id: clientId, manager_id }));
+    const rows = dto.manager_ids.map((manager_id) => ({
+      client_id: clientId,
+      manager_id,
+    }));
 
     const result = await this.db
       .insertInto('client_account_managers')
@@ -265,158 +295,293 @@ export class ClientService {
     return { message: 'Contact deleted successfully' };
   }
 
-  // async importClientsFromApi(token: string) {
-  //   const allExternalClients = await this.fetchAllExternalClients(token);
+  async listExternalClients(userId: string, query?: string): Promise<any[]> {
+    const cacheKey = RedisService.cacheKey('external-clients', userId);
 
-  //   if (allExternalClients.length === 0) {
-  //     this.logger.warn('No clients returned from external API. Skipping sync.');
-  //     return {
-  //       message: 'No clients returned from external API. Sync skipped.',
-  //       summary: { imported: 0, updated: 0, softDeleted: 0, skipped: 0 },
-  //     };
-  //   }
+    // Try cache first (full list, unfiltered)
+    const cached = await this.redis.cacheGet<any[]>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for external clients (user=${userId})`);
+      if (query) {
+        const q = query.toLowerCase();
+        return cached.filter(
+          (c: any) =>
+            c.client_name?.toLowerCase().includes(q) ||
+            String(c.id).includes(q) ||
+            c.email?.toLowerCase().includes(q),
+        );
+      }
+      return cached;
+    }
 
-  //   const externalIds = new Set(allExternalClients.map((c) => String(c.id)));
+    try {
+      const clients = await this.fetchAllExternalClients(userId);
 
-  //   const result = await this.db.transaction().execute(async (trx) => {
-  //     let imported = 0;
-  //     let updated = 0;
-  //     let skipped = 0;
+      // Store in cache — don't block the response
+      this.redis
+        .cacheSet(cacheKey, clients, ClientService.EXTERNAL_CLIENTS_TTL)
+        .catch((err) =>
+          this.logger.warn(`Failed to cache external clients: ${err.message}`),
+        );
 
-  //     for (const client of allExternalClients) {
-  //       try {
-  //         const externalId = String(client.id);
-  //         const now = new Date();
-  //         const createdAt = this.isValidDate(client.created_at) ? new Date(client.created_at) : now;
-  //         const updatedAt = this.isValidDate(client.updated_at) ? new Date(client.updated_at) : now;
+      if (query) {
+        const q = query.toLowerCase();
+        return clients.filter(
+          (c: any) =>
+            c.client_name?.toLowerCase().includes(q) ||
+            String(c.id).includes(q) ||
+            c.email?.toLowerCase().includes(q),
+        );
+      }
 
-  //         const existing = await trx
-  //           .selectFrom('clients')
-  //           .select(['id'])
-  //           .where('external_id', '=', externalId)
-  //           .executeTakeFirst();
+      return clients;
+    } catch (err: any) {
+      this.logger.error(
+        'Failed to fetch external clients',
+        err?.response?.data || err.message,
+      );
+      const detail =
+        err.response?.status === 401
+          ? 'External API authentication failed'
+          : 'Unable to fetch external client accounts.';
+      throw new BadRequestException(detail);
+    }
+  }
 
-  //         if (existing) {
-  //           await trx
-  //             .updateTable('clients')
-  //             .set({
-  //               name: client.client_name,
-  //               is_active: client.is_active ?? true,
-  //               updated_at: updatedAt,
-  //             })
-  //             .where('id', '=', existing.id)
-  //             .execute();
-  //           updated++;
-  //         } else {
-  //           await trx
-  //             .insertInto('clients')
-  //             .values({
-  //               external_id: externalId,
-  //               name: client.client_name,
-  //               is_active: client.is_active ?? true,
-  //               created_at: createdAt,
-  //               updated_at: updatedAt,
-  //             })
-  //             .execute();
-  //           imported++;
-  //         }
-  //       } catch (error) {
-  //         this.logger.error(`Failed to upsert client with external ID ${client?.id}`, error.data);
-  //         skipped++;
-  //       }
-  //     }
+ private async fetchAllExternalClients(userId: string): Promise<any[]> {
+  const allClients: any[] = [];
 
-  //     const softDeleted = await this.reconcileDeletedClients(trx, externalIds, new Date());
+  const user = await this.db
+    .selectFrom('users')
+    .select(['access_token'])
+    .where('id', '=', userId)
+    .executeTakeFirst();
 
-  //     return { imported, updated, skipped, softDeleted };
-  //   });
+  if (!user?.access_token) {
+    throw new BadRequestException(
+      'External access token not found for user',
+    );
+  }
 
-  //   this.logger.log(
-  //     `Client reconciliation complete. Imported: ${result.imported}, Updated: ${result.updated}, Soft-deleted: ${result.softDeleted}, Skipped: ${result.skipped}`,
-  //   );
+  let page = 1;
 
-  //   return {
-  //     message: 'Client reconciliation completed.',
-  //     summary: {
-  //       totalFetched: allExternalClients.length,
-  //       imported: result.imported,
-  //       updated: result.updated,
-  //       softDeleted: result.softDeleted,
-  //       skipped: result.skipped,
-  //     },
-  //   };
-  // }
+  while (true) {
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+      });
 
-  private async fetchAllExternalClients(token: string): Promise<any[]> {
-    const allClients: any[] = [];
-    let page = 1;
-    let hasNextPage = true;
-
-    while (hasNextPage) {
       const response = await firstValueFrom(
-        this.httpService.get(`${this.EXTERNAL_CLIENTS_API_URL}?page=${page}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        }),
+        this.httpService.get(
+          `${this.EXTERNAL_CLIENTS_API_URL}?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${user.access_token}`,
+              Accept: 'application/json',
+            },
+          },
+        ),
       );
 
-      const { data: clients, current_page, last_page } = response.data?.data || {};
+      const payload = response.data?.data;
+
+      const clients = payload?.data ?? [];
+      const currentPage = Number(payload?.current_page ?? page);
+      const lastPage = Number(payload?.last_page ?? page);
 
       if (!Array.isArray(clients)) {
-        this.logger.error(`Invalid clients structure on page ${page}`, response.data);
+        this.logger.error(
+          `Invalid clients structure on page ${page}`,
+          response.data,
+        );
         break;
       }
 
       allClients.push(...clients);
-      hasNextPage = current_page < last_page;
-      if (hasNextPage) page++;
-    }
 
-    return allClients;
+      this.logger.log(
+        `Fetched page ${currentPage}/${lastPage} (${clients.length} clients)`,
+      );
+
+      if (currentPage >= lastPage || clients.length === 0) {
+        break;
+      }
+
+      page++;
+    } catch (error) {
+      this.logger.error(
+        `Failed fetching external clients page ${page}`,
+        error,
+      );
+      throw error;
+    }
   }
 
-  private async reconcileDeletedClients(
-    trx: Kysely<DB>,
-    externalIds: Set<string>,
-    now: Date,
-  ): Promise<number> {
-    const localExternalClients = await trx
+  this.logger.log(
+    `Fetched ${allClients.length} clients across ${page} page(s)`,
+  );
+
+  return allClients;
+}
+
+
+  async syncAllClients(userId: string) {
+    const externalClients = await this.fetchAllExternalClients(userId);
+
+    if (externalClients.length === 0) {
+      return {
+        message: 'No clients returned from external API. Sync skipped.',
+        summary: { totalFetched: 0, updated: 0, skipped: 0 },
+      };
+    }
+
+    const externalMap = new Map<string, any>(
+      externalClients.map((c: any) => [String(c.id), c]),
+    );
+
+    const localClients = await this.db
       .selectFrom('clients')
-      .select(['id', 'external_id'])
+      .select(['id', 'external_id', 'name', 'email'])
       .where('external_id', 'is not', null)
       .where('deleted_at', 'is', null)
       .execute();
 
-    const toDelete = localExternalClients
-      .filter((c) => c.external_id && !externalIds.has(c.external_id))
-      .map((c) => c.id);
+    let updated = 0;
+    let skipped = 0;
+    let contactsSynced = 0;
 
-    if (toDelete.length === 0) return 0;
+    for (const local of localClients) {
+      if (!local.external_id) {
+        skipped++;
+        continue;
+      }
 
-    await trx
+      const external = externalMap.get(local.external_id);
+      if (!external) {
+        skipped++;
+        continue;
+      }
+
+      const newName = external.client_name;
+      const newEmail = external.email ?? null;
+
+      if (local.name !== newName || local.email !== newEmail) {
+        await this.db
+          .updateTable('clients')
+          .set({ name: newName, email: newEmail, updated_at: new Date() })
+          .where('id', '=', local.id)
+          .execute();
+        updated++;
+      } else {
+        skipped++;
+      }
+    }
+
+    this.logger.log(
+      `Sync complete: ${updated} updated, ${skipped} skipped, ${contactsSynced} contacts synced`,
+    );
+
+    return {
+      message: `${updated} client(s) synced successfully`,
+      summary: {
+        totalFetched: externalClients.length,
+        updated,
+        skipped,
+        contactsSynced,
+      },
+    };
+  }
+
+  async syncClient(id: string, userId: string) {
+    const client = await this.checkExists(id);
+
+    if (!client.external_id) {
+      throw new BadRequestException(
+        'This client has no external ID and cannot be synced from the external portal.',
+      );
+    }
+
+    const externalClients = await this.fetchAllExternalClients(userId);
+    const external = externalClients.find(
+      (c: any) => String(c.id) === client.external_id,
+    );
+
+    if (!external) {
+      throw new NotFoundException(
+        `External account with ID ${client.external_id} not found. The client may have been deleted from the external portal.`,
+      );
+    }
+
+    const newName = external.client_name;
+    const newEmail = external.email ?? null;
+
+    await this.db
       .updateTable('clients')
-      .set({ deleted_at: now, is_active: false })
-      .where('id', 'in', toDelete)
+      .set({ name: newName, email: newEmail, updated_at: new Date() })
+      .where('id', '=', id)
       .execute();
 
-    this.logger.log(`Soft-deleted ${toDelete.length} client(s) no longer in external source.`);
-    return toDelete.length;
+    const contactSynced = await this.syncClientContact(id, external);
+
+    return {
+      message: 'Client synced successfully',
+      client: { id, name: newName, email: newEmail },
+      contactsSynced: contactSynced ? 1 : 0,
+    };
+  }
+
+  private async syncClientContact(
+    clientId: string,
+    external: any,
+  ): Promise<boolean> {
+    const externalName = external.contact_name;
+    const externalEmail = external.email ?? null;
+    const externalPhone = external.phone ?? null;
+
+    const existing = await this.db
+      .selectFrom('client_contacts')
+      .select(['id', 'name', 'email', 'phone'])
+      .where('client_id', '=', clientId)
+      .where('is_primary', '=', true)
+      .executeTakeFirst();
+
+    if (existing) {
+      if (
+        existing.name === externalName &&
+        existing.email === externalEmail &&
+        existing.phone === externalPhone
+      ) {
+        return false;
+      }
+
+      await this.db
+        .updateTable('client_contacts')
+        .set({ name: externalName, email: externalEmail, phone: externalPhone })
+        .where('id', '=', existing.id)
+        .execute();
+
+      return true;
+    }
+
+    if (!externalName) return false;
+
+  
+    return true;
   }
 
   private async checkExists(id: string) {
-    const client = await this.db
-      .selectFrom('clients')
-      .select('id')
-      .where('id', '=', id)
-      .where('deleted_at', 'is', null)
-      .executeTakeFirst();
+  const client = await this.db
+    .selectFrom('clients')
+    .select(['id', 'external_id'])
+    .where('id', '=', id)
+    .where('deleted_at', 'is', null)
+    .executeTakeFirst();
 
-    if (!client) throw new NotFoundException(`Client ${id} not found`);
-    return client;
+  if (!client) {
+    throw new NotFoundException(`Client ${id} not found`);
   }
 
-  private isValidDate(value: any): boolean {
-    if (!value || typeof value !== 'string') return false;
-    const date = new Date(value);
-    return !isNaN(date.getTime());
-  }
+  return client;
 }
+}
+

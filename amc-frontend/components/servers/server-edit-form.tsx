@@ -26,6 +26,7 @@ const serverSchema = z.object({
   currency: z.string().optional(),
   renewal_date: z.string().optional(),
   notes: z.string().optional(),
+  owner: z.string().optional(),
 })
 type ServerFormValues = z.infer<typeof serverSchema>
 
@@ -52,6 +53,7 @@ interface ServerEditFormProps {
     currency?: string
     renewal_date?: string
     notes?: string
+    owner?: "SpiderWorks" | "client" | "thirdparty"
   }) => void
   onDelete: () => void
   isPending: boolean
@@ -68,6 +70,7 @@ interface ServerEditFormProps {
     currency?: string | null
     renewal_date?: string | null
     notes?: string | null
+    owner?: string | null
   }
 }
 
@@ -109,6 +112,7 @@ export function ServerEditForm({
       currency: server.currency ?? "USD",
       renewal_date: server.renewal_date ?? "",
       notes: server.notes ?? "",
+      owner: server.owner ?? "client",
     })
   }, [open, server, reset])
 
@@ -130,6 +134,7 @@ export function ServerEditForm({
       currency: data.currency || undefined,
       renewal_date: data.renewal_date || undefined,
       notes: data.notes?.trim() || undefined,
+      owner: (data.owner as "SpiderWorks" | "client" | "thirdparty") || undefined,
     })
   }
 
@@ -197,6 +202,21 @@ export function ServerEditForm({
                 placeholder="e.g., Ubuntu 22.04"
               />
             </div>
+          </div>
+
+          {/* Owner */}
+          <div className="space-y-2">
+            <Label>Owner</Label>
+            <SmoothSelect
+              options={[
+                { value: "client", label: "Client" },
+                { value: "SpiderWorks", label: "SpiderWorks" },
+                { value: "thirdparty", label: "Third Party" },
+              ]}
+              value={watch("owner") || "client"}
+              onChange={(value) => setValue("owner", value)}
+              className="w-full"
+            />
           </div>
 
           {/* Panel URL */}

@@ -12,9 +12,9 @@ import { DatabaseModule } from '../db/database.module';
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         connection: {
-          host: configService.get<string>('redis.host'),
-          port: configService.get<number>('redis.port'),
-          password: configService.get<string>('redis.password'),
+          host: configService.get<string>('REDIS_HOST'),
+          port: configService.get<number>('REDIS_PORT'),
+          password: configService.get<string>('REDIS_PASSWORD'),
         },
         defaultJobOptions: {
           removeOnComplete: true,

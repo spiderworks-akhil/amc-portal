@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsDateString,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -58,4 +59,9 @@ export class CreateServerDto {
   @IsOptional()
   @MaxLength(5000)
   notes?: string;
+
+  @IsString()
+  @IsIn(['SpiderWorks', 'client', 'thirdparty'])
+  @IsOptional()
+  owner?: 'SpiderWorks' | 'client' | 'thirdparty';
 }

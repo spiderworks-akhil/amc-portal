@@ -1,4 +1,4 @@
-import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsJSON, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateClientDto {
   @IsString()
@@ -7,11 +7,6 @@ export class CreateClientDto {
   name: string;
 
   @IsString()
-  @IsOptional()
-  @MaxLength(255)
-  company?: string;
-
-  @IsEmail()
   @IsOptional()
   email?: string;
 
@@ -33,6 +28,10 @@ export class CreateClientDto {
   notes?: string;
   
   @IsString()
-  external_id?: string;
+  external_id: string;
+
+  @IsJSON()
+  @IsOptional()
+  custom_fields?: Record<string, any>;
 
 }

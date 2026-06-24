@@ -1,9 +1,9 @@
 import {
   Controller, Get, Post, Put, Delete,
-  Param, Query, Body, Req,
-  HttpCode, HttpStatus, UnauthorizedException, ParseUUIDPipe,
+  Param, Query, Body,
+  HttpCode, HttpStatus, ParseUUIDPipe,
+  Patch,
 } from '@nestjs/common';
-import type { Request } from 'express';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { ClientService } from './client.service';
@@ -15,6 +15,7 @@ import {
   CreateContactDto,
   UpdateContactDto,
 } from './dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('client')
 export class ClientController {
@@ -24,8 +25,9 @@ export class ClientController {
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('Client created successfully')
   @AuditLog({ entityType: 'client' })
-  async create(@Body() dto: CreateClientDto) {
-    return this.clientService.createClient(dto);
+  
+  async create(@Body() dto: CreateClientDto, @CurrentUser() user: { id: string }) {
+    return this.clientService.createClient(dto, user.id);
   }
 
   @Get('list')
@@ -35,16 +37,31 @@ export class ClientController {
   }
 
 
-  // @Post('sync')
-  // @HttpCode(HttpStatus.OK)
-  // @ResponseMessage('Clients synced successfully')
-  // async syncClients(@Req() req: Request) {
-  //   const token = this.extractToken(req);
-  //   if (!token) {
-  //     throw new UnauthorizedException('No authentication token found');
-  //   }
-  //   return this.clientService.importClientsFromApi(token);
-  // }
+  @Get('external/list')
+  @HttpCode(HttpStatus.OK)
+  async listExternal(
+    @CurrentUser() user: { id: string },
+    @Query('query') query?: string,
+  ) {
+    return this.clientService.listExternalClients(user.id, query);
+  }
+
+  @Post('sync')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Clients synced successfully')
+  async syncAll(@CurrentUser() user: { id: string }) {
+    return this.clientService.syncAllClients(user.id);
+  }
+
+  @Post(':id/sync')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Client synced successfully')
+  async syncOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.clientService.syncClient(id, user.id);
+  }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
@@ -52,15 +69,16 @@ export class ClientController {
     return this.clientService.getClient(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Client updated successfully')
   @AuditLog({ entityType: 'client' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateClientDto,
+    @CurrentUser() user: { id: string },
   ) {
-    return this.clientService.updateClient(id, dto);
+    return this.clientService.updateClient(id, dto, user.id);
   }
 
   @Delete(':id')
@@ -121,13 +139,5 @@ export class ClientController {
   @AuditLog({ entityType: 'client', idParam: 'contactId' })
   async removeContact(@Param('contactId', ParseUUIDPipe) contactId: string) {
     return this.clientService.deleteContact(contactId);
-  }
-
-  private extractToken(req: Request): string | undefined {
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith('Bearer ')) {
-      return authHeader.slice(7);
-    }
-    return req.cookies?.token;
   }
 }

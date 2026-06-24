@@ -19,7 +19,6 @@ import {
 import {
   Plus,
   Clock,
-  MessageSquare,
   Trash2,
   Loader2,
   Check,
@@ -45,13 +44,16 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface NotesTimelineProps {
   noteableType: string;
   noteableId: string;
 }
-
-// ── Helpers ──
 
 function formatRelativeDate(dateStr: string): string {
   try {
@@ -75,8 +77,6 @@ function isEdited(note: Note): boolean {
   const updated = new Date(note.updated_at).getTime();
   return Math.abs(updated - created) > 5000;
 }
-
-// ── Auto-resize textarea ──
 
 function AutoResizeTextarea({
   value,
@@ -120,8 +120,6 @@ function AutoResizeTextarea({
   );
 }
 
-// ── Component ──
-
 export function NotesTimeline({
   noteableType,
   noteableId,
@@ -138,7 +136,6 @@ export function NotesTimeline({
 
   const notes = data?.data ?? [];
 
-  // Sort notes: most recent first
   const sortedNotes = [...notes].sort(
     (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -284,7 +281,6 @@ export function NotesTimeline({
 
       <CardContent className="pt-4 flex flex-col min-h-0 w-full">
 
-        {/* Timeline */}
         {isLoading ? (
           <div className="space-y-5">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -303,15 +299,16 @@ export function NotesTimeline({
             ))}
           </div>
         ) : notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-6">
-            <div className="size-12 rounded-xl bg-muted/40 border border-border/30 flex items-center justify-center mb-3">
-              <Quote className="size-5 text-muted-foreground/30" />
+          <div className="flex flex-col items-center justify-center py-14 px-6">
+            <div className="size-14 rounded-2xl bg-gradient-to-br from-primary/[0.07] to-primary/[0.02] border border-primary/10 flex items-center justify-center mb-4">
+              <Quote className="size-6 text-primary/35" />
             </div>
             <p className="text-sm font-medium text-foreground/60">
               No notes yet
             </p>
-            <p className="text-xs text-muted-foreground/40 mt-1 text-center max-w-xs">
-              Log decisions, track discussions, or record important updates
+            <p className="text-xs text-muted-foreground/40 mt-1.5 text-center max-w-xs leading-relaxed">
+              Log decisions, track discussions, or record important updates for this{" "}
+              {noteableType}
             </p>
           </div>
         ) : (
@@ -321,10 +318,8 @@ export function NotesTimeline({
                 <TimelineItem key={note.id} className="mt-3">
                   <TimelineDot variant="default" />
                   <TimelineContent>
-                    <div className="relative rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md hover:border-primary/20 hover:bg-accent/10 transition-all duration-200 group/card">
-                      {/* Left accent bar */}
+                    <div className="relative rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200 group/card">
                       <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-primary/20 opacity-0 group-hover/card:opacity-100 transition-all duration-200" />
-                      {/* Header */}
                       <div className="flex items-center gap-2.5 px-4 pt-3 pb-2 border-b border-border/10">
                         <Avatar className="size-7 ring-2 ring-border/10 shrink-0">
                           <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/5 text-primary/70 text-[10px] font-semibold">
@@ -353,30 +348,42 @@ export function NotesTimeline({
                             </span>
                           )}
                         </div>
-                        {/* Actions */}
-                        <div className="ml-auto flex items-center gap-1 opacity-40 group-hover/card:opacity-100 transition-all duration-200">
-                          <button
-                            type="button"
-                            onClick={() => startEditing(note)}
-                            className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-primary hover:bg-primary/5 transition-all"
-                            aria-label="Edit note"
-                          >
-                            <PenLine className="size-3" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteNote.mutate(note.id)}
-                            className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/5 transition-all"
-                            aria-label="Delete note"
-                          >
-                            <Trash2 className="size-3" />
-                          </button>
+                        <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/card:opacity-100 transition-all duration-200">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => startEditing(note)}
+                                className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-primary hover:bg-primary/5 transition-all"
+                                aria-label="Edit note"
+                              >
+                                <PenLine className="size-3" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-[10px] px-2 py-1">
+                              Edit note
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => deleteNote.mutate(note.id)}
+                                className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/5 transition-all"
+                                aria-label="Delete note"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-[10px] px-2 py-1">
+                              Delete note
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </div>
 
-                      {/* Content */}
                       {editingNoteId === note.id ? (
-                        <div className="m-3 rounded-lg border border-primary/20 bg-background shadow-xs overflow-hidden">
+                        <div className="m-3 rounded-lg border border-primary/20 bg-background overflow-hidden">
                           <AutoResizeTextarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
@@ -425,16 +432,15 @@ export function NotesTimeline({
                 </TimelineItem>
               ))}
 
-              {/* End marker */}
               {notes.length > 0 && (
                 <div className="flex items-center gap-4 mt-6 pb-2">
                   <div className="h-px flex-1 bg-gradient-to-r from-border/20 via-border/30 to-border/10" />
                   <div className="flex items-center gap-2">
-                    <div className="size-1 rounded-full bg-border/30" />
+                    <div className="size-1.5 rounded-full bg-border/30" />
                     <span className="text-[10px] font-semibold tracking-widest text-muted-foreground/25 uppercase">
                       {notes.length} note{notes.length !== 1 ? "s" : ""}
                     </span>
-                    <div className="size-1 rounded-full bg-border/30" />
+                    <div className="size-1.5 rounded-full bg-border/30" />
                   </div>
                   <div className="h-px flex-1 bg-gradient-to-r from-border/10 via-border/30 to-border/20" />
                 </div>

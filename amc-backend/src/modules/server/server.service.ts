@@ -58,6 +58,7 @@ export class ServerService {
         currency: dto.currency ?? 'USD',
         renewal_date: dto.renewal_date ? new Date(dto.renewal_date) : null,
         notes: dto.notes ?? null,
+        owner: dto.owner ?? 'client',
         created_by_id: createdBy ?? null,
       })
       .returningAll()
@@ -230,6 +231,7 @@ export class ServerService {
     if (dto.currency !== undefined) updateData.currency = dto.currency;
     if (dto.renewal_date !== undefined) updateData.renewal_date = new Date(dto.renewal_date);
     if (dto.notes !== undefined) updateData.notes = dto.notes;
+    if (dto.owner !== undefined) updateData.owner = dto.owner;
 
     return this.db
       .updateTable('servers')

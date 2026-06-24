@@ -102,6 +102,7 @@ export interface Clients {
   address: string | null;
   company: string | null;
   created_at: Generated<Timestamp>;
+  created_by: string | null;
   custom_fields: Json | null;
   deleted_at: Timestamp | null;
   email: string | null;
@@ -111,7 +112,9 @@ export interface Clients {
   name: string;
   notes: string | null;
   phone: string | null;
+  remarks: string | null;
   updated_at: Generated<Timestamp>;
+  updated_by: string | null;
 }
 
 export interface ClientTags {
@@ -383,6 +386,7 @@ export interface Tags {
 }
 
 export interface Users {
+  access_token: string | null;
   avatar_url: string | null;
   created_at: Generated<Timestamp>;
   email: string;

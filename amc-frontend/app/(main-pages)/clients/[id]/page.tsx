@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   useClient,
   useUpdateClient,
+  useSyncClient,
   useAddManagers,
   useRemoveManagers,
   useAddContact,
@@ -66,6 +67,7 @@ import {
   ExternalLink,
   Bell,
   BellOff,
+  RefreshCw,
 } from "lucide-react";
 
 import type { Contact as ContactType } from "@/types/api";
@@ -90,6 +92,7 @@ export default function ClientDetailPage() {
 
   const { data: client, isLoading, isError } = useClient(id);
   const updateClient = useUpdateClient();
+  const syncClient = useSyncClient();
   const { data: assetsData, isLoading: assetsLoading } = useClientAssets(id);
   const createAsset = useCreateAsset();
   const addManagers = useAddManagers(id);
@@ -249,15 +252,29 @@ export default function ClientDetailPage() {
               {client.name}
             </h1>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0"
-            onClick={() => setEditClientOpen(true)}
-          >
-            <Pencil className="size-3.5 mr-1.5" />
-            Edit
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {client.external_id && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => syncClient.mutate(client.id)}
+                disabled={syncClient.isPending}
+              >
+                <RefreshCw className={`size-3.5 mr-1.5 ${syncClient.isPending ? "animate-spin" : ""}`} />
+                {syncClient.isPending ? "Syncing..." : "Sync"}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => setEditClientOpen(true)}
+            >
+              <Pencil className="size-3.5 mr-1.5" />
+              Edit
+            </Button>
+          </div>
         </div>
       </div>
 

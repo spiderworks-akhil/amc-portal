@@ -4,32 +4,33 @@
 import { useCallback, useState, useEffect } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { ClientGrid } from "@/components/clients/client-grid"
-import { SyncButton } from "@/components/clients/sync-button"
-import { useClients } from "@/hooks/use-clients"
+import { useClients, useSyncClient, useSyncClients } from "@/hooks/use-clients"
 import { useDebounce } from "@/hooks/use-debounce"
+import { Button } from "@/components/ui/button"
+import { Plus, RefreshCw } from "lucide-react"
+import { CreateClientDialog } from "@/components/clients/create-client-dialog"
 
 export function ClientsPageContent() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [syncingId, setSyncingId] = useState<string | null>(null)
+  const syncClient = useSyncClient()
+  const syncAll = useSyncClients()
 
   const page = Number(searchParams.get("page")) || 1
   const search = searchParams.get("search") || ""
   const limit = 60
 
-  // Local state for instant input feedback
   const [inputValue, setInputValue] = useState(search)
-  // Debounce the value that drives the API call
   const debouncedSearch = useDebounce(inputValue, 300)
 
-  // Sync URL search param back to local state (e.g. browser back/forward)
   useEffect(() => {
     if (search !== inputValue && search !== debouncedSearch) {
       setInputValue(search)
     }
-  }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sync debounced value to URL (triggers the API fetch)
+  }, [search])
   useEffect(() => {
     if (debouncedSearch !== search) {
       const params = new URLSearchParams(searchParams.toString())
@@ -88,7 +89,17 @@ export function ClientsPageContent() {
     router.push(`/clients/${id}?edit=true`)
   }, [router])
 
- 
+  const handleSync = useCallback(
+    (id: string) => {
+      setSyncingId(id)
+      syncClient.mutate(id, {
+        onSettled: () => setSyncingId(null),
+      })
+    },
+    [syncClient],
+  )
+
+
 
   return (
     <div className="container mx-auto px-4 py-4 max-w-7xl">
@@ -101,7 +112,21 @@ export function ClientsPageContent() {
               Manage and view all your client information
             </p>
           </div>
-          <SyncButton />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => syncAll.mutate()}
+              disabled={syncAll.isPending}
+              className="gap-1.5"
+            >
+              <RefreshCw className={`size-4 ${syncAll.isPending ? "animate-spin" : ""}`} />
+              {syncAll.isPending ? "Syncing..." : "Sync All"}
+            </Button>
+            <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
+              <Plus className="size-4" />
+              Create Client
+            </Button>
+          </div>
         </div>
 
         {/* View Content */}
@@ -117,10 +142,12 @@ export function ClientsPageContent() {
             onPageChange={handlePageChange}
             onClientClick={handleClientClick}
             onEdit={handleEdit}
+            onSync={handleSync}
+            syncingId={syncingId}
           />
       </div>
 
-  
+      <CreateClientDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

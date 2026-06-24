@@ -15,6 +15,7 @@ import type {
   UpdateContactPayload,
   ListClientsParams,
   SyncSummary,
+  ExternalClientAccount,
 } from "@/types/api"
 
 const CLIENTS_KEY = "clients"
@@ -55,8 +56,9 @@ export function useCreateClient() {
     onSuccess: (res) => {
       toast.success(res.message)
       qc.invalidateQueries({ queryKey: [CLIENTS_KEY] })
+      qc.invalidateQueries({ queryKey: ["external-clients"] })
     },
-    onError: (err: Error) => toast.error(err.message),
+    // Error toast removed — handled inline in the create dialog
   })
 }
 
@@ -64,7 +66,7 @@ export function useUpdateClient() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, ...payload }: UpdateClientPayload & { id: string }) => {
-      const { data } = await apiClient.put<ApiResponse<ClientDetail>>(`/client/${id}`, payload)
+      const { data } = await apiClient.patch<ApiResponse<ClientDetail>>(`/client/${id}`, payload)
       return data
     },
     onSuccess: (res) => {
@@ -85,8 +87,22 @@ export function useDeleteClient() {
     onSuccess: (res) => {
       toast.success(res.message)
       qc.invalidateQueries({ queryKey: [CLIENTS_KEY] })
+      qc.invalidateQueries({ queryKey: ["external-clients"] })
     },
     onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useExternalClients(query?: string) {
+  return useQuery({
+    queryKey: ["external-clients", query],
+    queryFn: async () => {
+      const params = query ? { query } : undefined
+      const { data } = await apiClient.get<ExternalClientAccount[]>("/client/external/list", { params })
+      return data
+    },
+    staleTime: 30_000,
+    retry: false,
   })
 }
 
@@ -95,6 +111,21 @@ export function useSyncClients() {
   return useMutation({
     mutationFn: async () => {
       const { data } = await apiClient.post<ApiResponse<{ summary: SyncSummary }>>("/client/sync")
+      return data
+    },
+    onSuccess: (res) => {
+      toast.success(res.message)
+      qc.invalidateQueries({ queryKey: [CLIENTS_KEY] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useSyncClient() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<ApiResponse<{ client: { id: string; name: string; email: string | null }; contactsSynced: number }>>(`/client/${id}/sync`)
       return data
     },
     onSuccess: (res) => {

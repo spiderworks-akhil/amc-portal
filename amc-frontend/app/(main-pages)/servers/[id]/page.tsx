@@ -39,6 +39,7 @@ import {
   Trash2,
   Copy,
   Check,
+  User,
 } from "lucide-react"
 import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline"
 import { toast } from "sonner"
@@ -94,6 +95,7 @@ export default function ServerDetailPage() {
     currency?: string
     renewal_date?: string
     notes?: string
+    owner?: "SpiderWorks" | "client" | "thirdparty"
   }) => {
     updateMutation.mutate(
       { id, ...data },
@@ -286,6 +288,16 @@ export default function ServerDetailPage() {
                       </a>
                     )}
                   </div>
+                }
+              />
+              <DetailRow
+                icon={<User className="size-4 text-primary" />}
+                iconBg="bg-primary/10"
+                label="Owner"
+                value={
+                  <Badge variant="dot" size="sm" color={server.owner === "SpiderWorks" ? "blue" : server.owner === "client" ? "emerald" : "amber"}>
+                    {server.owner === "SpiderWorks" ? "SpiderWorks" : server.owner === "client" ? "Client" : "Third Party"}
+                  </Badge>
                 }
               />
               <DetailRow

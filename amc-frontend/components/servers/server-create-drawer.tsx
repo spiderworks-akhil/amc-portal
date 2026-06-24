@@ -36,6 +36,7 @@ const serverSchema = z.object({
   currency: z.string().optional(),
   renewal_date: z.string().optional(),
   notes: z.string().optional(),
+  owner: z.string().optional(),
 })
 type ServerFormValues = z.infer<typeof serverSchema>
 
@@ -68,6 +69,7 @@ interface ServerCreateDrawerProps {
     currency?: string
     renewal_date?: string
     notes?: string
+    owner?: "SpiderWorks" | "client" | "thirdparty"
   }) => void
   isPending: boolean
   /** Pre-selected asset ID — hides asset linking (used from asset detail page) */
@@ -96,6 +98,7 @@ export function ServerCreateDrawer({
       currency: "USD",
       renewal_date: "",
       notes: "",
+      owner: "client",
     },
   })
 
@@ -295,6 +298,7 @@ export function ServerCreateDrawer({
       currency: data.currency?.trim() || "USD",
       renewal_date: data.renewal_date || undefined,
       notes: data.notes?.trim() || undefined,
+      owner: (data.owner as "SpiderWorks" | "client" | "thirdparty") || undefined,
     })
 
     reset()
@@ -361,7 +365,7 @@ export function ServerCreateDrawer({
             {errors.panel_url?.message && <p className="text-xs text-destructive">{errors.panel_url.message}</p>}
           </div>
           {/* Provider */}
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label>
               Provider <span className="text-destructive">*</span>
             </Label>
@@ -383,7 +387,7 @@ export function ServerCreateDrawer({
               )}
             />
             {errors.provider_id?.message && <p className="text-xs text-destructive">{errors.provider_id.message}</p>}
-          </div>
+          </div> */}
 
           {/* Label */}
           <div className="space-y-2">
@@ -401,8 +405,27 @@ export function ServerCreateDrawer({
             {errors.label?.message && <p className="text-xs text-destructive">{errors.label.message}</p>}
           </div>
 
-        
-        
+          {/* Owner */}
+          <div className="space-y-2">
+            <Label>Owner</Label>
+            <Controller
+              name="owner"
+              control={control}
+              render={({ field }) => (
+                <SmoothSelect
+                  options={[
+                    { value: "client", label: "Client" },
+                    { value: "SpiderWorks", label: "SpiderWorks" },
+                    { value: "thirdparty", label: "Third Party" },
+                  ]}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select owner..."
+                  className="w-full"
+                />
+              )}
+            />
+          </div>
 
           {/* Region */}
           <div className="space-y-2">

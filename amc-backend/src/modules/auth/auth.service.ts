@@ -38,19 +38,28 @@ export class AuthService {
       throw new UnauthorizedException("Invalid token: missing user ID");
     }
 
+    const remoteUserId = String(decoded.id);
+    if (!/^\d+$/.test(remoteUserId)) {
+      throw new UnauthorizedException(
+        "Invalid external token: user ID must be a numeric value (BigInt). You may be sending an AMC JWT instead of the original SpiderWorks token.",
+      );
+    }
+
     const user = await this.db
       .insertInto("users")
       .values({
-        remote_user_id: BigInt(decoded.id),
+        remote_user_id: BigInt(remoteUserId),
         name: decoded.name || "Unknown",
         email: decoded.email || null,
         role: "user",
         is_active: true,
+        access_token:externalToken
       })
       .onConflict((oc) =>
         oc.column("remote_user_id").doUpdateSet({
           name: decoded.name || "Unknown",
           email: decoded.email || null,
+          access_token: externalToken,
           last_login_at: sql`now()`,
         }),
       )

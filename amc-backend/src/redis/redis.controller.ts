@@ -14,4 +14,10 @@ export class RedisController {
       value: await redis.get('hello'),
     };
   }
+  @Public()
+  @Get('cache/bust')
+  async bustCache() {
+    await this.redisService.bustDashboardCache();
+    return { message: 'Cache busting completed' };
+  }
 }
