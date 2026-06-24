@@ -72,3 +72,44 @@ export function useUnlinkScopesFromAsset() {
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+export function useScopesForContract(contractId: string | null) {
+  return useQuery({
+    queryKey: [SCOPES_KEY, "contract", contractId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<Scope[]>(`/scopes/contract/${contractId}`)
+      return data
+    },
+    enabled: !!contractId,
+  })
+}
+
+export function useLinkScopesToContract() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ contractId, scope_ids }: { contractId: string; scope_ids: string[] }) => {
+      const { data } = await apiClient.post(`/scopes/contract/${contractId}`, { scope_ids })
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [SCOPES_KEY] })
+      qc.invalidateQueries({ queryKey: ["contracts"] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useUnlinkScopesFromContract() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ contractId, scope_ids }: { contractId: string; scope_ids: string[] }) => {
+      const { data } = await apiClient.delete(`/scopes/contract/${contractId}`, { data: { scope_ids } })
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [SCOPES_KEY] })
+      qc.invalidateQueries({ queryKey: ["contracts"] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}

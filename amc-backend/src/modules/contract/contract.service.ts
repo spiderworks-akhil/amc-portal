@@ -248,7 +248,16 @@ export class ContractService {
       .orderBy('renewed_at', 'desc')
       .execute();
 
-    return { ...contract, assets, renewals };
+    // Fetch linked scopes
+    const scopes = await this.db
+      .selectFrom('contract_scopes')
+      .innerJoin('scopes', 'scopes.id', 'contract_scopes.scope_id')
+      .selectAll('scopes')
+      .where('contract_scopes.contract_id', '=', id)
+      .orderBy('scopes.name', 'asc')
+      .execute();
+
+    return { ...contract, assets, renewals, scopes };
   }
 
   async update(id: string, dto: UpdateContractDto) {

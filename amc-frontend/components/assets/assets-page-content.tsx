@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { AssetTable } from "./asset-table"
 import { useAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-assets"
-import { useClients } from "@/hooks/use-clients"
 import { useDebounce } from "@/hooks/use-debounce"
 import type { CreateAssetPayload } from "@/types/api"
 import { SmoothSelect } from "@/components/ui/smooth-select"
@@ -86,7 +85,6 @@ export function AssetsPageContent() {
     sort_order: sortOrder,
   })
 
-  const { data: clientsData } = useClients({ limit: 100, sort_by: "name", sort_order: "asc" })
   const { mutate: createAsset, isPending: isCreating } = useCreateAsset()
   const { mutate: deleteAsset } = useDeleteAsset()
 
@@ -294,7 +292,6 @@ export function AssetsPageContent() {
         onSubmit={handleCreateSubmit}
         isPending={isCreating}
         types={ASSET_TYPES}
-        clients={clientsData?.data ?? []}
       />
     </div>
   )

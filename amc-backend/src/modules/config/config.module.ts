@@ -1,0 +1,13 @@
+import { Module } from '@nestjs/common';
+import { DatabaseModule } from '../../db/database.module';
+import { ConfigController } from './config.controller';
+import { ConfigService } from './config.service';
+
+@Module({
+  imports: [DatabaseModule],
+  controllers: [ConfigController],
+  providers: [ConfigService],
+  exports: [ConfigService],
+})
+export class ConfigModule {}
+export { ConfigModule as AppConfigModule };

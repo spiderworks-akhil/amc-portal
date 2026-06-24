@@ -1,7 +1,7 @@
 "use client"
 
 import { AssetForm } from "./asset-form"
-import type { ClientListItem, Contact as ContactType } from "@/types/api"
+import type { Contact as ContactType } from "@/types/api"
 
 interface AssetCreateDialogProps {
   open: boolean
@@ -18,7 +18,6 @@ interface AssetCreateDialogProps {
   isPending: boolean
   types: Array<{ value: string; label: string }>
   clientId?: string
-  clients?: ClientListItem[]
   contacts?: ContactType[]
 }
 

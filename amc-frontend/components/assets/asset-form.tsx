@@ -16,13 +16,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, Server, CheckIcon, ChevronDownIcon, XIcon } from "lucide-react"
-import { SearchableSelect } from "@/components/ui/searchable-select"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxTrigger,
+  ComboboxEmpty,
+  ComboboxList,
+  ComboboxGroup,
+  ComboboxItem,
+} from "@/components/kibo-ui/combobox"
 import { SmoothSelect } from "@/components/ui/smooth-select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useClient } from "@/hooks/use-clients"
+import { useClient, useClients } from "@/hooks/use-clients"
 import { useServers } from "@/hooks/use-servers"
+import { useDebounce } from "@/hooks/use-debounce"
 import { cn } from "@/lib/utils"
-import type { ClientListItem, Contact as ContactType } from "@/types/api"
+import type { Contact as ContactType } from "@/types/api"
 
 // ── Form value type (wide enough for both modes) ──
 
@@ -96,7 +106,6 @@ type AssetFormProps = {
       onSubmit: CreateSubmit
       types: Array<{ value: string; label: string }>
       clientId?: string
-      clients?: ClientListItem[]
     }
   | {
       mode: "edit"
@@ -123,7 +132,6 @@ export function AssetForm(props: AssetFormProps) {
   const createProps = isCreate ? (props as typeof props & { mode: "create" }) : null
   const types = createProps?.types ?? []
   const clientId = createProps?.clientId ?? ""
-  const clients = createProps?.clients ?? []
 
   // Edit-specific props
   const editProps = isEdit ? (props as typeof props & { mode: "edit" }) : null
@@ -208,11 +216,32 @@ export function AssetForm(props: AssetFormProps) {
       (c.email || "") === (watch("primary_contact_email") || "")
   ) ?? null
 
+  // ── Client search (create mode, no pre-selected client) ──
+
+  const [clientSearch, setClientSearch] = useState("")
+  const debouncedClientSearch = useDebounce(clientSearch, 300)
+
+  const { data: searchedClients, isLoading: clientsLoading } = useClients(
+    hasClientSelector
+      ? { search: debouncedClientSearch || undefined, limit: 50, sort_by: "name", sort_order: "asc" }
+      : { limit: 0 },
+  )
+
+  const clientOptions = useMemo(
+    () =>
+      (searchedClients?.data ?? []).map((client) => ({
+        value: client.id,
+        label: client.company ? `${client.name} (${client.company})` : client.name,
+      })),
+    [searchedClients],
+  )
+
   // ── Reset on open ──
 
   useEffect(() => {
     if (open) {
       reset(defaultValues)
+      setClientSearch("")
       if (isCreate) {
         setSelectedServerIds([])
         setServerSearch("")
@@ -255,11 +284,6 @@ export function AssetForm(props: AssetFormProps) {
 
   // ── Helpers ──
 
-  const clientOptions = clients.map((client) => ({
-    value: client.id,
-    label: client.company ? `${client.name} (${client.company})` : client.name,
-  }))
-
   const typeOptions = types.map((t) => ({
     value: t.value,
     label: t.label,
@@ -288,20 +312,35 @@ export function AssetForm(props: AssetFormProps) {
           {/* Client Selector (create only) */}
           {isCreate && hasClientSelector && (
             <div className="space-y-2">
-              <Label htmlFor="client-select">
+              <Label>
                 Client <span className="text-destructive">*</span>
               </Label>
-              <SearchableSelect
-                id="client-select"
-                options={clientOptions}
-                value={selectedClientId}
-                onChange={(value) =>
+              <Combobox
+                modal
+                data={clientOptions}
+                onValueChange={(value) =>
                   setValue("client_id", value, { shouldValidate: true, shouldDirty: true })
                 }
-                placeholder="Select client..."
-                searchPlaceholder="Search clients..."
-                emptyText="No clients found."
-              />
+                type="client"
+              >
+                <ComboboxTrigger className="w-full justify-between" />
+                <ComboboxContent>
+                  <ComboboxInput
+                    onValueChange={(value) => setClientSearch(value)}
+                    placeholder="Select Client"
+                  />
+                  <ComboboxEmpty />
+                  <ComboboxList>
+                    <ComboboxGroup>
+                      {clientOptions.map((item) => (
+                        <ComboboxItem key={item.value} value={item.value} keywords={[item.label]} >
+                          {item.label}
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxGroup>
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
               {errors.client_id?.message && (
                 <p className="text-xs text-destructive">{errors.client_id.message}</p>
               )}

@@ -24,6 +24,33 @@ export interface ClientListItem {
   asset_count: number
 }
 
+export interface AppConfig {
+  id: string
+  group: string
+  config: Record<string, unknown>
+  updated_by_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SmtpConfig {
+  host: string
+  port: number
+  user: string
+  password: string
+  from_email: string
+  from_name?: string
+  encryption?: string
+}
+
+export interface WhatsAppConfig {
+  api_key: string
+  api_secret?: string
+  phone_number_id: string
+  business_account_id?: string
+  webhook_verify_token?: string
+}
+
 export interface PaginatedResponse<T> {
   data: T[]
   meta: {
@@ -263,6 +290,7 @@ export interface ContractDetail {
   notes?: string | null
   created_at: string
   updated_at: string
+  scopes: Scope[]
   assets: Array<{
     id: string
     name: string

@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline"
 import { ContractEditDrawer } from "@/components/contracts/contract-edit-drawer"
+import { ScopesSection } from "@/components/contracts/scopes-section"
 
 const CONTRACT_STATUS_COLORS: Record<string, "emerald" | "amber" | "red" | "blue" | "gray"> = {
   active: "emerald",
@@ -206,6 +207,8 @@ export default function ContractDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          <ScopesSection contractId={id} />
         </div>
 
         <div className="lg:col-span-2">

@@ -31,6 +31,15 @@ export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export type UserRole = "admin" | "user";
 
+export interface AppConfigs {
+  config: Generated<Json>;
+  created_at: Generated<Timestamp>;
+  group: string;
+  id: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  updated_by_id: string | null;
+}
+
 export interface Assets {
   client_id: string;
   created_at: Generated<Timestamp>;
@@ -401,6 +410,7 @@ export interface Users {
 }
 
 export interface DB {
+  app_configs: AppConfigs;
   asset_scopes: AssetScopes;
   asset_servers: AssetServers;
   assets: Assets;

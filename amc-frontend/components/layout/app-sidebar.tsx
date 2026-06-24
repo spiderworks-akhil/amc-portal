@@ -17,6 +17,7 @@ import {
   ClipboardList,
   CalendarDays,
   Bell,
+  Settings,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -66,12 +67,12 @@ const navItems = [
       // { title: "Notifications", icon: Bell, href: "/reminders" },
     ],
   },
-  // {
-  //   group: "Admin",
-  //   items: [
-  //     { title: "Queues", icon: Activity, href: "/admin/queues" },
-  //   ],
-  // },
+  {
+    group: "System",
+    items: [
+      { title: "Settings", icon: Settings, href: "/settings" },
+    ],
+  },
 ]
 
 export function AppSidebar() {
