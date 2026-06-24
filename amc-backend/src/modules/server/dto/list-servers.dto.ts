@@ -47,6 +47,10 @@ export class ListServersDto {
   @IsOptional()
   region?: string;
 
+  @IsString()
+  @IsOptional()
+  owner?: string;
+
   @IsDateString()
   @IsOptional()
   renewal_date_from?: string;

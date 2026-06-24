@@ -29,6 +29,7 @@ export function ServersPageContent() {
   const page = Number(searchParams.get("page")) || 1
   const search = searchParams.get("search") || ""
   const providerFilter = searchParams.get("provider_id") || "all"
+  const ownerFilter = searchParams.get("owner") || "all"
   const sortFieldParam = searchParams.get("sort_by") || "label"
   const sortOrderParam = searchParams.get("sort_order") || "asc"
   const limit = 30
@@ -65,6 +66,7 @@ export function ServersPageContent() {
     page,
     search,
     provider_id: providerFilter !== "all" ? providerFilter : undefined,
+    owner: ownerFilter !== "all" ? ownerFilter : undefined,
     limit,
     sort_by: sortField,
     sort_order: sortOrder,
@@ -92,6 +94,16 @@ export function ServersPageContent() {
     (value: string) => {
       updateParams({
         provider_id: value === "all" ? undefined : value,
+        page: "1",
+      })
+    },
+    [updateParams]
+  )
+
+  const handleOwnerChange = useCallback(
+    (value: string) => {
+      updateParams({
+        owner: value === "all" ? undefined : value,
         page: "1",
       })
     },
@@ -187,6 +199,19 @@ export function ServersPageContent() {
             </div>
           </div>
 
+          <div className="w-full sm:w-40">
+            <SmoothSelect
+              options={[
+                { value: "all", label: "All Owners" },
+                { value: "SpiderWorks", label: "SpiderWorks" },
+                { value: "client", label: "Client" },
+                { value: "thirdparty", label: "Third Party" },
+              ]}
+              value={ownerFilter}
+              onChange={handleOwnerChange}
+              className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
+            />
+          </div>
           <div className="w-full sm:w-48">
             <SmoothSelect
               options={[{ value: "all", label: "All Providers" }, ...(providersData?.data?.map((p) => ({ value: p.id, label: p.name })) || [])]}

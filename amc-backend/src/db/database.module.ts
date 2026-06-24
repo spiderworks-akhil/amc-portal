@@ -17,19 +17,12 @@ import { DatabaseService } from "./database.service";
           user: config.get("DB_USER"),
           password: config.get("DB_PASSWORD"),
           database: config.get("DB_NAME"),
-
-          // ── Connection pool sizing ──
           max: config.get<number>("DB_POOL_MAX") ?? 20,
-
-          // ── Timeouts to prevent hangs ──
           connectionTimeoutMillis: config.get<number>("DB_CONNECTION_TIMEOUT") ?? 5_000,
           idleTimeoutMillis: config.get<number>("DB_IDLE_TIMEOUT") ?? 30_000,
-
-          // ── Connection recycling ──
           maxUses: config.get<number>("DB_POOL_MAX_USES") ?? 7_500,
-
-          // ── Monitoring ──
           application_name: config.get("DB_APPLICATION_NAME") ?? "amc-portal",
+          ssl: config.get("DB_SSL") ?? false,
         };
 
         return {

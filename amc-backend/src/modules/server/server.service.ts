@@ -72,6 +72,7 @@ export class ServerService {
       search,
       provider_id,
       region,
+      owner,
       renewal_date_from,
       renewal_date_to,
       sort_by = ServerSortBy.LABEL,
@@ -101,6 +102,10 @@ export class ServerService {
 
     if (region) {
       query = query.where('servers.region', '=', region);
+    }
+
+    if (owner) {
+      query = query.where('servers.owner', '=', owner);
     }
 
     if (renewal_date_from) {
@@ -141,6 +146,7 @@ export class ServerService {
           'servers.monthly_cost',
           'servers.currency',
           'servers.renewal_date',
+          'servers.owner',
           'servers.notes',
           'servers.created_at',
           'servers.updated_at',
