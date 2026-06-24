@@ -389,7 +389,7 @@ export function AssetForm(props: AssetFormProps) {
               <Label>Primary Contact</Label>
               <SmoothSelect
                 placeholder="Select a contact..."
-                value={selectedContact?.id}
+                value={selectedContact?.id ?? ""}
                 options={contacts.map((contact) => ({
                   value: contact.id,
                   label: contact.email
@@ -517,7 +517,7 @@ export function AssetForm(props: AssetFormProps) {
                       { value: "development", label: "Development" },
                       { value: "parked", label: "Parked" },
                     ]}
-                    value={field.value || undefined}
+                    value={field.value || ""}
                     placeholder="Select status..."
                     onChange={field.onChange}
                   />
