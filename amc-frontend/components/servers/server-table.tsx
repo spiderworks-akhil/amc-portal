@@ -38,6 +38,7 @@ import {
   CalendarClock,
   HardDrive,
   Trash2,
+  User,
 } from "lucide-react"
 import type { ServerListItem } from "@/types/api"
 import { formatDate, formatCurrency } from "@/lib/format-utils"
@@ -126,6 +127,7 @@ export function ServerTable({
               <TableHead>Provider</TableHead>
               <TableHead>IP Address</TableHead>
               <TableHead>Region</TableHead>
+              <TableHead>Owner</TableHead>
               <SortHeader label="Monthly Cost" field="monthly_cost" currentField={sortField} order={sortOrder} onSort={onSort} />
               <SortHeader label="Renewal Date" field="renewal_date" currentField={sortField} order={sortOrder} onSort={onSort} />
               <TableHead>Status</TableHead>
@@ -137,7 +139,7 @@ export function ServerTable({
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 9 }).map((_, j) => (
+                  {Array.from({ length: 10 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -146,7 +148,7 @@ export function ServerTable({
               ))
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                   No servers found
                 </TableCell>
               </TableRow>
@@ -204,6 +206,29 @@ export function ServerTable({
                       ) : (
                         <span className="text-xs text-muted-foreground/50">—</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <User className="size-3.5 shrink-0 text-muted-foreground" />
+                        <Badge
+                          variant="dot"
+                          size="sm"
+                          color={
+                            server.owner === "SpiderWorks"
+                              ? "blue"
+                              : server.owner === "client"
+                                ? "green"
+                                : "amber"
+                          }
+                          className="capitalize"
+                        >
+                          {server.owner === "SpiderWorks"
+                            ? "SpiderWorks"
+                            : server.owner === "client"
+                              ? "Client"
+                              : "Third Party"}
+                        </Badge>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {server.monthly_cost ? (

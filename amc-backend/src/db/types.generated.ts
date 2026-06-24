@@ -112,7 +112,6 @@ export interface Clients {
   name: string;
   notes: string | null;
   phone: string | null;
-  remarks: string | null;
   updated_at: Generated<Timestamp>;
   updated_by: string | null;
 }

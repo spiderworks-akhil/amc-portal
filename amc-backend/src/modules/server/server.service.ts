@@ -8,7 +8,7 @@ import {
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import * as rdap from 'node-rdap';
-import { DB } from '../../db/types.generated';
+import { DB, OwnerEnum } from '../../db/types.generated';
 import {
   CreateServerDto,
   UpdateServerDto,
@@ -105,7 +105,7 @@ export class ServerService {
     }
 
     if (owner) {
-      query = query.where('servers.owner', '=', owner);
+      query = query.where('servers.owner', '=', owner as OwnerEnum);
     }
 
     if (renewal_date_from) {
