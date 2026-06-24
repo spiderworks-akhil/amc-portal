@@ -38,6 +38,7 @@ async function main() {
         user: process.env.DB_USER || "postgres",
         password: process.env.DB_PASSWORD || "althaf",
         database: process.env.DB_NAME || "amc-portal",
+        ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
       }),
     }),
   });
