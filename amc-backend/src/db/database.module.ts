@@ -22,7 +22,7 @@ import { DatabaseService } from "./database.service";
           idleTimeoutMillis: config.get<number>("DB_IDLE_TIMEOUT") ?? 30_000,
           maxUses: config.get<number>("DB_POOL_MAX_USES") ?? 7_500,
           application_name: config.get("DB_APPLICATION_NAME") ?? "amc-portal",
-          ssl: config.get("DB_SSL") ?? false,
+          ssl: config.get("NODE_ENV") === "production" ? { rejectUnauthorized: false } : false,
         };
 
         return {
