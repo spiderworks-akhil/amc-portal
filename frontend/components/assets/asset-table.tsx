@@ -133,7 +133,7 @@ export function AssetTable({
             ) : data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                  No assets found
+                  No projects found
                 </TableCell>
               </TableRow>
             ) : (
@@ -216,7 +216,7 @@ export function AssetTable({
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Asset</AlertDialogTitle>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete <strong>{deleteAsset?.name}</strong>? This action cannot be undone.
             </AlertDialogDescription>

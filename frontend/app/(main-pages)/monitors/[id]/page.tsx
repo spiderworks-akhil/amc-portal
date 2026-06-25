@@ -130,7 +130,7 @@ export default function MonitorDetailPage() {
                 <>
                   <span className="text-muted-foreground/50 mx-1">·</span>
                   <Link
-                    href={`/assets/${monitor.asset_id}`}
+                    href={`/projects/${monitor.asset_id}`}
                     className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
                   >
                     {monitor.asset_name}
@@ -379,7 +379,7 @@ export default function MonitorDetailPage() {
                   <span className="text-sm text-muted-foreground">Asset</span>
                   {monitor.asset_id && monitor.asset_name ? (
                     <Link
-                      href={`/assets/${monitor.asset_id}`}
+                      href={`/projects/${monitor.asset_id}`}
                       className="text-xs truncate max-w-[130px] font-medium hover:text-foreground hover:underline underline-offset-2 transition-colors"
                     >
                       {monitor.asset_name}

@@ -67,10 +67,14 @@ import {
   Pencil,
   Activity,
   Users,
+  Contact,
+  Phone,
+  Check,
+  Bell,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
-import type { AccountManager } from "@/types/api";
+import type { AccountManager, Contact as ContactType } from "@/types/api";
 import { ScopesSection } from "@/components/assets/asset-details/scopes-section";
 import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline";
 import { AssetEditForm } from "@/components/assets/asset-details/asset-edit-form";
@@ -101,7 +105,7 @@ const CONTRACT_STATUS_COLORS: Record<
   terminated: "gray",
 };
 
-export default function AssetDetailPage() {
+export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -347,15 +351,15 @@ export default function AssetDetailPage() {
           <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center">
             <FileText className="size-8 text-destructive" />
           </div>
-          <h2 className="text-xl font-semibold">Asset not found</h2>
+          <h2 className="text-xl font-semibold">Project not found</h2>
           <p className="text-muted-foreground max-w-sm">
-            The asset you&apos;re looking for doesn&apos;t exist or may have
+            The project you&apos;re looking for doesn&apos;t exist or may have
             been removed.
           </p>
           <BackButton
             variant="outline"
-            label="Back to Assets"
-            fallbackHref="/assets"
+            label="Back to Projects"
+            fallbackHref="/projects"
           />
         </div>
       </div>
@@ -366,7 +370,7 @@ export default function AssetDetailPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Back + Header */}
       <div className="mb-6">
-        <BackButton label="Back to Assets" fallbackHref="/assets" />
+        <BackButton label="Back to Projects" fallbackHref="/projects" />
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
@@ -471,7 +475,7 @@ export default function AssetDetailPage() {
                 Overview
               </CardTitle>
               <CardDescription>
-                Quick snapshot of asset health and linked resources
+                Quick snapshot of project health and linked resources
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -623,14 +627,14 @@ export default function AssetDetailPage() {
         );
       })()}
 
-      {/* Two-column layout: Asset Info + Status */}
+      {/* Two-column layout: Project Info + Status */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-        {/* Left: Asset Details */}
+        {/* Row 1: Project Details + Status */}
         <div className="lg:col-span-3 space-y-6">
           {/* Main Info Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Asset Details</CardTitle>
+              <CardTitle>Project Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
 
@@ -720,50 +724,8 @@ export default function AssetDetailPage() {
               )}
             </CardContent>
           </Card>
-   {/* Account Managers Card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <Users className="size-3.5 text-muted-foreground" />
-                Account Managers
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {asset.account_managers.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  <Users className="size-6 mx-auto mb-1.5 opacity-30" />
-                  <p className="text-xs">No managers assigned to this client</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {asset.account_managers.map((manager: AccountManager) => (
-                    <div
-                      key={manager.id}
-                      className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
-                    >
-                      <Avatar className="size-7">
-                        <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                          {getInitials(manager.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium truncate">
-                          {manager.name}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          {manager.email}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-       
         </div>
 
-        {/* Right: Monitoring & Quick Info */}
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -773,28 +735,7 @@ export default function AssetDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Monitoring toggle */}
-              <div className="flex items-center justify-between min-h-9">
-                <span className="text-sm text-muted-foreground">
-                  Monitoring
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    asset.monitoring_enabled
-                      ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  <span
-                    className={`size-1.5 rounded-full ${
-                      asset.monitoring_enabled
-                        ? "bg-emerald-500 animate-pulse"
-                        : "bg-muted-foreground/40"
-                    }`}
-                  />
-                  {asset.monitoring_enabled ? "Enabled" : "Disabled"}
-                </span>
-              </div>
+         
               <div className="flex items-center justify-between min-h-9">
                 <span className="text-sm text-muted-foreground">Type</span>
                 <span className="text-sm font-medium capitalize leading-none">
@@ -813,8 +754,112 @@ export default function AssetDetailPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
 
-       
+        {/* Row 2: Team section full width */}
+        <div className="lg:col-span-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            {/* Account Managers Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                  <Users className="size-3.5 text-muted-foreground" />
+                  Account Managers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {asset.account_managers.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Users className="size-6 mx-auto mb-1.5 opacity-30" />
+                    <p className="text-xs">No managers assigned to this client</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {asset.account_managers.map((manager: AccountManager) => (
+                      <div
+                        key={manager.id}
+                        className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
+                      >
+                        <Avatar className="size-7">
+                          <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                            {getInitials(manager.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate">
+                            {manager.name}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {manager.email}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Client Contacts Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                  <Contact className="size-3.5 text-muted-foreground" />
+                  Client Contacts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {asset.contacts.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Contact className="size-6 mx-auto mb-1.5 opacity-30" />
+                    <p className="text-xs">No contacts for this client</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {asset.contacts.map((contact: ContactType) => (
+                      <div
+                        key={contact.id}
+                        className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
+                      >
+                        <Avatar className="size-7">
+                          <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                            {getInitials(contact.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-medium truncate">
+                              {contact.name}
+                            </p>
+                            {contact.is_primary && (
+                              <Check className="size-3 shrink-0 text-emerald-500" />
+                            )}
+                            {contact.should_send_notification && (
+                              <Bell className="size-3 shrink-0 text-muted-foreground" />
+                            )}
+                          </div>
+                          {contact.designation && (
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {contact.designation}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                            {contact.email && (
+                              <span className="truncate">{contact.email}</span>
+                            )}
+                            {contact.email && contact.phone && <span>·</span>}
+                            {contact.phone && (
+                              <span className="shrink-0">{contact.phone}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3 w-full">
@@ -834,7 +879,7 @@ export default function AssetDetailPage() {
             </CardTitle>
             <CardDescription>
               {asset.domains.length === 0
-                ? "No domains linked to this asset"
+                ? "No domains linked to this project"
                 : `${asset.domains.length} domain${asset.domains.length > 1 ? "s" : ""}`}
             </CardDescription>
           </div>
@@ -965,7 +1010,7 @@ export default function AssetDetailPage() {
             </CardTitle>
             <CardDescription>
               {asset.ssl_certificates.length === 0
-                ? "No SSL certificates linked to this asset"
+                ? "No SSL certificates linked to this project"
                 : `${asset.ssl_certificates.length} certificate${asset.ssl_certificates.length > 1 ? "s" : ""}`}
             </CardDescription>
           </div>
@@ -1097,15 +1142,11 @@ export default function AssetDetailPage() {
             </CardTitle>
             <CardDescription>
               {asset.servers.length === 0
-                ? "No servers linked to this asset"
+                ? "No servers linked to this project"
                 : `${asset.servers.length} server${asset.servers.length > 1 ? "s" : ""}`}
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            {/* <Button size="sm" variant="ghost" onClick={() => setCreateProviderOpen(true)}>
-              <Plus className="size-3.5 mr-1.5" />
-              Provider
-            </Button> */}
             <Button
               size="sm"
               variant="outline"
@@ -1122,7 +1163,7 @@ export default function AssetDetailPage() {
               <Server className="size-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm font-medium">No servers linked</p>
               <p className="text-xs mt-1">
-                Link servers to this asset from the server detail page.
+                Link servers to this project from the server detail page.
               </p>
             </div>
           ) : (
@@ -1176,7 +1217,7 @@ export default function AssetDetailPage() {
               {monitorsLoading
                 ? "Loading monitors..."
                 : !monitorsData?.data?.length
-                  ? "No monitors linked to this asset"
+                  ? "No monitors linked to this project"
                   : `${monitorsData.meta.total} monitor${monitorsData.meta.total !== 1 ? "s" : ""}`}
             </CardDescription>
           </div>
@@ -1208,7 +1249,7 @@ export default function AssetDetailPage() {
               <Activity className="size-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm font-medium">No monitors set up</p>
               <p className="text-xs mt-1">
-                Create an uptime monitor to keep track of this asset&apos;s
+                Create an uptime monitor to keep track of this project&apos;s
                 availability.
               </p>
             </div>
@@ -1302,7 +1343,7 @@ export default function AssetDetailPage() {
               {contractsLoading
                 ? "Loading contracts..."
                 : !contractsData?.data?.length
-                  ? "No contracts linked to this asset"
+                  ? "No contracts linked to this project"
                   : `${contractsData.meta.total} contract${contractsData.meta.total !== 1 ? "s" : ""}`}
             </CardDescription>
           </div>
@@ -1334,7 +1375,7 @@ export default function AssetDetailPage() {
               <FileText className="size-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm font-medium">No contracts linked</p>
               <p className="text-xs mt-1">
-                Link contracts to this asset from the contract edit page.
+                Link contracts to this project from the contract edit page.
               </p>
             </div>
           ) : (

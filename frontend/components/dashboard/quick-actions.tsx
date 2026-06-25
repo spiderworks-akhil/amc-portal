@@ -6,7 +6,7 @@ import { Users, HardDrive, FileText, Globe, Activity } from "lucide-react"
 
 const actions = [
   { label: "Manage Clients", icon: Users, href: "/clients", color: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400" },
-  { label: "View Assets", icon: HardDrive, href: "/assets", color: "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400" },
+  { label: "View Projects", icon: HardDrive, href: "/projects", color: "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400" },
   { label: "Track Contracts", icon: FileText, href: "/contracts", color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" },
   { label: "Domain Health", icon: Globe, href: "/domains", color: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400" },
 ]

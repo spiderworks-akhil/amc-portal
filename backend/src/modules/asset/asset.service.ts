@@ -148,7 +148,7 @@ export class AssetService {
 
     if (!asset) throw new NotFoundException(`Asset ${id} not found`);
 
-    const [servers, domains, sslCertificates, accountManagers] = await Promise.all([
+    const [servers, domains, sslCertificates, accountManagers, contacts] = await Promise.all([
       this.db
         .selectFrom('asset_servers')
         .innerJoin('servers', 'servers.id', 'asset_servers.server_id')
@@ -220,9 +220,17 @@ export class AssetService {
             .where('users.is_active', '=', true)
             .execute()
         : Promise.resolve([] as { id: string; name: string; email: string }[]),
+
+      asset.client_id
+        ? this.db
+            .selectFrom('client_contacts')
+            .selectAll()
+            .where('client_id', '=', asset.client_id)
+            .execute()
+        : Promise.resolve([]),
     ]);
 
-    return { ...asset, servers, domains, ssl_certificates: sslCertificates, account_managers: accountManagers };
+    return { ...asset, servers, domains, ssl_certificates: sslCertificates, account_managers: accountManagers, contacts };
   }
 
   async update(id: string, dto: UpdateAssetDto) {

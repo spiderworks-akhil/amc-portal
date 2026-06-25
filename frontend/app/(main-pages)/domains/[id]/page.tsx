@@ -183,7 +183,7 @@ const registrars = providers?.data ?? [];
               <Building2 className="size-4 shrink-0" />
               <button
                 type="button"
-                onClick={() => router.push(`/assets/${domain.asset_id}`)}
+                onClick={() => router.push(`/projects/${domain.asset_id}`)}
                 className="text-primary hover:underline text-left"
               >
                 {domain.asset_name}
@@ -278,7 +278,7 @@ const registrars = providers?.data ?? [];
                 value={
                   <button
                     type="button"
-                    onClick={() => router.push(`/assets/${domain.asset_id}`)}
+                    onClick={() => router.push(`/projects/${domain.asset_id}`)}
                     className="text-primary hover:underline text-left"
                   >
                     {domain.asset_name}

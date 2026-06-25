@@ -22,7 +22,7 @@ export function StatCards({ summary, expiryStats, isLoading }: StatCardsProps) {
           bg: "bg-blue-50 dark:bg-blue-950/30",
         },
         {
-          label: "Total Assets",
+          label: "Total Projects",
           value: summary.totalAssets,
           icon: HardDrive,
           color: "text-violet-600 dark:text-violet-400",

@@ -73,7 +73,7 @@ export function ClientCard({ client, onClick, onSync, isSyncing }: ClientCardPro
           {client.asset_count > 0 && (
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-2.5 py-0.5 font-medium text-primary">
               <Layers className="size-3" />
-              {client.asset_count} {client.asset_count === 1 ? "asset" : "assets"}
+              {client.asset_count} {client.asset_count === 1 ? "project" : "projects"}
             </span>
           )}
           {client.manager_count > 0 && (

@@ -408,10 +408,10 @@ export default function ServerDetailPage() {
                 <div
                   key={asset.id}
                   className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group cursor-pointer"
-                  onClick={() => router.push(`/assets/${asset.id}`)}
+                  onClick={() => router.push(`/projects/${asset.id}`)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/assets/${asset.id}`) }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/projects/${asset.id}`) }}
                 >
                   <div className="flex items-start gap-3">
                     <div className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0">

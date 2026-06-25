@@ -7,7 +7,7 @@ import Link from "next/link"
 const pageTitles: Record<string, { label: string; icon?: React.ElementType }> = {
   "/dashboard": { label: "Dashboard", icon: LayoutDashboard },
   "/clients": { label: "Clients" },
-  "/assets": { label: "Assets" },
+  "/projects": { label: "Projects" },
   "/contracts": { label: "Contracts" },
   "/servers": { label: "Servers" },
   "/domains": { label: "Domains" },

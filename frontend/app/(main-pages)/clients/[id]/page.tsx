@@ -628,10 +628,10 @@ export default function ClientDetailPage() {
                   key={asset.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => router.push(`/assets/${asset.id}`)}
+                  onClick={() => router.push(`/projects/${asset.id}`)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ")
-                      router.push(`/assets/${asset.id}`);
+                      router.push(`/projects/${asset.id}`);
                   }}
                   className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm hover:bg-accent/30 group cursor-pointer"
                 >

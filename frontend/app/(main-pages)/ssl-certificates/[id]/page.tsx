@@ -245,7 +245,7 @@ export default function SslCertificateDetailPage() {
         )}
         {cert.asset_name && (
           <button
-            onClick={() => router.push(`/assets/${cert.asset_id}`)}
+            onClick={() => router.push(`/projects/${cert.asset_id}`)}
             className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs text-primary hover:bg-primary/10 transition-colors"
           >
             <FileText className="size-3" />
@@ -308,7 +308,7 @@ export default function SslCertificateDetailPage() {
                   value={
                     <button
                       type="button"
-                      onClick={() => router.push(`/assets/${cert.asset_id}`)}
+                      onClick={() => router.push(`/projects/${cert.asset_id}`)}
                       className="text-primary hover:underline text-left"
                     >
                       {cert.asset_name}

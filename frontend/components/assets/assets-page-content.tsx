@@ -141,14 +141,14 @@ export function AssetsPageContent() {
 
   const handleView = useCallback(
     (id: string) => {
-      router.push(`/assets/${id}`)
+      router.push(`/projects/${id}`)
     },
     [router]
   )
 
   const handleEdit = useCallback(
     (asset: AssetListItem) => {
-      router.push(`/assets/${asset.id}?edit=true`)
+      router.push(`/projects/${asset.id}?edit=true`)
     },
     [router]
   )
@@ -162,14 +162,14 @@ export function AssetsPageContent() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Assets</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
             <p className="text-muted-foreground mt-1">
-              Manage all client assets across the organization
+              Manage all projects across the organization
             </p>
           </div>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="size-4 mr-1.5" />
-            New Asset
+            New Project
           </Button>
         </div>
 
@@ -178,7 +178,7 @@ export function AssetsPageContent() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search assets by name, URL, or contact..."
+              placeholder="Search projects by name, URL, or contact..."
               value={inputValue}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9"
@@ -207,7 +207,7 @@ export function AssetsPageContent() {
         {/* Results summary */}
         {!isLoading && (
           <p className="text-xs text-muted-foreground">
-            Showing {data?.data.length ?? 0} of {total} assets
+            Showing {data?.data.length ?? 0} of {total} projects
           </p>
         )}
 

@@ -46,7 +46,7 @@ import Loading from "@/components/common/loader"
 const ENTITY_TYPE_OPTIONS = [
   { value: "all", label: "All Entities" },
   { value: "client", label: "Clients" },
-  { value: "asset", label: "Assets" },
+  { value: "asset", label: "Projects" },
   { value: "contract", label: "Contracts" },
   { value: "domain", label: "Domains" },
   { value: "ssl", label: "SSL Certificates" },

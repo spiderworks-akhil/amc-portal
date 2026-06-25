@@ -210,7 +210,7 @@ export function SslTable({
                     <TableCell>
                       {cert.asset_name ? (
                         <a
-                          href={`/assets/${cert.asset_id}`}
+                          href={`/projects/${cert.asset_id}`}
                           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate max-w-[140px] transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >

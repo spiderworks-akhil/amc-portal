@@ -1,7 +1,7 @@
 "use client"
 
 import { useConfig, useUpdateSmtpConfig, useUpdateWhatsAppConfig } from "@/hooks/use-config"
-import { Settings, Mail, MessageCircle, Loader2, Eye, EyeOff } from "lucide-react"
+import { Settings, Mail, MessageCircle, Loader2, Eye, EyeOff, Info } from "lucide-react"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -180,6 +180,21 @@ function WhatsAppSection() {
                 <Input id="wa-webhook-token" type="password" value={config?.webhook_verify_token ?? ""} onChange={(e) => handleChange("webhook_verify_token", e.target.value)} placeholder="••••••••" />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Template Requirements Info */}
+        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30 p-3">
+          <Info className="size-5 text-blue-500 shrink-0 mt-0.5" />
+          <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+            <p className="font-medium">WhatsApp Template Requirements</p>
+            <p>Each template must be created in <strong>Meta Business Manager</strong> with exactly <strong>3 text parameters</strong> in the body:</p>
+            <ol className="list-decimal pl-4 space-y-0.5">
+              <li>Entity name / identifier</li>
+              <li>Days remaining or creation date</li>
+              <li>Additional context (expiry date, severity, etc.)</li>
+            </ol>
+            <p className="mt-1">Enter the exact template name exactly as it appears in Meta Business Manager.</p>
           </div>
         </div>
 

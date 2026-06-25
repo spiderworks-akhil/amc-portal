@@ -300,7 +300,7 @@ export function IncidentsPageContent() {
                       <TableCell>
                         {incident.asset_id && incident.asset_name ? (
                           <Link
-                            href={`/assets/${incident.asset_id}`}
+                            href={`/projects/${incident.asset_id}`}
                             className="flex items-center gap-2 text-sm hover:text-foreground hover:underline underline-offset-2 transition-colors"
                             onClick={(e) => e.stopPropagation()}
                           >

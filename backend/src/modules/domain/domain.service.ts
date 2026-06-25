@@ -142,7 +142,6 @@ export class DomainService {
       );
     }
 
-    // Fire-and-forget WhatsApp notification
     this.whatsappService.sendDomainCreated(result.domain as unknown as Record<string, unknown>).catch(
       (err) => {
         this.logger.error(

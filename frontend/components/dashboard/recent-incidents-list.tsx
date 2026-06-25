@@ -170,7 +170,7 @@ export function RecentIncidentsList({ summary, isLoading }: RecentIncidentsListP
                           <>
                             <span>·</span>
                             <Link
-                              href={`/assets/${inc.asset_id}`}
+                              href={`/projects/${inc.asset_id}`}
                               className="truncate max-w-[100px] hover:text-foreground hover:underline underline-offset-2 transition-colors"
                             >
                               {inc.asset_name}

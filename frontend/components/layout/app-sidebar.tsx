@@ -49,7 +49,7 @@ const navItems = [
     items: [
       { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
       { title: "Clients", icon: Users, href: "/clients" },
-      { title: "Assets", icon: HardDrive, href: "/assets" },
+      { title: "Projects", icon: HardDrive, href: "/projects" },
       { title: "Contracts", icon: FileText, href: "/contracts" },
       { title: "Users", icon: User, href: "/users" },
        { title: "Expiry Calendar", icon: CalendarDays, href: "/expiry-calendar" },

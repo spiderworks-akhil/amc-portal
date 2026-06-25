@@ -225,6 +225,7 @@ export interface AssetDetail extends AssetListItem {
   notes?: string | null
   tech_stack?: string[] | null
   account_managers: AccountManager[]
+  contacts: Contact[]
   servers: Array<{
     id: string
     label: string

@@ -155,7 +155,7 @@ export default function IncidentDetailPage() {
                 <>
                   <span className="text-muted-foreground/40">|</span>
                   <Link
-                    href={`/assets/${incident.asset_id}`}
+                    href={`/projects/${incident.asset_id}`}
                     className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
                   >
                     {incident.asset_name}

@@ -203,18 +203,23 @@ export class WhatsappService {
         `WhatsApp template "${templateName}" sent to ${to}: ${JSON.stringify(response.data)}`,
       );
 
-      // Log successful send to history (only when tied to a reminder)
       if (reminderId) {
         await this.logHistory(reminderId, to, true, providerMessageId);
       }
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
+      let detail = '';
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosErr = err as { response?: { status?: number; data?: unknown } };
+        if (axiosErr.response) {
+          detail = ` | Status: ${axiosErr.response.status} | Response: ${JSON.stringify(axiosErr.response.data)}`;
+        }
+      }
       this.logger.error(
-        `Failed to send WhatsApp template "${templateName}" to ${to}: ${message}`,
+        `Failed to send WhatsApp template "${templateName}" to ${to}: ${message}${detail}`,
       );
-
-      // Log failed send to history (only when tied to a reminder)
+  
       if (reminderId) {
         await this.logHistory(reminderId, to, false, null);
       }
@@ -222,10 +227,7 @@ export class WhatsappService {
     }
   }
 
-  /**
-   * Resolve phone numbers for a given target type and ID.
-   * Used for expiry reminders where we need to find the client contacts.
-   */
+
   private async resolveRecipientsByTargetType(
     targetType: 'domain' | 'ssl' | 'server' | 'contract',
     targetId: string,
@@ -385,7 +387,13 @@ export class WhatsappService {
    */
   async sendDomainCreated(domain: Record<string, unknown>): Promise<void> {
     const config = await this.getConfig();
-    if (!config?.domain_created_template || !config.phone_number_id) return;
+    this.logger.log("Called whatsapp for sending domain created notification")
+    if (!config?.domain_created_template || !config.phone_number_id) {
+      this.logger.warn(
+        `WhatsApp config incomplete — domain_created_template: ${config?.domain_created_template ? 'set' : 'missing'}, phone_number_id: ${config?.phone_number_id ? 'set' : 'missing'}`,
+      );
+      return;
+    }
 
     const recipients = await this.resolveRecipientsForAsset(domain.asset_id as string);
     if (recipients.length === 0) {
@@ -393,7 +401,12 @@ export class WhatsappService {
       return;
     }
 
+    this.logger.log(
+      `Sending domain WhatsApp notification for "${domain.fqdn ?? domain.id}" to ${recipients.length} recipient(s): ${recipients.map((r) => r.phone).join(', ')}`,
+    );
+
     const bodyParams = this.buildTemplateParams('domain', domain);
+    this.logger.debug(`Template params for domain "${domain.fqdn}": ${JSON.stringify(bodyParams)}`);
 
     for (const r of recipients) {
       await this.sendTemplateMessage(config, r.phone, config.domain_created_template, bodyParams);

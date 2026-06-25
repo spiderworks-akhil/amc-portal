@@ -42,7 +42,7 @@ const ACTION_CONFIG: Record<string, { icon: typeof Edit; color: "emerald" | "blu
 
 const ENTITY_LINKS: Record<string, string> = {
   client: "/clients",
-  asset: "/assets",
+  asset: "/projects",
   contract: "/contracts",
   domain: "/domains",
   ssl: "/ssl-certificates",

@@ -220,7 +220,7 @@ function CalendarItemCard({ item, index }: { item: ExpiryCalendarItem; index: nu
       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
         {item.asset_id && item.asset_name ? (
           <Link
-            href={`/assets/${item.asset_id}`}
+            href={`/projects/${item.asset_id}`}
             onClick={(e) => e.stopPropagation()}
             className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
           >
@@ -574,7 +574,7 @@ function CalendarGridView({ items }: { items: ExpiryCalendarItem[] }) {
                       <div className="flex items-center gap-2 mt-0.5">
                         {item.asset_id && item.asset_name ? (
                           <Link
-                            href={`/assets/${item.asset_id}`}
+                            href={`/projects/${item.asset_id}`}
                             onClick={(e) => e.stopPropagation()}
                             className="text-[10px] text-muted-foreground/70 truncate hover:text-foreground hover:underline underline-offset-2 transition-colors"
                           >

@@ -22,7 +22,7 @@ export class ListAssetsDto {
 
   @Type(() => Number)
   @Min(1)
-  @Max(100)
+  @Max(500)
   @IsOptional()
   limit?: number = 50;
 
