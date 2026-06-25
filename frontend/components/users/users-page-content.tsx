@@ -3,7 +3,7 @@
 import { useCallback, useState, useEffect } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { UserTable, type UserSortField } from "@/components/users/user-table"
-import { useUsers } from "@/hooks/use-users"
+import { useUsers, useUpdateUser } from "@/hooks/use-users"
 import { Input } from "@/components/ui/input"
 import { useDebounce } from "@/hooks/use-debounce"
 import {
@@ -15,7 +15,19 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Search } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Search, Loader2, Phone } from "lucide-react"
+import { toast } from "sonner"
+import type { UserListItem } from "@/types/api"
 
 export function UsersPageContent() {
   const router = useRouter()
@@ -31,6 +43,10 @@ export function UsersPageContent() {
   const [inputValue, setInputValue] = useState(search)
   const [sortField, setSortField] = useState<UserSortField>(sortFieldParam as UserSortField)
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(sortOrderParam as "asc" | "desc")
+
+  const [editingUser, setEditingUser] = useState<UserListItem | null>(null)
+  const [editPhone, setEditPhone] = useState("")
+  const { mutate: updateUser, isPending: isUpdating } = useUpdateUser()
   const debouncedSearch = useDebounce(inputValue, 300)
 
   useEffect(() => {
@@ -101,6 +117,28 @@ export function UsersPageContent() {
     [sortOrder, updateParams]
   )
 
+  const handleEdit = useCallback((user: UserListItem) => {
+    setEditingUser(user)
+    setEditPhone(user.phone ?? "")
+  }, [])
+
+  const handleSavePhone = useCallback(() => {
+    if (!editingUser) return
+
+    updateUser(
+      { id: editingUser.id, phone: editPhone || null },
+      {
+        onSuccess: () => {
+          toast.success("Phone number updated")
+          setEditingUser(null)
+        },
+        onError: () => {
+          toast.error("Failed to update phone number")
+        },
+      },
+    )
+  }, [editingUser, editPhone, updateUser])
+
   const totalPages = data?.meta.totalPages ?? 0
 
   return (
@@ -136,6 +174,7 @@ export function UsersPageContent() {
           sortField={sortField}
           sortOrder={sortOrder}
           onSort={handleSort}
+          onEdit={handleEdit}
         />
 
         {totalPages > 1 && (
@@ -200,6 +239,43 @@ export function UsersPageContent() {
           </Pagination>
         )}
       </div>
+
+      {/* Edit Phone Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={(open) => { if (!open) setEditingUser(null) }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Phone Number</DialogTitle>
+            <DialogDescription>
+              Update the phone number for <span className="font-medium text-foreground">{editingUser?.name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-phone">Phone Number</Label>
+            <div className="relative">
+              <Phone className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="edit-phone"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="+1 (555) 123-4567"
+                className="pl-8"
+                autoFocus
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePhone} disabled={isUpdating}>
+              {isUpdating && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {isUpdating ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

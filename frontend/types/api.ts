@@ -789,11 +789,16 @@ export interface UserListItem {
   id: string
   name: string
   email: string
+  phone: string | null
   role: string
   is_active: boolean
   last_login_at: string | null
   created_at: string
   updated_at: string
+}
+
+export interface UpdateUserPayload {
+  phone?: string | null
 }
 
 export interface ListUsersParams {

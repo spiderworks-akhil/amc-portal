@@ -13,6 +13,8 @@ export interface NotificationHistory {
 
   provider_message_id: string | null;
 
+  failure_reason: string | null;
+
   sent_at: Timestamp;
 
   delivered_at: Timestamp | null;

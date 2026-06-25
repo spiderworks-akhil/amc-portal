@@ -103,6 +103,7 @@ export interface ClientContacts {
   is_primary: Generated<boolean>;
   name: string;
   phone: string | null;
+  send_recurring_notification: boolean | null;
   should_send_notification: Generated<boolean | null>;
   should_send_wp_notification: boolean | null;
   updated_by: string | null;
@@ -275,6 +276,7 @@ export interface NotificationHistory {
   channel: string;
   delivered_at: Timestamp | null;
   failed_at: Timestamp | null;
+  failure_reason: string | null;
   id: Generated<string>;
   provider_message_id: string | null;
   recipient: string;
@@ -299,6 +301,7 @@ export interface Reminders {
   acknowledged_at: Timestamp | null;
   channel: string;
   created_at: Generated<Timestamp>;
+  failure_reason: string | null;
   id: Generated<string>;
   message: string | null;
   rule_id: string | null;

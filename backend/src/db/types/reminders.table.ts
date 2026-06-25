@@ -23,6 +23,8 @@ export interface Reminders {
 
   status: ReminderStatus;
 
+  failure_reason: string | null;
+
   sent_at: Timestamp | null;
 
   acknowledged_at: Timestamp | null;

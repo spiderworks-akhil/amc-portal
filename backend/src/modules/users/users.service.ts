@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
 import { ListUsersDto, UserSortBy, UserSortOrder } from './dto/list-users.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -54,6 +55,7 @@ export class UsersService {
         id: row.id,
         name: row.name,
         email: row.email,
+        phone: row.phone,
         role: row.role,
         is_active: row.is_active,
         last_login_at: row.last_login_at,
@@ -90,5 +92,38 @@ export class UsersService {
       .where('is_active', '=', true)
       .orderBy('name', 'asc')
       .execute();
+  }
+
+  async update(id: string, dto: UpdateUserDto) {
+    const existing = await this.db
+      .selectFrom('users')
+      .select('id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    if (dto.phone !== undefined) {
+      updateData.phone = dto.phone || null;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return { message: 'No changes made' };
+    }
+
+    await this.db
+      .updateTable('users')
+      .set({
+        ...updateData,
+        updated_at: new Date(),
+      })
+      .where('id', '=', id)
+      .execute();
+
+    return { message: 'User updated successfully' };
   }
 }

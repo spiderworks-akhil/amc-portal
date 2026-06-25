@@ -29,6 +29,7 @@ import { DatabaseModule } from '../db/database.module';
     BullModule.registerQueue({ name: 'incident-notifications' }),
     BullModule.registerQueue({ name: 'reminder-creation' }),
     BullModule.registerQueue({ name: 'reminder-sending' }),
+    BullModule.registerQueue({ name: 'reminder-retry' }),
   ],
   controllers: [QueueController],
   providers: [QueueService, CronBootstrapService],

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowUpDown, User, Mail, Shield, Calendar, Clock, CheckCircle2, XCircle } from "lucide-react"
+import { ArrowUpDown, User, Mail, Shield, Calendar, Clock, CheckCircle2, XCircle, Phone, Pencil } from "lucide-react"
 import type { UserListItem } from "@/types/api"
 import { formatDate } from "@/lib/format-utils"
 
@@ -22,6 +22,7 @@ interface UserTableProps {
   sortField: UserSortField
   sortOrder: "asc" | "desc"
   onSort: (field: UserSortField) => void
+  onEdit: (user: UserListItem) => void
 }
 
 function SortHeader({
@@ -58,7 +59,7 @@ const roleColors: Record<string, "blue" | "purple" | "green" | "gray"> = {
   viewer: "gray",
 }
 
-export function UserTable({ data, isLoading, sortField, sortOrder, onSort }: UserTableProps) {
+export function UserTable({ data, isLoading, sortField, sortOrder, onSort, onEdit }: UserTableProps) {
   return (
     <div className="rounded-lg border border-border/60 overflow-hidden">
       <Table>
@@ -66,17 +67,19 @@ export function UserTable({ data, isLoading, sortField, sortOrder, onSort }: Use
           <TableRow className="bg-muted/30">
             <SortHeader label="Name" field="name" currentField={sortField} order={sortOrder} onSort={onSort} />
             <SortHeader label="Email" field="email" currentField={sortField} order={sortOrder} onSort={onSort} />
+            <TableHead>Phone</TableHead>
             <SortHeader label="Role" field="role" currentField={sortField} order={sortOrder} onSort={onSort} />
             <TableHead>Status</TableHead>
             <SortHeader label="Last Login" field="last_login_at" currentField={sortField} order={sortOrder} onSort={onSort} />
             <SortHeader label="Created" field="created_at" currentField={sortField} order={sortOrder} onSort={onSort} />
+            <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
               <TableRow key={i}>
-                {Array.from({ length: 6 }).map((_, j) => (
+                {Array.from({ length: 8 }).map((_, j) => (
                   <TableCell key={j}>
                     <Skeleton className="h-4 w-full" />
                   </TableCell>
@@ -85,7 +88,7 @@ export function UserTable({ data, isLoading, sortField, sortOrder, onSort }: Use
             ))
           ) : data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+              <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                 No users found
               </TableCell>
             </TableRow>
@@ -93,7 +96,7 @@ export function UserTable({ data, isLoading, sortField, sortOrder, onSort }: Use
             data.map((user) => (
               <TableRow
                 key={user.id}
-                className="transition-colors hover:bg-muted/40"
+                className="group/row transition-colors hover:bg-muted/40"
               >
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -110,6 +113,14 @@ export function UserTable({ data, isLoading, sortField, sortOrder, onSort }: Use
                     <Mail className="size-3.5 shrink-0 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground truncate max-w-[220px]">
                       {user.email}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {user.phone || <span className="text-muted-foreground/40 italic">Not set</span>}
                     </span>
                   </div>
                 </TableCell>
@@ -154,6 +165,15 @@ export function UserTable({ data, isLoading, sortField, sortOrder, onSort }: Use
                     <Calendar className="size-3.5 shrink-0 text-muted-foreground" />
                     <span className="text-sm">{formatDate(user.created_at)}</span>
                   </div>
+                </TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => onEdit(user)}
+                    className="flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover/row:opacity-100"
+                    title="Edit user"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
                 </TableCell>
               </TableRow>
             ))

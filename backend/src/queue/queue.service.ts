@@ -16,6 +16,7 @@ export class QueueService {
     @InjectQueue('incident-notifications') private readonly incidentNotificationQueue: Queue,
     @InjectQueue('reminder-creation') private readonly reminderCreationQueue: Queue,
     @InjectQueue('reminder-sending') private readonly reminderSendingQueue: Queue,
+    @InjectQueue('reminder-retry') private readonly reminderRetryQueue: Queue,
   ) {
     this.queues['monitor-checks'] = this.monitorQueue;
     this.queues['domain-refresh'] = this.domainRefreshQueue;
@@ -23,6 +24,7 @@ export class QueueService {
     this.queues['incident-notifications'] = this.incidentNotificationQueue;
     this.queues['reminder-creation'] = this.reminderCreationQueue;
     this.queues['reminder-sending'] = this.reminderSendingQueue;
+    this.queues['reminder-retry'] = this.reminderRetryQueue;
   }
 
   // ── Dashboard / Stats ──
@@ -240,6 +242,27 @@ export class QueueService {
       this.logger.log(`Enqueued incident notification for ${incidentId}`);
     } catch (err) {
       this.logger.error(`Failed to enqueue incident notification ${incidentId}: ${err}`);
+    }
+  }
+
+  // ── Reminder retry (every 15 minutes) ──
+
+  async scheduleReminderRetry(cron?: string) {
+    const pattern = cron ?? '*/15 * * * *';
+    try {
+      await this.reminderRetryQueue.add(
+        'reminder-retry',
+        {},
+        {
+          jobId: 'reminder-retry-schedule',
+          repeat: { pattern },
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
+      );
+      this.logger.log(`Scheduled reminder retry job with cron "${pattern}"`);
+    } catch (err) {
+      this.logger.error(`Failed to schedule reminder retry: ${err}`);
     }
   }
 

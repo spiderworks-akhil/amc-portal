@@ -41,6 +41,7 @@ export class ReminderSendingProcessor extends WorkerHost {
       .selectFrom('reminders')
       .selectAll()
       .where('status', '=', 'pending')
+      .where('failure_reason', 'is', null)
       .where('trigger_date', '<=', now)
       .execute();
 
@@ -102,18 +103,70 @@ export class ReminderSendingProcessor extends WorkerHost {
 
         // Fire-and-forget WhatsApp expiry notification
         this.sendWhatsAppExpiryReminder(reminder, entityInfo, daysRemaining, expiryDateStr)
-          .catch((err) => {
+          .catch(async (err) => {
+            const errMsg = err instanceof Error ? err.message : String(err);
             this.logger.error(
-              `WhatsApp expiry notification failed for ${reminder.target_type}/${reminder.target_id}: ${err instanceof Error ? err.message : err}`,
+              `WhatsApp expiry notification failed for ${reminder.target_type}/${reminder.target_id}: ${errMsg}`,
             );
+
+            // Log failure to notification_history for the reminder
+            if (reminder.id) {
+              try {
+                const whatsappRecipients = await this.resolveWhatsAppRecipients(reminder);
+                for (const recipient of whatsappRecipients) {
+                  await this.db
+                    .insertInto('notification_history')
+                    .values({
+                      reminder_id: reminder.id,
+                      recipient,
+                      channel: 'whatsapp',
+                      status: 'failed',
+                      failure_reason: errMsg.slice(0, 500),
+                      sent_at: new Date(),
+                      failed_at: new Date(),
+                    })
+                    .execute();
+                }
+              } catch (logErr) {
+                this.logger.error(`Failed to log WhatsApp failure history: ${logErr}`);
+              }
+            }
           });
       } else {
-        // BullMQ will retry automatically since we throw on failure
+        const errMsg = result.error ?? 'Unknown email send error';
         this.logger.warn(
-          `Email send failed for reminder ${reminder.id}, will retry (attempt ${jobAttempt + 1})`,
+          `Email send failed for reminder ${reminder.id}, will retry (attempt ${jobAttempt + 1}): ${errMsg}`,
         );
+
+        // Log failure to notification_history before throwing
+        try {
+          for (const recipient of recipients) {
+            await this.db
+              .insertInto('notification_history')
+              .values({
+                reminder_id: reminder.id,
+                recipient,
+                channel: 'email',
+                status: 'failed',
+                failure_reason: errMsg.slice(0, 500),
+                sent_at: new Date(),
+                failed_at: new Date(),
+              })
+              .execute();
+          }
+
+          // Also update reminder's failure_reason
+          await this.db
+            .updateTable('reminders')
+            .set({ failure_reason: errMsg.slice(0, 255) })
+            .where('id', '=', reminder.id)
+            .execute();
+        } catch (logErr) {
+          this.logger.error(`Failed to log email failure history: ${logErr}`);
+        }
+
         // Throw so BullMQ retries with backoff. Keep status as 'pending'.
-        throw new Error(`Email send failed for reminder ${reminder.id}`);
+        throw new Error(`Email send failed for reminder ${reminder.id}: ${errMsg}`);
       }
 
       sent++;
@@ -358,6 +411,90 @@ export class ReminderSendingProcessor extends WorkerHost {
         );
         break;
     }
+  }
+
+  /**
+   * Resolve WhatsApp-capable phone numbers for a given reminder's target entity.
+   */
+  private async resolveWhatsAppRecipients(reminder: {
+    target_type: string;
+    target_id: string;
+  }): Promise<string[]> {
+    let clientId: string | null = null;
+
+    switch (reminder.target_type) {
+      case 'domain': {
+        const row = await this.db
+          .selectFrom('domains')
+          .innerJoin('assets', 'assets.id', 'domains.asset_id')
+          .select('assets.client_id')
+          .where('domains.id', '=', reminder.target_id)
+          .executeTakeFirst();
+        clientId = row?.client_id ?? null;
+        break;
+      }
+      case 'ssl': {
+        const row = await this.db
+          .selectFrom('ssl_certificates')
+          .innerJoin('domains', 'domains.id', 'ssl_certificates.domain_id')
+          .innerJoin('assets', 'assets.id', 'domains.asset_id')
+          .select('assets.client_id')
+          .where('ssl_certificates.id', '=', reminder.target_id)
+          .executeTakeFirst();
+        clientId = row?.client_id ?? null;
+        break;
+      }
+      case 'contract': {
+        const row = await this.db
+          .selectFrom('contracts')
+          .select('client_id')
+          .where('contracts.id', '=', reminder.target_id)
+          .executeTakeFirst();
+        clientId = row?.client_id ?? null;
+        break;
+      }
+      case 'server': {
+        const assetLink = await this.db
+          .selectFrom('asset_servers')
+          .innerJoin('assets', 'assets.id', 'asset_servers.asset_id')
+          .select('assets.client_id')
+          .where('asset_servers.server_id', '=', reminder.target_id)
+          .executeTakeFirst();
+        clientId = assetLink?.client_id ?? null;
+        break;
+      }
+    }
+
+    if (!clientId) return [];
+
+    // Get client contacts with WhatsApp notification enabled
+    const contacts = await this.db
+      .selectFrom('client_contacts')
+      .select(['phone'])
+      .where('client_id', '=', clientId)
+      .where('phone', 'is not', null)
+      .execute();
+
+    const contactPhones = contacts
+      .filter((c) => c.phone)
+      .map((c) => c.phone!);
+
+    // Get account managers with phone numbers
+    const managers = await this.db
+      .selectFrom('client_account_managers')
+      .innerJoin('users', 'users.id', 'client_account_managers.manager_id')
+      .select('users.phone')
+      .where('client_account_managers.client_id', '=', clientId)
+      .where('client_account_managers.deleted_at', 'is', null)
+      .where('users.is_active', '=', true)
+      .where('users.phone', 'is not', null)
+      .execute();
+
+    const managerPhones = managers
+      .filter((m) => m.phone)
+      .map((m) => m.phone!);
+
+    return [...new Set([...contactPhones, ...managerPhones])];
   }
 
   private async findEntityContacts(

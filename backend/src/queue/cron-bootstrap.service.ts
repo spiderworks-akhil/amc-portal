@@ -25,7 +25,8 @@ export class CronBootstrapService implements OnApplicationBootstrap {
     try {
       await this.queueService.scheduleReminderCreation();
       await this.queueService.scheduleReminderSending();
-      this.logger.log('Scheduled reminder creation (every 6h) and sending (every 1min) jobs');
+      await this.queueService.scheduleReminderRetry();
+      this.logger.log('Scheduled reminder creation (every 6h), sending (every 3min), and retry (every 15min) jobs');
     } catch (err) {
       this.logger.error(`Failed to schedule reminder jobs: ${err instanceof Error ? err.message : err}`);
     }

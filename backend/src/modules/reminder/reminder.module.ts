@@ -10,6 +10,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { ReminderCreationProcessor } from '../../jobs/reminder-creation.processor';
 import { ReminderSendingProcessor } from '../../jobs/reminder-sending.processor';
+import { ReminderRetryProcessor } from '../../jobs/reminder-retry.processor';
 
 @Module({
   controllers: [ReminderController],
@@ -19,6 +20,7 @@ import { ReminderSendingProcessor } from '../../jobs/reminder-sending.processor'
     ReminderCleanupService,
     ReminderCreationProcessor,
     ReminderSendingProcessor,
+    ReminderRetryProcessor,
   ],
   imports: [
     ReminderRulesModule,

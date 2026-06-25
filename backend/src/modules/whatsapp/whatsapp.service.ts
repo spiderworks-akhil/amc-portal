@@ -137,6 +137,7 @@ export class WhatsappService {
     recipient: string,
     success: boolean,
     providerMessageId: string | null,
+    failureReason?: string | null,
   ): Promise<void> {
     try {
       await this.db
@@ -147,6 +148,7 @@ export class WhatsappService {
           channel: 'whatsapp',
           status: success ? 'sent' : 'failed',
           provider_message_id: providerMessageId,
+          failure_reason: failureReason ?? null,
           sent_at: new Date(),
           delivered_at: success ? new Date() : null,
           failed_at: success ? null : new Date(),
@@ -176,7 +178,7 @@ export class WhatsappService {
         type: 'template',
         template: {
           name: templateName,
-          language: { code: 'en' },
+          language: { code: 'en_US' },
           components: [
             {
               type: 'body',
@@ -221,7 +223,7 @@ export class WhatsappService {
       );
   
       if (reminderId) {
-        await this.logHistory(reminderId, to, false, null);
+        await this.logHistory(reminderId, to, false, null, message);
       }
       return false;
     }
