@@ -113,10 +113,7 @@ export class WhatsappService {
     return params;
   }
 
-  /**
-   * Build template parameters for expiry reminder messages.
-   * Expects 3 text params: entity label, days remaining, expiry date.
-   */
+
   private buildExpiryTemplateParams(
     targetLabel: string,
     daysRemaining: number,
@@ -308,15 +305,14 @@ export class WhatsappService {
   private async resolveRecipientsForClient(clientId: string): Promise<Recipient[]> {
     const recipients = new Map<string, Recipient>();
 
-    // 1. Client contacts with notification enabled
     const contacts = await this.db
       .selectFrom('client_contacts')
       .select(['name', 'phone'])
       .where('client_id', '=', clientId)
-      .where('should_send_notification', '=', true)
+      .where('should_send_wp_notification', '=', true)
       .where('phone', 'is not', null)
       .execute();
-
+      
     for (const c of contacts) {
       if (c.phone) {
         recipients.set(c.phone, { phone: c.phone, name: c.name ?? undefined });
@@ -382,11 +378,6 @@ export class WhatsappService {
     return this.resolveRecipientsForClient(clientId);
   }
 
-  // ── Public notification methods ──
-
-  /**
-   * Send WhatsApp notification for a newly created domain.
-   */
   async sendDomainCreated(domain: Record<string, unknown>): Promise<void> {
     const config = await this.getConfig();
     this.logger.log("Called whatsapp for sending domain created notification")
@@ -417,14 +408,11 @@ export class WhatsappService {
     this.logger.log(`Domain WhatsApp notification sent to ${recipients.length} recipient(s)`);
   }
 
-  /**
-   * Send WhatsApp notification for a newly created SSL certificate.
-   */
+ 
   async sendSslCreated(ssl: Record<string, unknown>): Promise<void> {
     const config = await this.getConfig();
     if (!config?.ssl_created_template || !config.phone_number_id) return;
 
-    // Resolve asset_id from the linked domain if not set on the SSL record directly
     let assetId = ssl.asset_id as string | undefined;
     if (!assetId && ssl.domain_id) {
       const domain = await this.db
@@ -453,9 +441,6 @@ export class WhatsappService {
     this.logger.log(`SSL WhatsApp notification sent to ${recipients.length} recipient(s)`);
   }
 
-  /**
-   * Send WhatsApp notification for a newly created server.
-   */
   async sendServerCreated(server: Record<string, unknown>): Promise<void> {
     const config = await this.getConfig();
     if (!config?.server_created_template || !config.phone_number_id) return;
@@ -492,9 +477,6 @@ export class WhatsappService {
     this.logger.log(`Server WhatsApp notification sent to ${allRecipients.size} recipient(s)`);
   }
 
-  /**
-   * Send WhatsApp notification for a newly created incident.
-   */
   async sendIncidentCreated(incident: Record<string, unknown>): Promise<void> {
     const config = await this.getConfig();
     if (!config?.incident_created_template || !config.phone_number_id) return;
@@ -514,11 +496,6 @@ export class WhatsappService {
     this.logger.log(`Incident WhatsApp notification sent to ${recipients.length} recipient(s)`);
   }
 
-  // ── Expiry reminder public methods ──
-
-  /**
-   * Send a WhatsApp expiry reminder to all relevant recipients.
-   */
   private async sendExpiryReminder(
     targetType: 'domain' | 'ssl' | 'server' | 'contract',
     targetId: string,
@@ -549,9 +526,7 @@ export class WhatsappService {
     );
   }
 
-  /**
-   * Send WhatsApp expiry reminder for a domain.
-   */
+
   async sendDomainExpiryReminder(
     domainId: string,
     targetLabel: string,
@@ -562,9 +537,7 @@ export class WhatsappService {
     return this.sendExpiryReminder('domain', domainId, targetLabel, daysRemaining, expiryDate, 'domain_expiry_template', reminderId);
   }
 
-  /**
-   * Send WhatsApp expiry reminder for an SSL certificate.
-   */
+ 
   async sendSslExpiryReminder(
     sslId: string,
     targetLabel: string,
@@ -575,9 +548,7 @@ export class WhatsappService {
     return this.sendExpiryReminder('ssl', sslId, targetLabel, daysRemaining, expiryDate, 'ssl_expiry_template', reminderId);
   }
 
-  /**
-   * Send WhatsApp expiry reminder for a server.
-   */
+
   async sendServerExpiryReminder(
     serverId: string,
     targetLabel: string,
@@ -588,9 +559,7 @@ export class WhatsappService {
     return this.sendExpiryReminder('server', serverId, targetLabel, daysRemaining, expiryDate, 'server_expiry_template', reminderId);
   }
 
-  /**
-   * Send WhatsApp expiry reminder for a contract.
-   */
+
   async sendContractExpiryReminder(
     contractId: string,
     targetLabel: string,

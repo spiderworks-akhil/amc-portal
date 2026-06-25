@@ -169,7 +169,7 @@ export function UserTable({ data, isLoading, sortField, sortOrder, onSort, onEdi
                 <TableCell>
                   <button
                     onClick={() => onEdit(user)}
-                    className="flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover/row:opacity-100"
+                    className="flex size-7 items-center justify-center rounded-md text-muted-foreground "
                     title="Edit user"
                   >
                     <Pencil className="size-3.5" />

@@ -134,6 +134,7 @@ export default function ClientDetailPage() {
       phone: string;
       is_primary: boolean;
       should_send_notification: boolean;
+      should_send_wp_notification: boolean;
     }) => {
       addContact.mutate(data, {
         onSuccess: () => setAddContactOpen(false),
@@ -154,6 +155,7 @@ export default function ClientDetailPage() {
       phone: string;
       is_primary: boolean;
       should_send_notification: boolean;
+      should_send_wp_notification: boolean;
     }) => {
       if (!editingContact) return;
       updateContact.mutate(
@@ -541,36 +543,39 @@ export default function ClientDetailPage() {
                         </DropdownMenu>
                       </div>
 
-                      <AlertDialog
-                        open={deletingContactId === contact.id}
-                        onOpenChange={(open) => {
-                          if (!open) setDeletingContactId(null);
-                        }}
-                      >
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete{" "}
-                              <strong>{contact.name}</strong>? This action
-                              cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive hover:bg-destructive/80"
-                              onClick={() => handleDeleteContact(contact.id)}
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
                     </div>
                   ))}
                 </div>
               )}
+
+              <AlertDialog
+                open={!!deletingContactId}
+                onOpenChange={(open) => {
+                  if (!open) setDeletingContactId(null);
+                }}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete{" "}
+                      <strong>
+                        {client.contacts.find((c) => c.id === deletingContactId)?.name ?? ""}
+                      </strong>
+                      ? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive hover:bg-destructive/80"
+                      onClick={() => deletingContactId && handleDeleteContact(deletingContactId)}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </CardContent>
           </Card>
         </div>

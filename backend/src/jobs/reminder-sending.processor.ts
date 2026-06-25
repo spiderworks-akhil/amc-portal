@@ -472,6 +472,7 @@ export class ReminderSendingProcessor extends WorkerHost {
       .selectFrom('client_contacts')
       .select(['phone'])
       .where('client_id', '=', clientId)
+      .where('should_send_wp_notification', '=', true)
       .where('phone', 'is not', null)
       .execute();
 

@@ -89,6 +89,7 @@ export interface Contact {
   phone?: string | null
   is_primary: boolean
   should_send_notification: boolean
+  should_send_wp_notification?: boolean | null
   created_at: string
 }
 
@@ -148,6 +149,7 @@ export interface CreateContactPayload {
   phone?: string
   is_primary?: boolean
   should_send_notification?: boolean
+  should_send_wp_notification?: boolean
 }
 
 export interface UpdateContactPayload {
@@ -157,6 +159,7 @@ export interface UpdateContactPayload {
   phone?: string
   is_primary?: boolean
   should_send_notification?: boolean
+  should_send_wp_notification?: boolean
 }
 
 export interface ApiResponse<T> {

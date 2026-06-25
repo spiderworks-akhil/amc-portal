@@ -105,7 +105,7 @@ export interface ClientContacts {
   phone: string | null;
   send_recurring_notification: boolean | null;
   should_send_notification: Generated<boolean | null>;
-  should_send_wp_notification: boolean | null;
+  should_send_wp_notification: Generated<boolean | null>;
   updated_by: string | null;
 }
 

@@ -252,7 +252,12 @@ export class ClientService {
 
     const contact = await this.db
       .insertInto('client_contacts')
-      .values({ ...dto, client_id: clientId })
+      .values({
+        ...dto,
+        client_id: clientId,
+        should_send_notification: dto.should_send_notification ?? false,
+        should_send_wp_notification: dto.should_send_wp_notification ?? false,
+      })
       .returningAll()
       .executeTakeFirst();
 

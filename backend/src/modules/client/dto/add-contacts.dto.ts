@@ -40,6 +40,10 @@ export class ContactDto {
   @IsOptional()
   should_send_notification?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  should_send_wp_notification?: boolean;
+
   @IsUUID()
   @IsOptional()
   client_id?: string;
@@ -73,6 +77,9 @@ export class CreateContactDto {
   @IsOptional()
   should_send_notification?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  should_send_wp_notification?: boolean;
 }
 
 export class AddContactsDto {
@@ -111,4 +118,8 @@ export class UpdateContactDto {
   @IsBoolean()
   @IsOptional()
   should_send_notification?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  should_send_wp_notification?: boolean;
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer"
@@ -20,6 +20,7 @@ const contactSchema = z.object({
   phone: z.string().optional(),
   is_primary: z.boolean().optional(),
   should_send_notification: z.boolean().optional(),
+  should_send_wp_notification: z.boolean().optional(),
 })
 type ContactFormValues = z.infer<typeof contactSchema>
 
@@ -32,19 +33,20 @@ export function ShowContactForm({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: { name: string; designation: string; email: string; phone: string; is_primary: boolean; should_send_notification: boolean }) => void
+  onSubmit: (data: { name: string; designation: string; email: string; phone: string; is_primary: boolean; should_send_notification: boolean; should_send_wp_notification: boolean }) => void
   isPending: boolean
   contact?: ContactType | null
 }) {
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormValues>({
+  const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
-      name: contact?.name ?? "",
-      designation: contact?.designation ?? "",
-      email: contact?.email ?? "",
-      phone: contact?.phone ?? "",
-      is_primary: contact?.is_primary ?? false,
-      should_send_notification: contact?.should_send_notification ?? true,
+      name: "",
+      designation: "",
+      email: "",
+      phone: "",
+      is_primary: false,
+      should_send_notification: true,
+      should_send_wp_notification: false,
     },
   })
 
@@ -56,6 +58,7 @@ export function ShowContactForm({
       phone: contact?.phone ?? "",
       is_primary: contact?.is_primary ?? false,
       should_send_notification: contact?.should_send_notification ?? true,
+      should_send_wp_notification: contact?.should_send_wp_notification ?? false,
     })
   }, [contact, reset])
 
@@ -67,6 +70,7 @@ export function ShowContactForm({
       phone: data.phone?.trim() ?? "",
       is_primary: data.is_primary ?? false,
       should_send_notification: data.should_send_notification ?? true,
+      should_send_wp_notification: data.should_send_wp_notification ?? false,
     })
   }
 
@@ -102,16 +106,43 @@ export function ShowContactForm({
             <Input id="contact-phone" {...register("phone")} placeholder="+1 (555) 123-4567" />
           </div>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <Checkbox
-              {...register("is_primary")}
+            <Controller
+              control={control}
+              name="is_primary"
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value ?? false}
+                  onCheckedChange={(val) => field.onChange(val)}
+                />
+              )}
             />
             <span>Primary contact</span>
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <Checkbox
-              {...register("should_send_notification")}
+            <Controller
+              control={control}
+              name="should_send_notification"
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value ?? false}
+                  onCheckedChange={(val) => field.onChange(val)}
+                />
+              )}
             />
             <span>Receive email notifications</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Controller
+              control={control}
+              name="should_send_wp_notification"
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value ?? false}
+                  onCheckedChange={(val) => field.onChange(val)}
+                />
+              )}
+            />
+            <span>Receive WhatsApp notifications</span>
           </label>
           <DrawerFooter className="mt-auto">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
