@@ -4,6 +4,7 @@ import { Kysely } from 'kysely';
 import { DB } from '../../db/types.generated';
 import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class IncidentNotificationService {
@@ -13,6 +14,7 @@ export class IncidentNotificationService {
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly emailService: EmailService,
     private readonly notificationsService: NotificationsService,
+    private readonly whatsappService: WhatsappService,
   ) {}
 
   /**
@@ -257,5 +259,14 @@ export class IncidentNotificationService {
         `Failed to send incident notification for ${incidentId}: ${result.error}`,
       );
     }
+
+    // Fire-and-forget WhatsApp notification
+    this.whatsappService.sendIncidentCreated(incident as unknown as Record<string, unknown>).catch(
+      (err) => {
+        this.logger.error(
+          `WhatsApp notification failed for incident ${incidentId}: ${err instanceof Error ? err.message : err}`,
+        );
+      },
+    );
   }
 }

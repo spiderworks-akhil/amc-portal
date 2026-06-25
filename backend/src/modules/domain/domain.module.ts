@@ -6,6 +6,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { DomainController } from './domain.controller';
 import { DomainService } from './domain.service';
 import { DomainRefreshProcessor } from '../../jobs/domain-refresh.processor';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { DomainRefreshProcessor } from '../../jobs/domain-refresh.processor';
     SslModule,
     QueueModule,
     BullModule.registerQueue({ name: 'domain-refresh' }),
+    WhatsappModule,
   ],
   controllers: [DomainController],
   providers: [DomainService, DomainRefreshProcessor],

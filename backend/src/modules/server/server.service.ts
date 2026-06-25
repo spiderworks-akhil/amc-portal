@@ -9,6 +9,7 @@ import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import * as rdap from 'node-rdap';
 import { DB, OwnerEnum } from '../../db/types.generated';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import {
   CreateServerDto,
   UpdateServerDto,
@@ -17,7 +18,7 @@ import {
   SortOrder,
   AssetIdsDto,
 } from './dto';
-import { ProviderType } from 'src/db/types/enums';
+import { ProviderType } from '../../db/types/enums';
 
 @Injectable()
 export class ServerService {
@@ -25,6 +26,7 @@ export class ServerService {
 
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
+    private readonly whatsappService: WhatsappService,
   ) {}
 
   /**
@@ -45,7 +47,7 @@ export class ServerService {
   }
 
   async create(dto: CreateServerDto, createdBy?: string) {
-    return this.db
+    const server = await this.db
       .insertInto('servers')
       .values({
         provider_id: dto.provider_id,
@@ -63,6 +65,17 @@ export class ServerService {
       })
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    // Fire-and-forget WhatsApp notification
+    this.whatsappService.sendServerCreated(server as unknown as Record<string, unknown>).catch(
+      (err) => {
+        this.logger.error(
+          `WhatsApp notification failed for server ${server.id}: ${err instanceof Error ? err.message : err}`,
+        );
+      },
+    );
+
+    return server;
   }
 
   async list(dto: ListServersDto) {

@@ -8,6 +8,7 @@ import { EmailService } from '../modules/email/email.service';
 import { NotificationsService } from '../modules/notifications/notifications.service';
 import { buildReminderHtml } from '../modules/email/email-templates';
 import { ReminderRulesService } from '../modules/reminder/reminder-rules/reminder-rules.service';
+import { WhatsappService } from '../modules/whatsapp/whatsapp.service';
 
 @Processor('reminder-sending', {
   concurrency: 3,
@@ -20,6 +21,7 @@ export class ReminderSendingProcessor extends WorkerHost {
     private readonly emailService: EmailService,
     private readonly notificationsService: NotificationsService,
     private readonly rulesService: ReminderRulesService,
+    private readonly whatsappService: WhatsappService,
   ) {
     super();
   }
@@ -97,6 +99,14 @@ export class ReminderSendingProcessor extends WorkerHost {
 
         // Push in-app notification to account managers
         await this.notifyManagersForReminder(reminder);
+
+        // Fire-and-forget WhatsApp expiry notification
+        this.sendWhatsAppExpiryReminder(reminder, entityInfo, daysRemaining, expiryDateStr)
+          .catch((err) => {
+            this.logger.error(
+              `WhatsApp expiry notification failed for ${reminder.target_type}/${reminder.target_id}: ${err instanceof Error ? err.message : err}`,
+            );
+          });
       } else {
         // BullMQ will retry automatically since we throw on failure
         this.logger.warn(
@@ -298,6 +308,55 @@ export class ReminderSendingProcessor extends WorkerHost {
       }
       default:
         return null;
+    }
+  }
+
+  /**
+   * Send WhatsApp expiry reminder for the given entity via the WhatsApp service.
+   */
+  private async sendWhatsAppExpiryReminder(
+    reminder: { id: string; target_type: string; target_id: string },
+    entityInfo: { expiryDate: Date; label: string },
+    daysRemaining: number,
+    expiryDateStr: string,
+  ): Promise<void> {
+    switch (reminder.target_type) {
+      case 'domain':
+        await this.whatsappService.sendDomainExpiryReminder(
+          reminder.target_id,
+          entityInfo.label,
+          daysRemaining,
+          expiryDateStr,
+          reminder.id,
+        );
+        break;
+      case 'ssl':
+        await this.whatsappService.sendSslExpiryReminder(
+          reminder.target_id,
+          entityInfo.label,
+          daysRemaining,
+          expiryDateStr,
+          reminder.id,
+        );
+        break;
+      case 'server':
+        await this.whatsappService.sendServerExpiryReminder(
+          reminder.target_id,
+          entityInfo.label,
+          daysRemaining,
+          expiryDateStr,
+          reminder.id,
+        );
+        break;
+      case 'contract':
+        await this.whatsappService.sendContractExpiryReminder(
+          reminder.target_id,
+          entityInfo.label,
+          daysRemaining,
+          expiryDateStr,
+          reminder.id,
+        );
+        break;
     }
   }
 

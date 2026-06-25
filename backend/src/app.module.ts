@@ -31,6 +31,7 @@ import { AppConfigModule } from './modules/config/config.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { ScopesModule } from './modules/scopes/scopes.module';
 import { CacheInvalidationInterceptor } from './common/interceptors/cache-invalidation.interceptor';
+import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { CacheInvalidationInterceptor } from './common/interceptors/cache-invali
     NotesModule,
     ScopesModule,
     AppConfigModule,
+    WhatsappModule,
   ],
   controllers: [AppController],
   providers: [

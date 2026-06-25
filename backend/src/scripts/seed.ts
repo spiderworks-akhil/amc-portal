@@ -31,12 +31,12 @@ async function main() {
   await db
     .insertInto("users")
     .values({
-      name: "Admin",
-      email: "admin@amc.local",
-      password_hash: "$2b$10$placeholder",
-      role: "user",
+      name: "Muhammed Althaf",
+      email: "muhammed.althaf@spiderworks.in",
+      phone:"919567485652",
+      role: "admin",
       is_active: true,
-      remote_user_id: BigInt(1),
+      remote_user_id: BigInt(3956),
     })
     .execute();
 

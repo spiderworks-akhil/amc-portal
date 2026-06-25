@@ -25,4 +25,46 @@ export class UpdateWhatsAppConfigDto {
   @IsOptional()
   @MaxLength(255)
   webhook_verify_token?: string;
+
+  // ── Template names ──
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  domain_created_template?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  ssl_created_template?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  server_created_template?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  incident_created_template?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  domain_expiry_template?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  ssl_expiry_template?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  server_expiry_template?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  contract_expiry_template?: string;
 }

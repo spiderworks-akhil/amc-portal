@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
@@ -8,7 +9,9 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import { IS_PUBLIC_KEY } from "./decorators/public.decorator";
+import { ROLES_KEY } from "./decorators/roles.decorator";
 import { AuthService } from "./auth.service";
+import type { UserRole } from "../../db/types.generated";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -19,7 +22,7 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // 1. Allow routes decorated with @Public() to bypass auth
+    // 1. Allow routes decorated with @Public() to bypass auth entirely
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -57,6 +60,20 @@ export class JwtAuthGuard implements CanActivate {
       role: payload.role,
       jti: payload.jti,
     };
+
+    // 6. Check role-based access if @Roles() is set on the handler or class
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (requiredRoles && requiredRoles.length > 0) {
+      const userRole = payload.role as UserRole;
+      if (!requiredRoles.includes(userRole)) {
+        throw new ForbiddenException(
+          `Insufficient permissions. Required role: ${requiredRoles.join(" or ")}`,
+        );
+      }
+    }
 
     return true;
   }

@@ -9,6 +9,7 @@ import { IncidentNotificationService } from './incident-notification.service';
 import { IncidentController } from './incident.controller';
 import { IncidentNotificationProcessor } from '../../jobs/incident-notification.processor';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     BullModule.registerQueue({ name: 'incident-notifications' }),
     EmailModule,
     NotificationsModule,
+    WhatsappModule,
   ],
   controllers: [IncidentController],
   providers: [IncidentService, IncidentNotificationService, IncidentNotificationProcessor],

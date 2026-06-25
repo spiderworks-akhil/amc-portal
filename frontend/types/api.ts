@@ -49,6 +49,14 @@ export interface WhatsAppConfig {
   phone_number_id: string
   business_account_id?: string
   webhook_verify_token?: string
+  domain_created_template?: string
+  ssl_created_template?: string
+  server_created_template?: string
+  incident_created_template?: string
+  domain_expiry_template?: string
+  ssl_expiry_template?: string
+  server_expiry_template?: string
+  contract_expiry_template?: string
 }
 
 export interface PaginatedResponse<T> {

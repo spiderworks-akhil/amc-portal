@@ -404,6 +404,7 @@ export interface Users {
   name: string;
   notification_prefs: Json | null;
   password_hash: string | null;
+  phone: string | null;
   remote_user_id: Int8 | null;
   role: Generated<UserRole>;
   updated_at: Generated<Timestamp>;

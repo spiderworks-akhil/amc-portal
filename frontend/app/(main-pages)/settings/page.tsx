@@ -118,7 +118,7 @@ function WhatsAppSection() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><MessageCircle className="size-4" />WhatsApp</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}
+          {Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}
         </CardContent>
       </Card>
     )
@@ -146,36 +146,95 @@ function WhatsAppSection() {
         </CardTitle>
         <CardDescription>WhatsApp Business API settings for notifications</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="wa-phone-id">Phone Number ID</Label>
-          <Input id="wa-phone-id" value={config?.phone_number_id ?? ""} onChange={(e) => handleChange("phone_number_id", e.target.value)} placeholder="123456789012345" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="wa-api-key">API Key</Label>
-            <div className="relative">
-              <Input id="wa-api-key" type={showKey ? "text" : "password"} value={config?.api_key ?? ""} onChange={(e) => handleChange("api_key", e.target.value)} placeholder="••••••••" />
-              <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
+      <CardContent className="space-y-6">
+        {/* API Credentials */}
+        <div>
+          <h4 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">API Credentials</h4>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="wa-phone-id">Phone Number ID</Label>
+              <Input id="wa-phone-id" value={config?.phone_number_id ?? ""} onChange={(e) => handleChange("phone_number_id", e.target.value)} placeholder="123456789012345" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="wa-api-key">API Key</Label>
+                <div className="relative">
+                  <Input id="wa-api-key" type={showKey ? "text" : "password"} value={config?.api_key ?? ""} onChange={(e) => handleChange("api_key", e.target.value)} placeholder="••••••••" />
+                  <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wa-api-secret">API Secret</Label>
+                <Input id="wa-api-secret" type="password" value={config?.api_secret ?? ""} onChange={(e) => handleChange("api_secret", e.target.value)} placeholder="••••••••" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="wa-business-id">Business Account ID</Label>
+                <Input id="wa-business-id" value={config?.business_account_id ?? ""} onChange={(e) => handleChange("business_account_id", e.target.value)} placeholder="123456789" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wa-webhook-token">Webhook Verify Token</Label>
+                <Input id="wa-webhook-token" type="password" value={config?.webhook_verify_token ?? ""} onChange={(e) => handleChange("webhook_verify_token", e.target.value)} placeholder="••••••••" />
+              </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="wa-api-secret">API Secret</Label>
-            <Input id="wa-api-secret" type="password" value={config?.api_secret ?? ""} onChange={(e) => handleChange("api_secret", e.target.value)} placeholder="••••••••" />
+        </div>
+
+        <Separator />
+
+        {/* Creation Templates */}
+        <div>
+          <h4 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Creation Notification Templates</h4>
+          <p className="text-xs text-muted-foreground mb-3">Template names sent when a new entity is created</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="wa-domain-created">Domain Created</Label>
+              <Input id="wa-domain-created" value={config?.domain_created_template ?? ""} onChange={(e) => handleChange("domain_created_template", e.target.value)} placeholder="domain_created" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wa-ssl-created">SSL Created</Label>
+              <Input id="wa-ssl-created" value={config?.ssl_created_template ?? ""} onChange={(e) => handleChange("ssl_created_template", e.target.value)} placeholder="ssl_created" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wa-server-created">Server Created</Label>
+              <Input id="wa-server-created" value={config?.server_created_template ?? ""} onChange={(e) => handleChange("server_created_template", e.target.value)} placeholder="server_created" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wa-incident-created">Incident Created</Label>
+              <Input id="wa-incident-created" value={config?.incident_created_template ?? ""} onChange={(e) => handleChange("incident_created_template", e.target.value)} placeholder="incident_created" />
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="wa-business-id">Business Account ID</Label>
-            <Input id="wa-business-id" value={config?.business_account_id ?? ""} onChange={(e) => handleChange("business_account_id", e.target.value)} placeholder="123456789" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="wa-webhook-token">Webhook Verify Token</Label>
-            <Input id="wa-webhook-token" type="password" value={config?.webhook_verify_token ?? ""} onChange={(e) => handleChange("webhook_verify_token", e.target.value)} placeholder="••••••••" />
+
+        <Separator />
+
+        {/* Expiry Reminder Templates */}
+        <div>
+          <h4 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Expiry Reminder Templates</h4>
+          <p className="text-xs text-muted-foreground mb-3">Template names sent when entities are nearing expiration</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="wa-domain-expiry">Domain Expiry</Label>
+              <Input id="wa-domain-expiry" value={config?.domain_expiry_template ?? ""} onChange={(e) => handleChange("domain_expiry_template", e.target.value)} placeholder="domain_expiry_reminder" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wa-ssl-expiry">SSL Expiry</Label>
+              <Input id="wa-ssl-expiry" value={config?.ssl_expiry_template ?? ""} onChange={(e) => handleChange("ssl_expiry_template", e.target.value)} placeholder="ssl_expiry_reminder" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wa-server-expiry">Server Renewal</Label>
+              <Input id="wa-server-expiry" value={config?.server_expiry_template ?? ""} onChange={(e) => handleChange("server_expiry_template", e.target.value)} placeholder="server_renewal_reminder" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wa-contract-expiry">Contract Expiry</Label>
+              <Input id="wa-contract-expiry" value={config?.contract_expiry_template ?? ""} onChange={(e) => handleChange("contract_expiry_template", e.target.value)} placeholder="contract_expiry_reminder" />
+            </div>
           </div>
         </div>
+
         <div className="flex justify-end gap-2 pt-2">
           {hasChanges && (
             <Button variant="outline" onClick={() => setForm(null)}>Cancel</Button>

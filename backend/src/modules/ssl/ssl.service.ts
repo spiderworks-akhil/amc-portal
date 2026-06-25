@@ -11,6 +11,7 @@ import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
 import { QueueService } from '../../queue/queue.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import {
   CreateSslDto,
   UpdateSslDto,
@@ -27,6 +28,7 @@ export class SslService {
     @InjectKysely() private readonly db: Kysely<DB>,
     private readonly queueService: QueueService,
     private readonly configService: ConfigService,
+    private readonly whatsappService: WhatsappService,
   ) {}
 
   async create(dto: CreateSslDto, createdBy?: string) {
@@ -59,6 +61,15 @@ export class SslService {
 
     // Schedule periodic SSL refresh via BullMQ
     await this.queueService.scheduleSslRefresh(cert.id, this.configService.get('SSL_REFRESH_CRON', '0 */6 * * *'));
+
+    // Fire-and-forget WhatsApp notification
+    this.whatsappService.sendSslCreated(cert as unknown as Record<string, unknown>).catch(
+      (err) => {
+        this.logger.error(
+          `WhatsApp notification failed for SSL ${cert.id}: ${err instanceof Error ? err.message : err}`,
+        );
+      },
+    );
 
     return cert;
   }

@@ -8,6 +8,8 @@ export interface Users {
 
   email: string;
 
+  phone: string | null;
+
   password_hash: string | null;
   avatar_url: string | null;
   remote_user_id: bigint | null;

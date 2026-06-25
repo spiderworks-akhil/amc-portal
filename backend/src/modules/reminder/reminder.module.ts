@@ -7,6 +7,7 @@ import { ReminderDispatcherService } from './reminder-dispatcher.service';
 import { ReminderCleanupService } from './reminder-cleanup.service';
 import { ReminderRulesModule } from './reminder-rules/reminder-rules.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { ReminderCreationProcessor } from '../../jobs/reminder-creation.processor';
 import { ReminderSendingProcessor } from '../../jobs/reminder-sending.processor';
 
@@ -24,6 +25,7 @@ import { ReminderSendingProcessor } from '../../jobs/reminder-sending.processor'
     ScheduleModule.forRoot(),
     EmailModule,
     NotificationsModule,
+    WhatsappModule,
   ],
 })
 export class ReminderModule {}

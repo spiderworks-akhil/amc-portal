@@ -26,9 +26,21 @@ type ClientFormValues = z.infer<typeof clientSchema>;
 interface ClientEditFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { notes?: string }) => void;
+  onSubmit: (data: {
+    name: string;
+    company?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    notes?: string;
+  }) => void;
   isPending: boolean;
   client: {
+    name: string;
+    company?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
     notes?: string | null;
   };
 }
@@ -57,6 +69,11 @@ export function ClientEditForm({
 
   const onFormSubmit = (data: ClientFormValues) => {
     onSubmit({
+      name: client.name,
+      company: client.company ?? undefined,
+      email: client.email ?? undefined,
+      phone: client.phone ?? undefined,
+      address: client.address ?? undefined,
       notes: data.notes?.trim() || undefined,
     });
   };

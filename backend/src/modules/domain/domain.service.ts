@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SslService } from '../ssl/ssl.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { ProviderType } from '../../db/types/enums';
 import * as rdap from 'node-rdap';
 import * as whoiser from 'whoiser';
@@ -33,6 +34,7 @@ export class DomainService {
     private readonly sslService: SslService,
     private readonly queueService: QueueService,
     private readonly configService: ConfigService,
+    private readonly whatsappService: WhatsappService,
   ) {}
 
   /**
@@ -139,6 +141,15 @@ export class DomainService {
         err instanceof Error ? err.stack : undefined,
       );
     }
+
+    // Fire-and-forget WhatsApp notification
+    this.whatsappService.sendDomainCreated(result.domain as unknown as Record<string, unknown>).catch(
+      (err) => {
+        this.logger.error(
+          `WhatsApp notification failed for domain ${result.domain.id}: ${err instanceof Error ? err.message : err}`,
+        );
+      },
+    );
 
     return result.domain;
   }
