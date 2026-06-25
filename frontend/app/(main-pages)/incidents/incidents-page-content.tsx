@@ -113,8 +113,6 @@ export function IncidentsPageContent() {
     sort_by: "started_at",
     sort_order: "desc",
   });
- console.log("console",data?.data);
- 
   const { mutate: resolveIncident, isPending: isResolving } =
     useResolveIncident();
   const { mutate: acknowledgeIncident, isPending: isAcknowledging } =

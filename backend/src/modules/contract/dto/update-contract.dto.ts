@@ -13,6 +13,11 @@ import { BillingCycle } from 'src/db/types/enums';
 export class UpdateContractDto {
   @IsString()
   @IsOptional()
+  @MaxLength(255)
+  label?: string;
+
+  @IsString()
+  @IsOptional()
   @MaxLength(100)
   contract_number?: string;
 

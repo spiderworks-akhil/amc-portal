@@ -58,6 +58,7 @@ export function useDetectServerProvider() {
       const { data } = await apiClient.get<DetectProviderResult>("/server/detect-provider", { params: { ip } })
       return data
     },
+    onError: (err: Error) => toast.error(err.message),
   })
 }
 

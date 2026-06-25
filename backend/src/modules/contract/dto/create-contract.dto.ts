@@ -19,6 +19,11 @@ export class CreateContractDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(255)
+  label?: string;
+
+  @IsString()
+  @IsOptional()
   @MaxLength(100)
   contract_number?: string;
 
@@ -39,8 +44,9 @@ export class CreateContractDto {
   renewal_date: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
   @Min(0)
-  amount: number;
+  amount?: number;
 
   @IsString()
   @IsOptional()

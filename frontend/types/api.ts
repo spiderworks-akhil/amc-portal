@@ -268,12 +268,13 @@ export interface ContractListItem {
   id: string
   client_id: string
   client_name: string
+  label?: string | null
   contract_number?: string | null
   billing_cycle: string
   start_date: string
   end_date: string
   renewal_date: string
-  amount: string
+  amount: string | null
   currency: string
   auto_renew: boolean
   scope?: string | null
@@ -289,12 +290,13 @@ export interface ContractDetail {
   client_name: string
   client_email?: string | null
   client_company?: string | null
+  label?: string | null
   contract_number?: string | null
   billing_cycle: string
   start_date: string
   end_date: string
   renewal_date: string
-  amount: string
+  amount: string | null
   currency: string
   auto_renew: boolean
   scope?: string | null
@@ -336,12 +338,13 @@ export interface CreateServerPayload {
 
 export interface CreateContractPayload {
   client_id: string
+  label?: string
   contract_number?: string
   billing_cycle: string
   start_date: string
   end_date: string
   renewal_date: string
-  amount: number
+  amount?: number
   currency?: string
   auto_renew?: boolean
   scope?: string
@@ -508,6 +511,7 @@ export interface UpdateSslPayload {
 }
 
 export interface UpdateContractPayload {
+  label?: string
   contract_number?: string
   billing_cycle?: string
   start_date?: string

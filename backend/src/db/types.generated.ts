@@ -150,7 +150,7 @@ export interface ContractRenewals {
 }
 
 export interface Contracts {
-  amount: Numeric;
+  amount: Numeric | null;
   auto_renew: Generated<boolean>;
   billing_cycle: string;
   client_id: string;

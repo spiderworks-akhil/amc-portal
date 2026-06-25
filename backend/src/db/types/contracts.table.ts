@@ -16,7 +16,7 @@ export interface Contracts {
 
   renewal_date: Timestamp;
 
-  amount: string;
+  amount: string | null;
 
   currency: string;
 

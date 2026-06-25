@@ -52,6 +52,7 @@ export default function ContractDetailPage() {
 
   const handleEditSubmit = useCallback(
     (data: {
+      label?: string
       billing_cycle?: string
       start_date?: string
       end_date?: string
@@ -103,7 +104,7 @@ export default function ContractDetailPage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight truncate">
-                {contract.contract_number || `Contract ${contract.id.slice(0, 8)}`}
+                {contract.label || contract.contract_number || `Contract ${contract.id.slice(0, 8)}`}
               </h1>
               <Badge
                 variant="dot"
@@ -113,6 +114,11 @@ export default function ContractDetailPage() {
                 {contract.status}
               </Badge>
             </div>
+            {contract.label && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {contract.contract_number || `ID: ${contract.id.slice(0, 8)}`}
+              </p>
+            )}
             <p className="text-muted-foreground flex items-center gap-1.5 mt-0.5">
               <Building2 className="size-4 shrink-0" />
               <button

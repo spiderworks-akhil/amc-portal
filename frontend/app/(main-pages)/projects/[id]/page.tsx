@@ -198,7 +198,7 @@ export default function ProjectDetailPage() {
       start_date: string;
       end_date: string;
       renewal_date: string;
-      amount: number;
+      amount?: number;
       currency?: string;
       auto_renew?: boolean;
       scope?: string;

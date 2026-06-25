@@ -34,12 +34,13 @@ export class ContractService {
       .insertInto('contracts')
       .values({
         client_id: dto.client_id,
+        label: dto.label ?? null,
         contract_number,
         billing_cycle: dto.billing_cycle,
         start_date: new Date(dto.start_date),
         end_date: new Date(dto.end_date),
         renewal_date: new Date(dto.renewal_date),
-        amount: String(dto.amount),
+        amount: dto.amount != null ? String(dto.amount) : null,
         currency: dto.currency ?? 'USD',
         auto_renew: dto.auto_renew ?? false,
         status: dto.status ?? 'active',
@@ -83,6 +84,7 @@ export class ContractService {
       query = query.where((eb) =>
         eb.or([
           eb('contracts.contract_number', 'ilike', pattern),
+          eb('contracts.label', 'ilike', pattern),
           eb('clients.name', 'ilike', pattern),
         ]),
       );
@@ -161,6 +163,7 @@ export class ContractService {
           'contracts.id',
           'contracts.client_id',
           'contracts.contract_number',
+          'contracts.label',
           'contracts.billing_cycle',
           'contracts.start_date',
           'contracts.end_date',
@@ -265,6 +268,7 @@ export class ContractService {
 
     const updateData: Record<string, unknown> = { updated_at: new Date() };
 
+    if (dto.label !== undefined) updateData.label = dto.label;
     if (dto.contract_number !== undefined) updateData.contract_number = dto.contract_number;
     if (dto.billing_cycle !== undefined) updateData.billing_cycle = dto.billing_cycle;
     if (dto.start_date !== undefined) updateData.start_date = new Date(dto.start_date);
@@ -449,6 +453,7 @@ export class ContractService {
       .select([
         'contracts.id',
         'contracts.contract_number',
+        'contracts.label',
         'contracts.end_date',
         'contracts.renewal_date',
         'contracts.amount',

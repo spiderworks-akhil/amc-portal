@@ -9,7 +9,7 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { Throttle } from "@nestjs/throttler";
+import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { CurrentUser } from "./decorators/current-user.decorator";
@@ -60,6 +60,7 @@ export class AuthController {
     return result;
   }
 
+  @SkipThrottle()
   @Public()
   @Get("me")
   async getMe(@Req() req: Request) {

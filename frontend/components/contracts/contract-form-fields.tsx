@@ -12,11 +12,12 @@ import type { UseFormRegister, UseFormSetValue, UseFormWatch, FieldErrors } from
 
 export interface ContractFormValues {
   client_id?: string
+  label?: string
   billing_cycle: string
   start_date: string
   end_date: string
   renewal_date: string
-  amount: string
+  amount?: string
   currency?: string
   auto_renew?: boolean
   scope?: string
@@ -80,6 +81,16 @@ export function ContractFormFields({
 
   return (
     <>
+      {/* Label */}
+      <div className="space-y-2">
+        <Label htmlFor={compact ? "edit-label" : "contract-label"}>Label</Label>
+        <Input
+          id={compact ? "edit-label" : "contract-label"}
+          {...register("label")}
+          placeholder="e.g. Annual Maintenance Contract"
+        />
+      </div>
+
       {/* Billing Cycle */}
       <div className="space-y-2">
         <Label>
@@ -168,7 +179,7 @@ export function ContractFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor={compact ? "edit-amount" : "contract-amount"}>
-            Amount <span className="text-destructive">*</span>
+            Amount
           </Label>
           <Input
             id={compact ? "edit-amount" : "contract-amount"}

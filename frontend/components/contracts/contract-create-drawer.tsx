@@ -22,11 +22,12 @@ import type { ClientListItem } from "@/types/api"
 
 const contractSchema = z.object({
   client_id: z.string().optional(),
+  label: z.string().optional(),
   billing_cycle: z.string().min(1, "Billing cycle is required"),
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
   renewal_date: z.string().min(1, "Renewal date is required"),
-  amount: z.string().min(1, "Amount is required"),
+  amount: z.string().optional(),
   currency: z.string().optional(),
   auto_renew: z.boolean().optional(),
   scope: z.string().optional(),
@@ -38,12 +39,13 @@ interface ContractCreateDrawerProps {
   onOpenChange: (open: boolean) => void
   onSubmit: (data: {
     client_id: string
+    label?: string
     contract_number?: string
     billing_cycle: string
     start_date: string
     end_date: string
     renewal_date: string
-    amount: number
+    amount?: number
     currency?: string
     auto_renew?: boolean
     scope?: string
@@ -78,6 +80,7 @@ export function ContractCreateDrawer({
     ),
     defaultValues: {
       client_id: clientId ?? "",
+      label: "",
       billing_cycle: "yearly",
       start_date: "",
       end_date: "",
@@ -94,6 +97,7 @@ export function ContractCreateDrawer({
     if (open) {
       reset({
         client_id: clientId ?? "",
+        label: "",
         billing_cycle: "yearly",
         start_date: "",
         end_date: "",
@@ -115,11 +119,12 @@ export function ContractCreateDrawer({
   const onFormSubmit = (data: ContractFormValues) => {
     onSubmit({
       client_id: data.client_id ?? "",
+      label: data.label?.trim() || undefined,
       billing_cycle: data.billing_cycle,
       start_date: data.start_date,
       end_date: data.end_date,
       renewal_date: data.renewal_date,
-      amount: Number(data.amount),
+      amount: data.amount ? Number(data.amount) : undefined,
       currency: data.currency || "USD",
       auto_renew: data.auto_renew ?? true,
       scope: data.scope?.trim() || undefined,

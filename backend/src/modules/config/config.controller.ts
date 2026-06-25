@@ -12,17 +12,18 @@ import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ConfigService, ConfigGroup } from './config.service';
 import { UpdateSmtpConfigDto, UpdateWhatsAppConfigDto } from './dto';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('config')
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
-
+  @Roles('admin')
   @Get(':group')
   @HttpCode(HttpStatus.OK)
   async get(@Param('group') group: ConfigGroup) {
     return this.configService.getConfig(group);
   }
-
+  @Roles('admin')
   @Put('smtp')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('SMTP config updated successfully')
@@ -34,6 +35,7 @@ export class ConfigController {
     return this.configService.updateSmtp(dto, user.id);
   }
 
+  @Roles('admin')
   @Put('whatsapp')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('WhatsApp config updated successfully')

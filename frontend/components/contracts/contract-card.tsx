@@ -1,11 +1,9 @@
 "use client"
 
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
-  FileText,
   Building2,
-  DollarSign,
   CalendarClock,
   RefreshCw,
   HardDrive,
@@ -23,9 +21,16 @@ interface ContractCardProps {
   onClick: (id: string) => void
 }
 
+const STATUS_ACCENT: Record<string, string> = {
+  active: "bg-emerald-500",
+  expiring: "bg-amber-500",
+  expired: "bg-red-500",
+  draft: "bg-blue-500",
+  terminated: "bg-gray-400",
+}
+
 export function ContractCard({ contract, onClick }: ContractCardProps) {
-  const title =
-    contract.contract_number || `Contract ${contract.id.slice(0, 8)}`
+  const title = contract.label || contract.contract_number || `Contract ${contract.id.slice(0, 8)}`
 
   const endDate = new Date(contract.end_date)
   const now = new Date()
@@ -35,82 +40,68 @@ export function ContractCard({ contract, onClick }: ContractCardProps) {
   const isExpired = daysUntilEnd <= 0
   const isExpiringSoon = daysUntilEnd > 0 && daysUntilEnd <= 30
 
+  const accentBg = STATUS_ACCENT[contract.status] ?? "bg-gray-400"
+
   return (
-    <Card
-      className="group cursor-pointer transition-all duration-300 hover:border-primary/20 hover:shadow-lg"
-      onClick={() => onClick(contract.id)}
-    >
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-        <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-primary/10 bg-primary/10">
-            <FileText className="h-5 w-5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold leading-tight">
-              {title}
-            </h3>
-            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Building2 className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{contract.client_name}</span>
-            </p>
-          </div>
+    <Card interactive className="cursor-pointer relative overflow-hidden gap-1" onClick={() => onClick(contract.id)}>
+      <div className={`absolute inset-x-0 top-0 h-1 z-10 rounded-t-lg ${accentBg}`} />
+
+      <CardHeader>
+        <CardAction>
+          <Badge
+            variant="dot"
+            size="sm"
+            color={CONTRACT_STATUS_COLORS[contract.status] ?? "gray"}
+            className="capitalize"
+          >
+            {formatStatusLabel(contract.status)}
+          </Badge>
+        </CardAction>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Building2 className="h-3 w-3 shrink-0" />
+          <span className="truncate">{contract.client_name}</span>
         </div>
-        <Badge
-          variant="dot"
-          size="sm"
-          color={CONTRACT_STATUS_COLORS[contract.status] ?? "gray"}
-          className="shrink-0 capitalize"
-        >
-          {formatStatusLabel(contract.status)}
-        </Badge>
+        <CardTitle className="text-sm font-semibold truncate">{title}</CardTitle>
+        {contract.label && (
+          <CardDescription className="truncate text-xs">
+            {contract.contract_number || `ID: ${contract.id.slice(0, 8)}`}
+          </CardDescription>
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-2 pb-3 text-sm">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <DollarSign className="h-3.5 w-3.5 shrink-0" />
-          <span className="font-medium text-foreground">
+      <CardContent>
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="text-base font-semibold tracking-tight text-foreground shrink-0">
             {formatCurrency(contract.amount, contract.currency)}
-          </span>
-          <span>
-            /{" "}
-            {BILLING_CYCLE_LABELS[contract.billing_cycle] ||
-              contract.billing_cycle}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <CalendarClock className="h-3.5 w-3.5 shrink-0" />
-          <span>Ends {formatDate(contract.end_date)}</span>
-          {isExpired && (
-            <span className="font-medium text-destructive">· Expired</span>
-          )}
-          {isExpiringSoon && !isExpired && (
-            <span className="font-medium text-amber-600 dark:text-amber-400">
-              · {daysUntilEnd}d left
+            <span className="text-xs text-muted-foreground font-normal ml-1">
+              / {BILLING_CYCLE_LABELS[contract.billing_cycle] || contract.billing_cycle}
             </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <RefreshCw className="h-3.5 w-3.5 shrink-0" />
-          {contract.auto_renew ? (
-            <span className="text-emerald-600 dark:text-emerald-400">
-              Auto-renew enabled
-            </span>
-          ) : (
-            <span>Manual renewal</span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <HardDrive className="h-3.5 w-3.5 shrink-0" />
-          <span>
-            {contract.asset_count} asset{contract.asset_count !== 1 ? "s" : ""}
           </span>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+            <CalendarClock className="h-3 w-3 shrink-0" />
+            <span>Ends {formatDate(contract.end_date)}</span>
+            {isExpired && (
+              <span className="font-medium text-destructive">· Expired</span>
+            )}
+            {isExpiringSoon && !isExpired && (
+              <span className="font-medium text-amber-600 dark:text-amber-400">· {daysUntilEnd}d</span>
+            )}
+          </div>
         </div>
       </CardContent>
 
-      <CardFooter className="pt-0" />
+      <CardFooter>
+        <div className="flex w-full items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <RefreshCw className="h-3 w-3" />
+            {contract.auto_renew ? "Auto-renew" : "Manual renewal"}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <HardDrive className="h-3 w-3" />
+            {contract.asset_count} {contract.asset_count === 1 ? "asset" : "assets"}
+          </span>
+        </div>
+      </CardFooter>
     </Card>
   )
 }

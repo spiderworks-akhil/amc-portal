@@ -67,10 +67,22 @@ apiClient.interceptors.request.use(async (config) => {
   return config
 })
 
-// Response interceptor: handle 401 with token refresh
+// Response interceptor: transform backend error messages + handle 401 with token refresh
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Extract the actual backend error message so all toast.error(err.message)
+    // calls show something useful (e.g. "Amount is required") instead of
+    // "Request failed with status code 400"
+    const data = error.response?.data
+    if (data) {
+      if (Array.isArray(data.details)) {
+        error.message = data.details.join(", ")
+      } else if (data.message) {
+        error.message = Array.isArray(data.message) ? data.message.join(", ") : data.message
+      }
+    }
+
     const originalRequest = error.config
 
     // Only handle 401s and don't retry refresh/logout endpoints

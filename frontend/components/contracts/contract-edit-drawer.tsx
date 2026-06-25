@@ -19,11 +19,12 @@ import type { ContractDetail } from "@/types/api"
 
 const editSchema = z.object({
   client_id: z.string().optional(),
+  label: z.string().optional(),
   billing_cycle: z.string().min(1, "Billing cycle is required"),
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
   renewal_date: z.string().min(1, "Renewal date is required"),
-  amount: z.string().min(1, "Amount is required"),
+  amount: z.string().optional(),
   currency: z.string().optional(),
   auto_renew: z.boolean().optional(),
   scope: z.string().optional(),
@@ -34,6 +35,7 @@ interface ContractEditDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: {
+    label?: string
     billing_cycle?: string
     start_date?: string
     end_date?: string
@@ -71,6 +73,7 @@ export function ContractEditDrawer({
   } = useForm<ContractFormValues>({
     resolver: zodResolver(editSchema),
     defaultValues: {
+      label: contract.label ?? "",
       billing_cycle: contract.billing_cycle,
       start_date: extractDate(contract.start_date),
       end_date: extractDate(contract.end_date),
@@ -86,6 +89,7 @@ export function ContractEditDrawer({
   useEffect(() => {
     if (open) {
       reset({
+        label: contract.label ?? "",
         billing_cycle: contract.billing_cycle,
         start_date: extractDate(contract.start_date),
         end_date: extractDate(contract.end_date),
@@ -101,6 +105,7 @@ export function ContractEditDrawer({
 
   const onFormSubmit = (data: ContractFormValues) => {
     onSubmit({
+      label: data.label?.trim() || undefined,
       billing_cycle: data.billing_cycle,
       start_date: data.start_date,
       end_date: data.end_date,

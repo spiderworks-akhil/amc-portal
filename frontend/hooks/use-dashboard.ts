@@ -119,12 +119,13 @@ export interface ExpiryCalendarResponse {
 export interface DashboardContract {
   id: string
   client_name: string
+  label?: string | null
   contract_number: string | null
   billing_cycle: string
   start_date: string
   end_date: string
   renewal_date: string
-  amount: string
+  amount: string | null
   currency: string
   auto_renew: boolean
   scope: string | null

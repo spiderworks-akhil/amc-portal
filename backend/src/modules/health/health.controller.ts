@@ -1,10 +1,12 @@
 import { Controller, Get, Logger } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { InjectKysely } from 'nestjs-kysely';
 import { Kysely, sql } from 'kysely';
 import { DB } from '../../db/types.generated';
 import { RedisService } from '../../redis/redis.service';
 import { Public } from '../auth/decorators/public.decorator';
 
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);
