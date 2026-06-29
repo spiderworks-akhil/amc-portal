@@ -41,10 +41,10 @@ import {
   Check,
   User,
 } from "lucide-react"
-import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline"
+import { NotesTimeline } from "@/components/projects/project-details/notes-timeline"
 import { toast } from "sonner"
 
-const ASSET_STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
+const PROJECT_STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
   live: "emerald",
   staging: "amber",
   development: "blue",
@@ -381,17 +381,17 @@ export default function ServerDetailPage() {
         <NotesTimeline noteableType="server" noteableId={id} />
       </div>
 
-      {/* Linked Assets Section */}
+      {/* Linked Projects Section */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <HardDrive className="size-4" />
-            Linked Assets
+            Linked Projects
           </CardTitle>
           <CardDescription>
             {server.assets.length === 0
-              ? "No assets linked to this server"
-              : `${server.assets.length} asset${server.assets.length > 1 ? "s" : ""}`
+              ? "No projects linked to this server"
+              : `${server.assets.length} project${server.assets.length > 1 ? "s" : ""}`
             }
           </CardDescription>
         </CardHeader>
@@ -399,36 +399,36 @@ export default function ServerDetailPage() {
           {server.assets.length === 0 ? (
             <EmptyState
               icon={<HardDrive className="size-8" />}
-              title="No assets linked"
-              description="Link assets to this server from the asset detail page."
+              title="No projects linked"
+              description="Link projects to this server from the project detail page."
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {server.assets.map((asset) => (
+              {server.assets.map((project) => (
                 <div
-                  key={asset.id}
+                  key={project.id}
                   className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group cursor-pointer"
-                  onClick={() => router.push(`/projects/${asset.id}`)}
+                  onClick={() => router.push(`/projects/${project.id}`)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/projects/${asset.id}`) }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/projects/${project.id}`) }}
                 >
                   <div className="flex items-start gap-3">
                     <div className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
                       <HardDrive className="size-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{asset.name}</p>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{asset.type_name}</p>
+                      <p className="text-sm font-medium truncate">{project.name}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{project.type_name}</p>
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3">
                     <Badge
                       variant="dot"
                       size="sm"
-                      color={ASSET_STATUS_COLORS[asset.status] ?? "gray"}
+                      color={PROJECT_STATUS_COLORS[project.status] ?? "gray"}
                     >
-                      {asset.status}
+                      {project.status}
                     </Badge>
 
                   </div>
@@ -461,7 +461,7 @@ export default function ServerDetailPage() {
             <AlertDialogTitle>Delete Server</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete <strong>{server.label}</strong>?
-              All asset links will be removed. This action cannot be undone.
+              All project links will be removed. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

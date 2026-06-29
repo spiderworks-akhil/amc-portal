@@ -176,7 +176,7 @@ export interface SyncSummary {
   contactsSynced?: number
 }
 
-export interface AssetListItem {
+export interface ProjectListItem {
   id: string
   name: string
   status: string
@@ -191,7 +191,7 @@ export interface AssetListItem {
   client_name: string
 }
 
-export interface CreateAssetPayload {
+export interface CreateProjectPayload {
   name: string
   client_id: string
   type: string
@@ -213,7 +213,7 @@ export interface ListClientsParams {
   sort_order?: "asc" | "desc"
 }
 
-export interface ListAssetsParams {
+export interface ListProjectsParams {
   page?: number
   limit?: number
   search?: string
@@ -224,7 +224,7 @@ export interface ListAssetsParams {
   sort_order?: "asc" | "desc"
 }
 
-export interface AssetDetail extends AssetListItem {
+export interface ProjectDetail extends ProjectListItem {
   notes?: string | null
   tech_stack?: string[] | null
   account_managers: AccountManager[]
@@ -524,7 +524,7 @@ export interface UpdateContractPayload {
   status?: string
 }
 
-export interface UpdateAssetPayload {
+export interface UpdateProjectPayload {
   name?: string
   status?: string
   primary_contact_name?: string

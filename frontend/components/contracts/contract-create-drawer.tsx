@@ -52,7 +52,7 @@ interface ContractCreateDrawerProps {
     status?: string
   }) => void
   isPending: boolean
-  /** Pre-selected client ID — hides client selector when provided (used from asset detail page) */
+  /** Pre-selected client ID — hides client selector when provided (used from project detail page) */
   clientId?: string
 }
 
@@ -139,7 +139,7 @@ export function ContractCreateDrawer({
         <DrawerHeader>
           <DrawerTitle>Create Contract</DrawerTitle>
           <DrawerDescription>
-            {clientId ? "Add a new contract and link it to this asset." : "Add a new contract agreement."}
+            {clientId ? "Add a new contract and link it to this project." : "Add a new contract agreement."}
           </DrawerDescription>
         </DrawerHeader>
         <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">

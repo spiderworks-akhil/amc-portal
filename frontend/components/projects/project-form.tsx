@@ -36,7 +36,7 @@ import type { Contact as ContactType } from "@/types/api"
 
 // ── Form value type (wide enough for both modes) ──
 
-interface AssetFormValues {
+interface ProjectFormValues {
   name: string
   type?: string
   client_id?: string
@@ -51,7 +51,7 @@ interface AssetFormValues {
 
 function buildSchema(mode: "create" | "edit", hasClientSelector: boolean) {
   const base = {
-    name: z.string().min(1, "Asset name is required").max(255),
+    name: z.string().min(1, "Project name is required").max(255),
     primary_contact_name: z.string().max(255).optional(),
     primary_contact_email: z.string().email("Must be a valid email").or(z.literal("")).optional(),
     notes: z.string().max(5000).optional(),
@@ -63,7 +63,7 @@ function buildSchema(mode: "create" | "edit", hasClientSelector: boolean) {
       client_id: hasClientSelector
         ? z.string().min(1, "Client is required")
         : z.string().optional(),
-      type: z.string().min(1, "Asset type is required"),
+      type: z.string().min(1, "Project type is required"),
     })
   }
 
@@ -95,7 +95,7 @@ type EditSubmit = (data: {
   notes?: string
 }) => void
 
-type AssetFormProps = {
+type ProjectFormProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   isPending: boolean
@@ -110,7 +110,7 @@ type AssetFormProps = {
   | {
       mode: "edit"
       onSubmit: EditSubmit
-      asset: {
+      project: {
         name: string
         primary_contact_name?: string | null
         primary_contact_email?: string | null
@@ -123,7 +123,7 @@ type AssetFormProps = {
 
 // ── Component ──
 
-export function AssetForm(props: AssetFormProps) {
+export function ProjectForm(props: ProjectFormProps) {
   const { open, onOpenChange, isPending, contacts: contactsProp, mode } = props
   const isCreate = mode === "create"
   const isEdit = mode === "edit"
@@ -135,7 +135,7 @@ export function AssetForm(props: AssetFormProps) {
 
   // Edit-specific props
   const editProps = isEdit ? (props as typeof props & { mode: "edit" }) : null
-  const asset = editProps?.asset
+  const project = editProps?.project
 
   // Mode-agnostic submit wrapper
   const onSubmit = props.onSubmit
@@ -146,15 +146,15 @@ export function AssetForm(props: AssetFormProps) {
 
   const schema = useMemo(() => buildSchema(mode, hasClientSelector), [mode, hasClientSelector])
 
-  const defaultValues: AssetFormValues = useMemo(() => {
-    if (isEdit && asset) {
+  const defaultValues: ProjectFormValues = useMemo(() => {
+    if (isEdit && project) {
       return {
-        name: asset.name ?? "",
-        primary_contact_name: asset.primary_contact_name ?? "",
-        primary_contact_email: asset.primary_contact_email ?? "",
-        status: asset.status ?? "live",
-        monitoring_enabled: asset.monitoring_enabled ?? false,
-        notes: asset.notes ?? "",
+        name: project.name ?? "",
+        primary_contact_name: project.primary_contact_name ?? "",
+        primary_contact_email: project.primary_contact_email ?? "",
+        status: project.status ?? "live",
+        monitoring_enabled: project.monitoring_enabled ?? false,
+        notes: project.notes ?? "",
       }
     }
     return {
@@ -165,7 +165,7 @@ export function AssetForm(props: AssetFormProps) {
       primary_contact_email: "",
       notes: "",
     }
-  }, [isEdit, asset, clientId])
+  }, [isEdit, project, clientId])
 
   const {
     register,
@@ -175,7 +175,7 @@ export function AssetForm(props: AssetFormProps) {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<AssetFormValues>({
+  } = useForm<ProjectFormValues>({
     resolver: zodResolver(schema),
     defaultValues,
   })
@@ -259,7 +259,7 @@ export function AssetForm(props: AssetFormProps) {
 
   // ── Submit ──
 
-  const onFormSubmit = (data: AssetFormValues) => {
+  const onFormSubmit = (data: ProjectFormValues) => {
     if (isCreate) {
       ;(onSubmit as CreateSubmit)({
         client_id: createProps?.clientId ?? (data.client_id || undefined),
@@ -295,13 +295,13 @@ export function AssetForm(props: AssetFormProps) {
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
       <DrawerContent className="w-full max-h-screen overflow-y-auto sm:max-w-[458px]">
         <DrawerHeader>
-          <DrawerTitle>{isCreate ? "Create Asset" : "Edit Asset"}</DrawerTitle>
+          <DrawerTitle>{isCreate ? "Create Project" : "Edit Project"}</DrawerTitle>
           <DrawerDescription>
             {isCreate
               ? createProps?.clientId
-                ? "Add a new asset for this client."
-                : "Add a new asset to the system."
-              : "Update this asset's information."}
+                ? "Add a new project for this client."
+                : "Add a new project to the system."
+              : "Update this project's information."}
           </DrawerDescription>
         </DrawerHeader>
 
@@ -347,13 +347,13 @@ export function AssetForm(props: AssetFormProps) {
             </div>
           )}
 
-          {/* Asset Name */}
+          {/* Project Name */}
           <div className="space-y-2">
-            <Label htmlFor="asset-name">
+            <Label htmlFor="project-name">
               Name <span className="text-destructive">*</span>
             </Label>
             <Input
-              id="asset-name"
+              id="project-name"
               {...register("name")}
               placeholder="e.g., Client Website, Mobile App"
               autoFocus
@@ -363,7 +363,7 @@ export function AssetForm(props: AssetFormProps) {
             )}
           </div>
 
-          {/* Asset Type (create only) */}
+          {/* Project Type (create only) */}
           {isCreate && (
             <div className="space-y-2">
               <Label htmlFor="type-select">
@@ -375,7 +375,7 @@ export function AssetForm(props: AssetFormProps) {
                 onChange={(value) =>
                   setValue("type", value, { shouldValidate: true, shouldDirty: true })
                 }
-                placeholder="Select asset type..."
+                placeholder="Select project type..."
               />
               {errors.type?.message && (
                 <p className="text-xs text-destructive">{errors.type.message}</p>
@@ -528,11 +528,11 @@ export function AssetForm(props: AssetFormProps) {
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="asset-notes">Notes</Label>
+            <Label htmlFor="project-notes">Notes</Label>
             <textarea
-              id="asset-notes"
+              id="project-notes"
               {...register("notes")}
-              placeholder="Additional notes about this asset..."
+              placeholder="Additional notes about this project..."
               rows={3}
               className="h-auto w-full min-w-0 resize-none rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
             />
@@ -552,7 +552,7 @@ export function AssetForm(props: AssetFormProps) {
                   ? "Creating..."
                   : "Saving..."
                 : isCreate
-                  ? "Create Asset"
+                  ? "Create Project"
                   : "Save Changes"
               }
             </Button>

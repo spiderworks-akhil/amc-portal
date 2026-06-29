@@ -98,7 +98,7 @@ export function ContractCard({ contract, onClick }: ContractCardProps) {
           </span>
           <span className="flex items-center gap-1.5">
             <HardDrive className="h-3 w-3" />
-            {contract.asset_count} {contract.asset_count === 1 ? "asset" : "assets"}
+            {contract.asset_count} {contract.asset_count === 1 ? "project" : "projects"}
           </span>
         </div>
       </CardFooter>

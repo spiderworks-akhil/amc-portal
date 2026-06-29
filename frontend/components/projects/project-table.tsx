@@ -35,7 +35,7 @@ import {
   Trash2,
   Globe,
 } from "lucide-react"
-import type { AssetListItem } from "@/types/api"
+import type { ProjectListItem } from "@/types/api"
 
 const STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
   live: "emerald",
@@ -53,13 +53,13 @@ const STATUS_LABELS: Record<string, string> = {
 
 export type SortField = "name" | "status" | "type_name" | "client_name" | "created_at" | "updated_at"
 
-interface AssetTableProps {
-  data: AssetListItem[]
+interface ProjectTableProps {
+  data: ProjectListItem[]
   isLoading: boolean
   sortField: SortField
   sortOrder: "asc" | "desc"
   onSort: (field: SortField) => void
-  onEdit: (asset: AssetListItem) => void
+  onEdit: (project: ProjectListItem) => void
   onDelete: (id: string) => void
   onView: (id: string) => void
 }
@@ -91,7 +91,7 @@ function SortHeader({
   )
 }
 
-export function AssetTable({
+export function ProjectTable({
   data,
   isLoading,
   sortField,
@@ -100,9 +100,9 @@ export function AssetTable({
   onEdit,
   onDelete,
   onView,
-}: AssetTableProps) {
+}: ProjectTableProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const deleteAsset = data.find((a) => a.id === deleteId)
+  const deleteProject = data.find((a) => a.id === deleteId)
 
   return (
     <>
@@ -137,37 +137,37 @@ export function AssetTable({
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((asset) => (
+              data.map((project) => (
                 <TableRow
-                  key={asset.id}
+                  key={project.id}
                   className="cursor-pointer group transition-colors hover:bg-muted/40"
-                  onClick={() => onView(asset.id)}
+                  onClick={() => onView(project.id)}
                 >
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Globe className="size-4 shrink-0 text-muted-foreground" />
-                      <span className="font-medium truncate max-w-[180px]">{asset.name}</span>
+                      <span className="font-medium truncate max-w-[180px]">{project.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-muted-foreground text-xs">{asset.type_name}</span>
+                    <span className="text-muted-foreground text-xs">{project.type_name}</span>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="dot"
                       size="sm"
-                      color={STATUS_COLORS[asset.status] ?? "gray"}
+                      color={STATUS_COLORS[project.status] ?? "gray"}
                     >
-                      {STATUS_LABELS[asset.status] ?? asset.status}
+                      {STATUS_LABELS[project.status] ?? project.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm">{asset.client_name}</span>
+                    <span className="text-sm">{project.client_name}</span>
                   </TableCell>
                   <TableCell>
-                    {asset.primary_contact_name ? (
+                    {project.primary_contact_name ? (
                       <span className="text-xs text-muted-foreground truncate max-w-[120px] block">
-                        {asset.primary_contact_name}
+                        {project.primary_contact_name}
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground/50">—</span>
@@ -175,7 +175,7 @@ export function AssetTable({
                   </TableCell>
                   <TableCell>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(asset.created_at).toLocaleDateString()}
+                      {new Date(project.created_at).toLocaleDateString()}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -187,7 +187,7 @@ export function AssetTable({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-36">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(asset) }}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(project) }}>
                             <Pencil className="size-3.5 mr-2" />
                             Edit
                           </DropdownMenuItem>
@@ -195,7 +195,7 @@ export function AssetTable({
                             className="text-destructive focus:text-destructive"
                             onClick={(e) => {
                               e.stopPropagation()
-                              setDeleteId(asset.id)
+                              setDeleteId(project.id)
                             }}
                           >
                             <Trash2 className="size-3.5" />
@@ -218,7 +218,7 @@ export function AssetTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Project</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteAsset?.name}</strong>? This action cannot be undone.
+              Are you sure you want to delete <strong>{deleteProject?.name}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

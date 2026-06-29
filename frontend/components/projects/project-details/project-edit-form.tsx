@@ -1,9 +1,9 @@
 "use client"
 
-import { AssetForm } from "@/components/assets/asset-form"
+import { ProjectForm } from "@/components/projects/project-form"
 import type { Contact as ContactType } from "@/types/api"
 
-interface AssetEditFormProps {
+interface ProjectEditFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: {
@@ -15,7 +15,7 @@ interface AssetEditFormProps {
     notes?: string
   }) => void
   isPending: boolean
-  asset: {
+  project: {
     name: string
     primary_contact_name?: string | null
     primary_contact_email?: string | null
@@ -26,6 +26,6 @@ interface AssetEditFormProps {
   contacts: ContactType[]
 }
 
-export function AssetEditForm(props: AssetEditFormProps) {
-  return <AssetForm mode="edit" {...props} />
+export function ProjectEditForm(props: ProjectEditFormProps) {
+  return <ProjectForm mode="edit" {...props} />
 }

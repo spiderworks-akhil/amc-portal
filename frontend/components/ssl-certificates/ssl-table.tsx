@@ -109,7 +109,7 @@ export function SslTable({
               <TableHead>Domain</TableHead>
               <SortHeader label="Valid To" field="valid_to" currentField={sortField} order={sortOrder} onSort={onSort} />
               <TableHead>Status</TableHead>
-              <TableHead>Asset</TableHead>
+              <TableHead>Project</TableHead>
               <TableHead className="w-12 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>

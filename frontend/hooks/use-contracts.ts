@@ -57,7 +57,7 @@ export function useUpdateContract() {
   })
 }
 
-export function useLinkAssetToContract() {
+export function useLinkProjectToContract() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ contractId, asset_ids }: { contractId: string; asset_ids: string[] }) => {
@@ -68,7 +68,7 @@ export function useLinkAssetToContract() {
       return data
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
       qc.invalidateQueries({ queryKey: [CONTRACTS_KEY] })
     },
     onError: (err: Error) => toast.error(err.message),

@@ -22,7 +22,7 @@ import {
   History,
   Pencil,
 } from "lucide-react"
-import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline"
+import { NotesTimeline } from "@/components/projects/project-details/notes-timeline"
 import { ContractEditDrawer } from "@/components/contracts/contract-edit-drawer"
 import { ScopesSection } from "@/components/contracts/scopes-section"
 
@@ -34,7 +34,7 @@ const CONTRACT_STATUS_COLORS: Record<string, "emerald" | "amber" | "red" | "blue
   terminated: "gray",
 }
 
-const ASSET_STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
+const PROJECT_STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
   live: "emerald",
   staging: "amber",
   development: "blue",
@@ -287,17 +287,17 @@ export default function ContractDetailPage() {
         <NotesTimeline noteableType="contract" noteableId={id} />
       </div>
 
-      {/* Linked Assets Section */}
+      {/* Linked Projects Section */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <HardDrive className="size-4" />
-            Covered Assets
+            Covered Projects
           </CardTitle>
           <CardDescription>
             {contract.assets.length === 0
-              ? "No assets covered by this contract"
-              : `${contract.assets.length} asset${contract.assets.length > 1 ? "s" : ""}`
+              ? "No projects covered by this contract"
+              : `${contract.assets.length} project${contract.assets.length > 1 ? "s" : ""}`
             }
           </CardDescription>
         </CardHeader>
@@ -305,36 +305,36 @@ export default function ContractDetailPage() {
           {contract.assets.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               <HardDrive className="size-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">No assets covered</p>
-              <p className="text-xs mt-1">Link assets to this contract from the asset detail page.</p>
+              <p className="text-sm font-medium">No projects covered</p>
+              <p className="text-xs mt-1">Link projects to this contract from the project detail page.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {contract.assets.map((asset) => (
+              {contract.assets.map((project) => (
                 <div
-                  key={asset.id}
+                  key={project.id}
                   className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group cursor-pointer"
-                  onClick={() => router.push(`/projects/${asset.id}`)}
+                  onClick={() => router.push(`/projects/${project.id}`)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/projects/${asset.id}`) }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/projects/${project.id}`) }}
                 >
                   <div className="flex items-start gap-3">
                     <div className="size-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
                       <HardDrive className="size-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{asset.name}</p>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{asset.type_name}</p>
+                      <p className="text-sm font-medium truncate">{project.name}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{project.type_name}</p>
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3">
                     <Badge
                       variant="dot"
                       size="sm"
-                      color={ASSET_STATUS_COLORS[asset.status] ?? "gray"}
+                      color={PROJECT_STATUS_COLORS[project.status] ?? "gray"}
                     >
-                      {asset.status}
+                      {project.status}
                     </Badge>
 
                   </div>

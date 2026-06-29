@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useSslCertificate, useUpdateSsl, useDeleteSsl, useTriggerSslCheck } from "@/hooks/use-ssl"
 import { formatDate } from "@/lib/format-utils"
-import { SslEditForm } from "@/components/assets/asset-details/ssl-edit-form"
+import { SslEditForm } from "@/components/projects/project-details/ssl-edit-form"
 
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -304,7 +304,7 @@ export default function SslCertificateDetailPage() {
                 <DetailRow
                   icon={<FileText className="size-4 text-primary" />}
                   iconBg="bg-primary/10"
-                  label="Linked Asset"
+                  label="Linked Project"
                   value={
                     <button
                       type="button"

@@ -376,7 +376,7 @@ export default function MonitorDetailPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Asset</span>
+                  <span className="text-sm text-muted-foreground">Project</span>
                   {monitor.asset_id && monitor.asset_name ? (
                     <Link
                       href={`/projects/${monitor.asset_id}`}

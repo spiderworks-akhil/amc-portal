@@ -1,11 +1,11 @@
 import { Suspense } from "react"
-import { AssetsPageContent } from "@/components/assets/assets-page-content"
+import { ProjectsPageContent } from "@/components/projects/projects-page-content"
 import Loading from "@/components/common/loader"
 
 export default function ProjectsPage() {
   return (
     <Suspense fallback={<Loading />}>
-      <AssetsPageContent />
+      <ProjectsPageContent />
     </Suspense>
   )
 }

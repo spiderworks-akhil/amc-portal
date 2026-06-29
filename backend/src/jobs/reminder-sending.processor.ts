@@ -10,6 +10,14 @@ import { buildReminderHtml } from '../modules/email/email-templates';
 import { ReminderRulesService } from '../modules/reminder/reminder-rules/reminder-rules.service';
 import { WhatsappService } from '../modules/whatsapp/whatsapp.service';
 
+function formatDateDDMMYYYY(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
 @Processor('reminder-sending', {
   concurrency: 3,
 })
@@ -102,7 +110,7 @@ export class ReminderSendingProcessor extends WorkerHost {
         await this.notifyManagersForReminder(reminder);
 
         // Fire-and-forget WhatsApp expiry notification
-        this.sendWhatsAppExpiryReminder(reminder, entityInfo, daysRemaining, expiryDateStr)
+        this.sendWhatsAppExpiryReminder(reminder, entityInfo, daysRemaining, formatDateDDMMYYYY(entityInfo.expiryDate))
           .catch(async (err) => {
             const errMsg = err instanceof Error ? err.message : String(err);
             this.logger.error(

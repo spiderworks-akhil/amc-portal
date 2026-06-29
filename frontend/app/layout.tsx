@@ -9,7 +9,7 @@ const geistMono = Geist_Mono({subsets:['latin'],variable:'--font-geist-mono'});
 
 export const metadata: Metadata = {
   title: "AMC Portal",
-  description: "Asset Management Portal",
+  description: "Project Management Portal",
 };
 
 export default function RootLayout({

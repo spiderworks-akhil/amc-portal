@@ -60,7 +60,7 @@ interface CreateSslFormProps {
   }) => void
   isPending: boolean
   domains: DomainOption[]
-  assetId: string
+  projectId: string
 }
 
 export function CreateSslForm({
@@ -69,7 +69,7 @@ export function CreateSslForm({
   onSubmit,
   isPending,
   domains,
-  assetId,
+  projectId,
 }: CreateSslFormProps) {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<SslFormValues>({
     resolver: zodResolver(sslSchema),
@@ -240,7 +240,7 @@ export function CreateSslForm({
 
     onSubmit({
       domain_id: data.domain_id,
-      asset_id: assetId,
+      asset_id: projectId,
       common_name: data.common_name?.trim() || undefined,
       issuer: data.issuer?.trim() || undefined,
       sans,

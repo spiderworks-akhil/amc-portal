@@ -4,34 +4,34 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import apiClient from "@/lib/api-client"
 import type {
-  AssetListItem,
-  AssetDetail,
+  ProjectListItem,
+  ProjectDetail,
   PaginatedResponse,
   ApiResponse,
-  CreateAssetPayload,
-  UpdateAssetPayload,
-  ListAssetsParams,
+  CreateProjectPayload,
+  UpdateProjectPayload,
+  ListProjectsParams,
   ContractListItem,
 } from "@/types/api"
 
-const ASSETS_KEY = "assets"
+const PROJECTS_KEY = "projects"
 
-export function useAssets(params: ListAssetsParams) {
+export function useProjects(params: ListProjectsParams) {
   return useQuery({
-    queryKey: [ASSETS_KEY, "list", params],
+    queryKey: [PROJECTS_KEY, "list", params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<AssetListItem>>("/asset/list", { params })
+      const { data } = await apiClient.get<PaginatedResponse<ProjectListItem>>("/asset/list", { params })
       return data
     },
     placeholderData: (prev) => prev,
   })
 }
 
-export function useClientAssets(clientId: string | null) {
+export function useClientProjects(clientId: string | null) {
   return useQuery({
-    queryKey: [ASSETS_KEY, "by-client", clientId],
+    queryKey: [PROJECTS_KEY, "by-client", clientId],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<AssetListItem>>(
+      const { data } = await apiClient.get<PaginatedResponse<ProjectListItem>>(
         "/asset/list",
         { params: { client_id: clientId, limit: 100, sort_by: "name", sort_order: "asc" } }
       )
@@ -41,48 +41,48 @@ export function useClientAssets(clientId: string | null) {
   })
 }
 
-export function useAsset(id: string | null) {
+export function useProject(id: string | null) {
   return useQuery({
-    queryKey: [ASSETS_KEY, id],
+    queryKey: [PROJECTS_KEY, id],
     queryFn: async () => {
-      const { data } = await apiClient.get<AssetDetail>(`/asset/${id}`)
+      const { data } = await apiClient.get<ProjectDetail>(`/asset/${id}`)
       return data
     },
     enabled: !!id,
   })
 }
 
-export function useCreateAsset() {
+export function useCreateProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: CreateAssetPayload) => {
-      const { data } = await apiClient.post<ApiResponse<AssetListItem>>("/asset", payload)
+    mutationFn: async (payload: CreateProjectPayload) => {
+      const { data } = await apiClient.post<ApiResponse<ProjectListItem>>("/asset", payload)
       return data
     },
     onSuccess: (res) => {
       toast.success(res.message)
-      qc.invalidateQueries({ queryKey: [ASSETS_KEY] })
+      qc.invalidateQueries({ queryKey: [PROJECTS_KEY] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
 }
 
-export function useUpdateAsset() {
+export function useUpdateProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...payload }: UpdateAssetPayload & { id: string }) => {
-      const { data } = await apiClient.put<ApiResponse<AssetListItem>>(`/asset/${id}`, payload)
+    mutationFn: async ({ id, ...payload }: UpdateProjectPayload & { id: string }) => {
+      const { data } = await apiClient.put<ApiResponse<ProjectListItem>>(`/asset/${id}`, payload)
       return data
     },
     onSuccess: (res) => {
       toast.success(res.message)
-      qc.invalidateQueries({ queryKey: [ASSETS_KEY] })
+      qc.invalidateQueries({ queryKey: [PROJECTS_KEY] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
 }
 
-export function useDeleteAsset() {
+export function useDeleteProject() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
@@ -91,22 +91,22 @@ export function useDeleteAsset() {
     },
     onSuccess: (res) => {
       toast.success(res.message)
-      qc.invalidateQueries({ queryKey: [ASSETS_KEY] })
+      qc.invalidateQueries({ queryKey: [PROJECTS_KEY] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
 }
 
-export function useAssetContracts(assetId: string | null) {
+export function useProjectContracts(projectId: string | null) {
   return useQuery({
-    queryKey: [ASSETS_KEY, "contracts", assetId],
+    queryKey: [PROJECTS_KEY, "contracts", projectId],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<ContractListItem>>(
         "/contract/list",
-        { params: { asset_id: assetId, limit: 50, sort_by: "end_date", sort_order: "asc" } }
+        { params: { asset_id: projectId, limit: 50, sort_by: "end_date", sort_order: "asc" } }
       )
       return data
     },
-    enabled: !!assetId,
+    enabled: !!projectId,
   })
 }

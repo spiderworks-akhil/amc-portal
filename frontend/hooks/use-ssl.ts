@@ -52,7 +52,7 @@ export function useCreateSsl() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [SSL_KEY] })
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
       qc.invalidateQueries({ queryKey: ["domains"] })
     },
     onError: (err: Error) => toast.error(err.message),
@@ -68,7 +68,7 @@ export function useUpdateSsl() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [SSL_KEY] })
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -83,7 +83,7 @@ export function useDeleteSsl() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [SSL_KEY] })
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
       toast.success("SSL certificate deleted")
     },
     onError: (err: Error) => toast.error(err.message),

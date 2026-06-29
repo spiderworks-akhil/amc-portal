@@ -3,17 +3,17 @@
 import { useCallback, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  useAsset,
-  useUpdateAsset,
-  useAssetContracts,
-} from "@/hooks/use-assets";
+  useProject,
+  useUpdateProject,
+  useProjectContracts,
+} from "@/hooks/use-projects";
 import { useClient } from "@/hooks/use-clients";
 import { useProviders } from "@/hooks/use-providers";
 import { useCreateProvider } from "@/hooks/use-create-provider";
-import { useCreateServer, useLinkAssetToServer } from "@/hooks/use-servers";
+import { useCreateServer, useLinkProjectToServer } from "@/hooks/use-servers";
 import {
   useCreateContract,
-  useLinkAssetToContract,
+  useLinkProjectToContract,
 } from "@/hooks/use-contracts";
 import {
   useCreateDomain,
@@ -21,7 +21,7 @@ import {
   useDeleteDomain,
 } from "@/hooks/use-domains";
 import { useCreateSsl, useUpdateSsl, useDeleteSsl } from "@/hooks/use-ssl";
-import { useMonitorsByAsset, useCreateMonitor } from "@/hooks/use-monitors";
+import { useMonitorsByProject, useCreateMonitor } from "@/hooks/use-monitors";
 
 import {
   Card,
@@ -36,14 +36,14 @@ import { Badge } from "@/components/ui/badge";
 import { DetailSkeleton } from "@/components/clients/client-details/detail-skeleton";
 import { ServerCreateDrawer } from "@/components/servers/server-create-drawer";
 import { ContractCreateDrawer } from "@/components/contracts/contract-create-drawer";
-import { CreateDomainForm } from "@/components/assets/asset-details/create-domain-form";
-import { CreateSslForm } from "@/components/assets/asset-details/create-ssl-form";
-import { DomainEditForm } from "@/components/assets/asset-details/domain-edit-form";
-import { SslEditForm } from "@/components/assets/asset-details/ssl-edit-form";
+import { CreateDomainForm } from "@/components/projects/project-details/create-domain-form";
+import { CreateSslForm } from "@/components/projects/project-details/create-ssl-form";
+import { DomainEditForm } from "@/components/projects/project-details/domain-edit-form";
+import { SslEditForm } from "@/components/projects/project-details/ssl-edit-form";
 import { CreateProviderDialog } from "@/components/providers/create-provider-dialog";
 import { MonitorCreateDrawer } from "@/components/monitors/monitor-create-drawer";
 import { formatDate, formatCurrency } from "@/lib/format-utils";
-import type { AssetDetail } from "@/types/api";
+import type { ProjectDetail } from "@/types/api";
 import { BackButton } from "@/components/common/back-button";
 import {
   Monitor,
@@ -75,9 +75,9 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import type { AccountManager, Contact as ContactType } from "@/types/api";
-import { ScopesSection } from "@/components/assets/asset-details/scopes-section";
-import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline";
-import { AssetEditForm } from "@/components/assets/asset-details/asset-edit-form";
+import { ScopesSection } from "@/components/projects/project-details/scopes-section";
+import { NotesTimeline } from "@/components/projects/project-details/notes-timeline";
+import { ProjectEditForm } from "@/components/projects/project-details/project-edit-form";
 import Link from "next/link";
 
 const STATUS_COLORS: Record<string, "emerald" | "amber" | "blue" | "gray"> = {
@@ -110,16 +110,16 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const { data: asset, isLoading, isError } = useAsset(id);
-  const { data: assetClient } = useClient(asset?.client_id ?? null);
+  const { data: project, isLoading, isError } = useProject(id);
+  const { data: projectClient } = useClient(project?.client_id ?? null);
   const { data: contractsData, isLoading: contractsLoading } =
-    useAssetContracts(id);
+    useProjectContracts(id);
   const { data: providersData, refetch: refetchProviders } = useProviders();
-  const updateAsset = useUpdateAsset();
+  const updateProject = useUpdateProject();
   const createServer = useCreateServer();
-  const linkAssetToServer = useLinkAssetToServer();
+  const linkProjectToServer = useLinkProjectToServer();
   const createContract = useCreateContract();
-  const linkAssetToContract = useLinkAssetToContract();
+  const linkProjectToContract = useLinkProjectToContract();
   const createDomain = useCreateDomain();
   const updateDomain = useUpdateDomain();
   const deleteDomain = useDeleteDomain();
@@ -128,7 +128,7 @@ export default function ProjectDetailPage() {
   const deleteSsl = useDeleteSsl();
   const createProvider = useCreateProvider();
   const { data: monitorsData, isLoading: monitorsLoading } =
-    useMonitorsByAsset(id);
+    useMonitorsByProject(id);
   const createMonitor = useCreateMonitor();
 
   const [editOpen, setEditOpen] = useState(false);
@@ -141,13 +141,13 @@ export default function ProjectDetailPage() {
   const [editSslOpen, setEditSslOpen] = useState(false);
   const [createMonitorOpen, setCreateMonitorOpen] = useState(false);
   const [editingDomain, setEditingDomain] = useState<
-    AssetDetail["domains"][number] | null
+    ProjectDetail["domains"][number] | null
   >(null);
   const [editingSsl, setEditingSsl] = useState<
-    AssetDetail["ssl_certificates"][number] | null
+    ProjectDetail["ssl_certificates"][number] | null
   >(null);
 
-  const handleUpdateAsset = useCallback(
+  const handleUpdateProject = useCallback(
     (data: {
       name: string;
       primary_contact_name?: string;
@@ -156,12 +156,12 @@ export default function ProjectDetailPage() {
       monitoring_enabled?: boolean;
       notes?: string;
     }) => {
-      updateAsset.mutate(
+      updateProject.mutate(
         { id, ...data },
         { onSuccess: () => setEditOpen(false) },
       );
     },
-    [id, updateAsset],
+    [id, updateProject],
   );
 
   const handleCreateServer = useCallback(
@@ -180,14 +180,14 @@ export default function ProjectDetailPage() {
       createServer.mutate(data, {
         onSuccess: (result) => {
           const serverId = result.data.id;
-          linkAssetToServer.mutate(
+          linkProjectToServer.mutate(
             { serverId, asset_ids: [id] },
             { onSuccess: () => setCreateServerOpen(false) },
           );
         },
       });
     },
-    [id, createServer, linkAssetToServer],
+    [id, createServer, linkProjectToServer],
   );
 
   const handleCreateContract = useCallback(
@@ -207,14 +207,14 @@ export default function ProjectDetailPage() {
       createContract.mutate(data, {
         onSuccess: (result) => {
           const contractId = result.data.id;
-          linkAssetToContract.mutate(
+          linkProjectToContract.mutate(
             { contractId, asset_ids: [id] },
             { onSuccess: () => setCreateContractOpen(false) },
           );
         },
       });
     },
-    [id, createContract, linkAssetToContract],
+    [id, createContract, linkProjectToContract],
   );
 
   const handleUpdateDomain = useCallback(
@@ -325,9 +325,9 @@ export default function ProjectDetailPage() {
   );
 
   const isCreatingServer =
-    createServer.isPending || linkAssetToServer.isPending;
+    createServer.isPending || linkProjectToServer.isPending;
   const isCreatingContract =
-    createContract.isPending || linkAssetToContract.isPending;
+    createContract.isPending || linkProjectToContract.isPending;
   const isCreatingDomain = createDomain.isPending;
   const isCreatingSsl = createSsl.isPending;
   const isUpdatingDomain = updateDomain.isPending;
@@ -344,7 +344,7 @@ export default function ProjectDetailPage() {
 
   if (isLoading) return <DetailSkeleton />;
 
-  if (isError || !asset) {
+  if (isError || !project) {
     return (
       <div className="container mx-auto px-4 py-16 max-w-7xl">
         <div className="flex flex-col items-center justify-center text-center gap-4">
@@ -375,22 +375,22 @@ export default function ProjectDetailPage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight truncate">
-                {asset.name}
+                {project.name}
               </h1>
               <Badge
                 variant="dot"
                 size="sm"
-                color={STATUS_COLORS[asset.status] ?? "gray"}
+                color={STATUS_COLORS[project.status] ?? "gray"}
               >
-                {STATUS_LABELS[asset.status] ?? asset.status}
+                {STATUS_LABELS[project.status] ?? project.status}
               </Badge>
             </div>
             <p className="text-muted-foreground flex items-center gap-1.5 mt-0.5">
               <FileText className="size-4 shrink-0" />
-              <span>{asset.type_name}</span>
+              <span>{project.type_name}</span>
               <span className="text-muted-foreground/50 mx-1">·</span>
               <Building2 className="size-4 shrink-0" />
-              <span className="truncate">{asset.client_name}</span>
+              <span className="truncate">{project.client_name}</span>
             </p>
           </div>
           <Button
@@ -410,10 +410,10 @@ export default function ProjectDetailPage() {
         const now = new Date();
 
         // Compute health data from domains
-        const expiredDomains = asset.domains.filter(
+        const expiredDomains = project.domains.filter(
           (d) => d.expiry_date && new Date(d.expiry_date) <= now,
         ).length;
-        const expiringDomains = asset.domains.filter((d) => {
+        const expiringDomains = project.domains.filter((d) => {
           if (!d.expiry_date) return false;
           const days = Math.ceil(
             (new Date(d.expiry_date).getTime() - now.getTime()) /
@@ -423,10 +423,10 @@ export default function ProjectDetailPage() {
         }).length;
 
         // Compute health data from SSL
-        const expiredSsl = asset.ssl_certificates.filter(
+        const expiredSsl = project.ssl_certificates.filter(
           (c) => c.valid_to && new Date(c.valid_to) <= now,
         ).length;
-        const expiringSsl = asset.ssl_certificates.filter((c) => {
+        const expiringSsl = project.ssl_certificates.filter((c) => {
           if (!c.valid_to) return false;
           const days = Math.ceil(
             (new Date(c.valid_to).getTime() - now.getTime()) /
@@ -445,9 +445,9 @@ export default function ProjectDetailPage() {
         ).length;
 
         const totalItems =
-          asset.domains.length +
-          asset.ssl_certificates.length +
-          asset.servers.length +
+          project.domains.length +
+          project.ssl_certificates.length +
+          project.servers.length +
           monitors.length +
           (contractsData?.data?.length ?? 0);
         const needsAttention =
@@ -459,7 +459,7 @@ export default function ProjectDetailPage() {
 
         // Compute health score (0-100)
         const totalChecks =
-          asset.domains.length + asset.ssl_certificates.length;
+          project.domains.length + project.ssl_certificates.length;
         const totalIssues =
           expiredDomains + expiringDomains + expiredSsl + expiringSsl;
         const healthScore =
@@ -640,7 +640,7 @@ export default function ProjectDetailPage() {
 
 
               {/* Contact row */}
-              {asset.primary_contact_name && (
+              {project.primary_contact_name && (
                 <div className="flex items-start gap-3">
                   <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <User className="size-4 text-primary" />
@@ -649,15 +649,15 @@ export default function ProjectDetailPage() {
                     <p className="text-xs text-muted-foreground font-medium leading-none mb-1">
                       Contact
                     </p>
-                    <p className="text-sm">{asset.primary_contact_name}</p>
-                    {asset.primary_contact_email && (
+                    <p className="text-sm">{project.primary_contact_name}</p>
+                    {project.primary_contact_email && (
                       <div className="flex items-center gap-1.5 mt-1">
                         <Mail className="size-3 shrink-0 text-muted-foreground" />
                         <a
-                          href={`mailto:${asset.primary_contact_email}`}
+                          href={`mailto:${project.primary_contact_email}`}
                           className="text-xs text-primary hover:underline truncate"
                         >
-                          {asset.primary_contact_email}
+                          {project.primary_contact_email}
                         </a>
                       </div>
                     )}
@@ -677,10 +677,10 @@ export default function ProjectDetailPage() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => router.push(`/clients/${asset.client_id}`)}
+                      onClick={() => router.push(`/clients/${project.client_id}`)}
                       className="text-sm text-primary hover:underline text-left leading-snug"
                     >
-                      {asset.client_name}
+                      {project.client_name}
                     </button>
                   </div>
                 </div>
@@ -693,14 +693,14 @@ export default function ProjectDetailPage() {
                       Created
                     </p>
                     <p className="text-sm leading-snug">
-                      {formatDate(asset.created_at)}
+                      {formatDate(project.created_at)}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Tech Stack */}
-              {asset.tech_stack && asset.tech_stack.length > 0 && (
+              {project.tech_stack && project.tech_stack.length > 0 && (
                 <div className="flex items-start gap-3 pt-1 border-t border-border/40">
                   <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Layers className="size-4 text-primary" />
@@ -710,7 +710,7 @@ export default function ProjectDetailPage() {
                       Tech Stack
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {asset.tech_stack.map((tech, i) => (
+                      {project.tech_stack.map((tech, i) => (
                         <span
                           key={i}
                           className="inline-flex items-center rounded-full border border-border/60 bg-accent/50 px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs"
@@ -739,7 +739,7 @@ export default function ProjectDetailPage() {
               <div className="flex items-center justify-between min-h-9">
                 <span className="text-sm text-muted-foreground">Type</span>
                 <span className="text-sm font-medium capitalize leading-none">
-                  {asset.type_name}
+                  {project.type_name}
                 </span>
               </div>
               <div className="flex items-center justify-between min-h-9">
@@ -747,9 +747,9 @@ export default function ProjectDetailPage() {
                 <Badge
                   variant="dot"
                   size="sm"
-                  color={STATUS_COLORS[asset.status] ?? "gray"}
+                  color={STATUS_COLORS[project.status] ?? "gray"}
                 >
-                  {STATUS_LABELS[asset.status] ?? asset.status}
+                  {STATUS_LABELS[project.status] ?? project.status}
                 </Badge>
               </div>
             </CardContent>
@@ -768,14 +768,14 @@ export default function ProjectDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {asset.account_managers.length === 0 ? (
+                {project.account_managers.length === 0 ? (
                   <div className="text-center py-4 text-muted-foreground">
                     <Users className="size-6 mx-auto mb-1.5 opacity-30" />
                     <p className="text-xs">No managers assigned to this client</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {asset.account_managers.map((manager: AccountManager) => (
+                    {project.account_managers.map((manager: AccountManager) => (
                       <div
                         key={manager.id}
                         className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
@@ -809,14 +809,14 @@ export default function ProjectDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {asset.contacts.length === 0 ? (
+                {project.contacts.length === 0 ? (
                   <div className="text-center py-4 text-muted-foreground">
                     <Contact className="size-6 mx-auto mb-1.5 opacity-30" />
                     <p className="text-xs">No contacts for this client</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {asset.contacts.map((contact: ContactType) => (
+                    {project.contacts.map((contact: ContactType) => (
                       <div
                         key={contact.id}
                         className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
@@ -864,10 +864,10 @@ export default function ProjectDetailPage() {
       </div>
       <div className="grid grid-cols-2 gap-3 w-full">
         {/* Scopes Section */}
-        <ScopesSection assetId={id} />
+        <ScopesSection projectId={id} />
 
         {/* Activity Timeline */}
-        <NotesTimeline noteableType="asset" noteableId={id} />
+        <NotesTimeline noteableType="project" noteableId={id} />
       </div>
       {/* Domains Section */}
       <Card className="mb-6">
@@ -878,9 +878,9 @@ export default function ProjectDetailPage() {
               Linked Domains
             </CardTitle>
             <CardDescription>
-              {asset.domains.length === 0
+              {project.domains.length === 0
                 ? "No domains linked to this project"
-                : `${asset.domains.length} domain${asset.domains.length > 1 ? "s" : ""}`}
+                : `${project.domains.length} domain${project.domains.length > 1 ? "s" : ""}`}
             </CardDescription>
           </div>
           <Button
@@ -893,7 +893,7 @@ export default function ProjectDetailPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          {asset.domains.length === 0 ? (
+          {project.domains.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               <Globe2 className="size-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm font-medium">No domains linked</p>
@@ -903,7 +903,7 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {asset.domains.map((domain) => {
+              {project.domains.map((domain) => {
                 const expiryDate = domain.expiry_date
                   ? new Date(domain.expiry_date)
                   : null;
@@ -1009,9 +1009,9 @@ export default function ProjectDetailPage() {
               SSL Certificates
             </CardTitle>
             <CardDescription>
-              {asset.ssl_certificates.length === 0
+              {project.ssl_certificates.length === 0
                 ? "No SSL certificates linked to this project"
-                : `${asset.ssl_certificates.length} certificate${asset.ssl_certificates.length > 1 ? "s" : ""}`}
+                : `${project.ssl_certificates.length} certificate${project.ssl_certificates.length > 1 ? "s" : ""}`}
             </CardDescription>
           </div>
           <Button
@@ -1024,7 +1024,7 @@ export default function ProjectDetailPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          {asset.ssl_certificates.length === 0 ? (
+          {project.ssl_certificates.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               <ShieldCheck className="size-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm font-medium">No SSL certificates</p>
@@ -1034,7 +1034,7 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {asset.ssl_certificates.map((cert) => {
+              {project.ssl_certificates.map((cert) => {
                 const validTo = cert.valid_to ? new Date(cert.valid_to) : null;
                 const now = new Date();
                 const daysToExpiry = validTo
@@ -1141,9 +1141,9 @@ export default function ProjectDetailPage() {
               Linked Servers
             </CardTitle>
             <CardDescription>
-              {asset.servers.length === 0
+              {project.servers.length === 0
                 ? "No servers linked to this project"
-                : `${asset.servers.length} server${asset.servers.length > 1 ? "s" : ""}`}
+                : `${project.servers.length} server${project.servers.length > 1 ? "s" : ""}`}
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -1158,7 +1158,7 @@ export default function ProjectDetailPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {asset.servers.length === 0 ? (
+          {project.servers.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               <Server className="size-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm font-medium">No servers linked</p>
@@ -1168,7 +1168,7 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {asset.servers.map((server) => (
+              {project.servers.map((server) => (
                 <div
                   key={server.id}
                   className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border hover:shadow-sm group cursor-pointer"
@@ -1479,14 +1479,14 @@ export default function ProjectDetailPage() {
       </Card>
 
       {/* Edit Drawer */}
-      <AssetEditForm
-        key={`edit-asset-${editOpen}`}
+      <ProjectEditForm
+        key={`edit-project-${editOpen}`}
         open={editOpen}
         onOpenChange={setEditOpen}
-        onSubmit={handleUpdateAsset}
-        isPending={updateAsset.isPending}
-        asset={asset}
-        contacts={assetClient?.contacts ?? []}
+        onSubmit={handleUpdateProject}
+        isPending={updateProject.isPending}
+        project={project}
+        contacts={projectClient?.contacts ?? []}
       />
 
       {/* Create Server Drawer */}
@@ -1506,7 +1506,7 @@ export default function ProjectDetailPage() {
         onOpenChange={setCreateContractOpen}
         onSubmit={handleCreateContract}
         isPending={isCreatingContract}
-        clientId={asset.client_id}
+        clientId={project.client_id}
       />
 
       {/* Create Domain Drawer */}
@@ -1516,7 +1516,7 @@ export default function ProjectDetailPage() {
         onOpenChange={setCreateDomainOpen}
         onSubmit={handleCreateDomain}
         isPending={isCreatingDomain}
-        assetId={id}
+        projectId={id}
       />
 
       {/* Create SSL Drawer */}
@@ -1526,8 +1526,8 @@ export default function ProjectDetailPage() {
         onOpenChange={setCreateSslOpen}
         onSubmit={handleCreateSsl}
         isPending={isCreatingSsl}
-        domains={asset.domains}
-        assetId={id}
+        domains={project.domains}
+        projectId={id}
       />
 
       {/* Edit Domain Drawer */}
@@ -1565,7 +1565,7 @@ export default function ProjectDetailPage() {
         onOpenChange={setCreateMonitorOpen}
         onSubmit={handleCreateMonitor}
         isPending={isCreatingMonitor}
-        preSelectedAssetId={id}
+        preSelectedProjectId={id}
       />
 
       {/* Create Provider Dialog */}

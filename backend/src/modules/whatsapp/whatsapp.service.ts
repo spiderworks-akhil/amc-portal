@@ -6,6 +6,14 @@ import { firstValueFrom } from 'rxjs';
 import { DB } from '../../db/types.generated';
 import { ConfigService } from '../config/config.service';
 
+function formatDateDDMMYYYY(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
 interface WhatsAppConfig {
   api_key: string;
   api_secret?: string;
@@ -80,8 +88,8 @@ export class WhatsappService {
 
     // Second parameter: date created
     const createdAt = entity.created_at
-      ? new Date(entity.created_at as string).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0];
+      ? formatDateDDMMYYYY(entity.created_at as string)
+      : formatDateDDMMYYYY(new Date());
     params.push({ type: 'text', text: createdAt });
 
     // Third parameter: additional context (expiry date, severity, etc.)
@@ -89,17 +97,17 @@ export class WhatsappService {
     switch (entityType) {
       case 'domain':
         extra = (entity.expiry_date as string)
-          ? `Expires: ${new Date(entity.expiry_date as string).toISOString().split('T')[0]}`
+          ? `Expires: ${formatDateDDMMYYYY(entity.expiry_date as string)}`
           : 'No expiry date set';
         break;
       case 'ssl':
         extra = (entity.valid_to as string)
-          ? `Expires: ${new Date(entity.valid_to as string).toISOString().split('T')[0]}`
+          ? `Expires: ${formatDateDDMMYYYY(entity.valid_to as string)}`
           : 'No expiry date set';
         break;
       case 'server':
         extra = (entity.renewal_date as string)
-          ? `Renewal: ${new Date(entity.renewal_date as string).toISOString().split('T')[0]}`
+          ? `Renewal: ${formatDateDDMMYYYY(entity.renewal_date as string)}`
           : `Provider: ${(entity.provider_name as string) ?? (entity.provider_id as string) ?? 'N/A'}`;
         break;
       case 'incident':

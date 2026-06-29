@@ -117,7 +117,7 @@ export function MonitorTable({
               <TableHead>Type</TableHead>
               <SortHeader label="Status" field="current_status" currentField={sortField} order={sortOrder} onSort={onSort} />
               <TableHead>Target</TableHead>
-              <TableHead>Asset</TableHead>
+              <TableHead>Project</TableHead>
               <SortHeader label="Last Checked" field="last_checked_at" currentField={sortField} order={sortOrder} onSort={onSort} />
               <TableHead>Interval</TableHead>
               <TableHead>Enabled</TableHead>

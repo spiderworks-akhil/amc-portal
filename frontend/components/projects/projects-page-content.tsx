@@ -4,10 +4,10 @@ import { useCallback, useState, useEffect } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { AssetTable } from "./asset-table"
-import { useAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-assets"
+import { ProjectTable } from "./project-table"
+import { useProjects, useCreateProject, useDeleteProject } from "@/hooks/use-projects"
 import { useDebounce } from "@/hooks/use-debounce"
-import type { CreateAssetPayload } from "@/types/api"
+import type { CreateProjectPayload } from "@/types/api"
 import { SmoothSelect } from "@/components/ui/smooth-select"
 import {
   Pagination,
@@ -19,9 +19,9 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Search, Plus } from "lucide-react"
-import type { AssetListItem } from "@/types/api"
-import type { SortField } from "./asset-table"
-import { AssetCreateDialog } from "./asset-create-dialog"
+import type { ProjectListItem } from "@/types/api"
+import type { SortField } from "./project-table"
+import { ProjectCreateDialog } from "./project-create-dialog"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
@@ -31,13 +31,13 @@ const STATUS_OPTIONS = [
   { value: "parked", label: "Parked" },
 ]
 
-const ASSET_TYPES = [
+const PROJECT_TYPES = [
   { value: "website", label: "Website" },
   { value: "landing_page", label: "Landing Page" },
   { value: "mobile_application", label: "Mobile Application" },
 ]
 
-export function AssetsPageContent() {
+export function ProjectsPageContent() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -75,7 +75,7 @@ export function AssetsPageContent() {
     }
   }, [debouncedSearch, search, searchParams, router, pathname])
 
-  const { data, isLoading } = useAssets({
+  const { data, isLoading } = useProjects({
     page,
     search,
     status: statusFilter !== "all" ? statusFilter : undefined,
@@ -85,8 +85,8 @@ export function AssetsPageContent() {
     sort_order: sortOrder,
   })
 
-  const { mutate: createAsset, isPending: isCreating } = useCreateAsset()
-  const { mutate: deleteAsset } = useDeleteAsset()
+  const { mutate: createProject, isPending: isCreating } = useCreateProject()
+  const { mutate: deleteProject } = useDeleteProject()
 
   const updateParams = useCallback(
     (updates: Record<string, string | undefined>) => {
@@ -125,18 +125,18 @@ export function AssetsPageContent() {
     (formData: { client_id?: string; name: string; type: string; primary_contact_name?: string; primary_contact_email?: string; notes?: string }) => {
       if (!formData.client_id) return
 
-      createAsset(formData as CreateAssetPayload, {
+      createProject(formData as CreateProjectPayload, {
         onSuccess: () => setCreateOpen(false),
       })
     },
-    [createAsset]
+    [createProject]
   )
 
   const handleDelete = useCallback(
     (id: string) => {
-      deleteAsset(id)
+      deleteProject(id)
     },
-    [deleteAsset]
+    [deleteProject]
   )
 
   const handleView = useCallback(
@@ -147,8 +147,8 @@ export function AssetsPageContent() {
   )
 
   const handleEdit = useCallback(
-    (asset: AssetListItem) => {
-      router.push(`/projects/${asset.id}?edit=true`)
+    (project: ProjectListItem) => {
+      router.push(`/projects/${project.id}?edit=true`)
     },
     [router]
   )
@@ -195,7 +195,7 @@ export function AssetsPageContent() {
             </div>
             <div className="w-44">
               <SmoothSelect
-                options={[{ value: "all", label: "All Types" }, ...ASSET_TYPES]}
+                options={[{ value: "all", label: "All Types" }, ...PROJECT_TYPES]}
                 value={typeFilter}
                 onChange={(value) => updateParams({ type: value === "all" ? undefined : value })}
                 className="[&>button]:min-h-9 [&>button]:h-9 [&>button]:text-xs"
@@ -212,7 +212,7 @@ export function AssetsPageContent() {
         )}
 
         {/* Table */}
-        <AssetTable
+        <ProjectTable
           data={data?.data ?? []}
           isLoading={isLoading}
           sortField={sortField}
@@ -286,12 +286,12 @@ export function AssetsPageContent() {
         )}
       </div>
 
-      <AssetCreateDialog
+      <ProjectCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSubmit={handleCreateSubmit}
         isPending={isCreating}
-        types={ASSET_TYPES}
+        types={PROJECT_TYPES}
       />
     </div>
   )

@@ -27,17 +27,17 @@ export function useMonitors(params: ListMonitorsParams) {
   })
 }
 
-export function useMonitorsByAsset(assetId: string | null) {
+export function useMonitorsByProject(projectId: string | null) {
   return useQuery({
-    queryKey: [MONITORS_KEY, "by-asset", assetId],
+    queryKey: [MONITORS_KEY, "by-asset", projectId],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<MonitorListItem>>(
         "/monitor/list",
-        { params: { asset_id: assetId, limit: 100, sort_by: "name", sort_order: "asc" } }
+        { params: { asset_id: projectId, limit: 100, sort_by: "name", sort_order: "asc" } }
       )
       return data
     },
-    enabled: !!assetId,
+    enabled: !!projectId,
   })
 }
 

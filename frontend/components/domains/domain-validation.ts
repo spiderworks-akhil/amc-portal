@@ -123,13 +123,13 @@ const createDomainBase = {
  * Standalone domain create schema — includes asset_id.
  */
 export const createDomainSchema = z
-  .object({ asset_id: z.string().min(1, "Asset is required"), ...createDomainBase })
+  .object({ asset_id: z.string().min(1, "Project is required"), ...createDomainBase })
   .superRefine(domainRefinement)
 
 /**
- * Asset-detail domain create schema — no asset_id (injected from props).
+ * Project-detail domain create schema — no asset_id (injected from props).
  */
-export const assetDetailDomainSchema = z
+export const projectDetailDomainSchema = z
   .object(createDomainBase)
   .superRefine(domainRefinement)
 
@@ -144,5 +144,5 @@ export const editDomainSchema = z
   .superRefine(domainRefinement)
 
 export type CreateDomainFormValues = z.infer<typeof createDomainSchema>
-export type AssetDetailDomainFormValues = z.infer<typeof assetDetailDomainSchema>
+export type ProjectDetailDomainFormValues = z.infer<typeof projectDetailDomainSchema>
 export type EditDomainFormValues = z.infer<typeof editDomainSchema>

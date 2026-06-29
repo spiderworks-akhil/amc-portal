@@ -13,9 +13,9 @@ import {
   useDeleteContact,
 } from "@/hooks/use-clients";
 import {
-  useClientAssets,
-  useCreateAsset,
-} from "@/hooks/use-assets";
+  useClientProjects,
+  useCreateProject,
+} from "@/hooks/use-projects";
 
 import {
   Card,
@@ -76,10 +76,10 @@ import { DetailSkeleton } from "@/components/clients/client-details/detail-skele
 import { ShowContactForm } from "@/components/clients/client-details/contact-form";
 import { ClientEditForm } from "@/components/clients/client-details/client-edit-form";
 import { AddManagerSheet } from "@/components/clients/client-details/add-manager-sheet";
-import { AssetCreateDialog } from "@/components/assets/asset-create-dialog";
-import { NotesTimeline } from "@/components/assets/asset-details/notes-timeline";
+import { ProjectCreateDialog } from "@/components/projects/project-create-dialog";
+import { NotesTimeline } from "@/components/projects/project-details/notes-timeline";
 
-const ASSET_TYPES = [
+const PROJECT_TYPES = [
   { value: "website", label: "Website" },
   { value: "landing_page", label: "Landing Page" },
   { value: "mobile_application", label: "Mobile Application" },
@@ -93,8 +93,8 @@ export default function ClientDetailPage() {
   const { data: client, isLoading, isError } = useClient(id);
   const updateClient = useUpdateClient();
   const syncClient = useSyncClient();
-  const { data: assetsData, isLoading: assetsLoading } = useClientAssets(id);
-  const createAsset = useCreateAsset();
+  const { data: projectsData, isLoading: projectsLoading } = useClientProjects(id);
+  const createProject = useCreateProject();
   const addManagers = useAddManagers(id);
   const removeManagers = useRemoveManagers(id);
   const addContact = useAddContact(id);
@@ -102,7 +102,7 @@ export default function ClientDetailPage() {
   const deleteContact = useDeleteContact(id);
 
   const [editClientOpen, setEditClientOpen] = useState(false);
-  const [createAssetOpen, setCreateAssetOpen] = useState(false);
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [addManagerOpen, setAddManagerOpen] = useState(false);
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<ContactType | null>(
@@ -204,7 +204,7 @@ export default function ClientDetailPage() {
     [id, updateClient],
   );
 
-  const handleCreateAsset = useCallback(
+  const handleCreateProject = useCallback(
     (data: {
       name: string;
       type: string;
@@ -213,12 +213,12 @@ export default function ClientDetailPage() {
       notes?: string;
       server_ids?: string[];
     }) => {
-      createAsset.mutate(
+      createProject.mutate(
         { ...data, client_id: id },
-        { onSuccess: () => setCreateAssetOpen(false) },
+        { onSuccess: () => setCreateProjectOpen(false) },
       );
     },
-    [id, createAsset],
+    [id, createProject],
   );
 
   if (isLoading) return <DetailSkeleton />;
@@ -580,31 +580,31 @@ export default function ClientDetailPage() {
           </Card>
         </div>
 
-      {/* Assets Section */}
+      {/* Projects Section */}
       <Card className="mb-6 mt-4">
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Monitor className="size-4" />
-              Assets
+              Projects
             </CardTitle>
             <CardDescription>
-              {assetsData?.data?.length === 0
-                ? "No assets assigned"
-                : `${assetsData?.meta?.total ?? 0} asset${(assetsData?.meta?.total ?? 0) !== 1 ? "s" : ""}`}
+              {projectsData?.data?.length === 0
+                ? "No projects assigned"
+                : `${projectsData?.meta?.total ?? 0} project${(projectsData?.meta?.total ?? 0) !== 1 ? "s" : ""}`}
             </CardDescription>
           </div>
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setCreateAssetOpen(true)}
+            onClick={() => setCreateProjectOpen(true)}
           >
             <Plus className="size-3.5 mr-1.5" />
-            Create Asset
+            Create Project
           </Button>
         </CardHeader>
         <CardContent>
-          {assetsLoading ? (
+          {projectsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div
@@ -617,26 +617,26 @@ export default function ClientDetailPage() {
                 </div>
               ))}
             </div>
-          ) : !assetsData?.data?.length ? (
+          ) : !projectsData?.data?.length ? (
             <div className="text-center py-10 text-muted-foreground">
               <Archive className="size-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">No assets yet</p>
+              <p className="text-sm font-medium">No projects yet</p>
               <p className="text-xs mt-1">
-                Create an asset to track websites, applications, and services
+                Create a project to track websites, applications, and services
                 for this client.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {assetsData.data.map((asset) => (
+              {projectsData.data.map((project) => (
                 <div
-                  key={asset.id}
+                  key={project.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => router.push(`/projects/${asset.id}`)}
+                  onClick={() => router.push(`/projects/${project.id}`)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ")
-                      router.push(`/projects/${asset.id}`);
+                      router.push(`/projects/${project.id}`);
                   }}
                   className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm hover:bg-accent/30 group cursor-pointer"
                 >
@@ -644,31 +644,31 @@ export default function ClientDetailPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                          {asset.name}
+                          {project.name}
                         </p>
                         <ExternalLink className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {asset.type_name}
+                        {project.type_name}
                       </p>
                     </div>
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0 ${
-                        asset.status === "live"
+                        project.status === "live"
                           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
-                          : asset.status === "staging"
+                          : project.status === "staging"
                             ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                            : asset.status === "development"
+                            : project.status === "development"
                               ? "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
                               : "bg-gray-50 text-gray-700 dark:bg-gray-950/30 dark:text-gray-400"
                       }`}
                     >
-                      {asset.status}
+                      {project.status}
                     </span>
                   </div>
 
                   <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-                    {asset.monitoring_enabled && (
+                    {project.monitoring_enabled && (
                       <span className="flex items-center gap-1">
                         <span className="size-1.5 rounded-full bg-emerald-500" />
                         Monitored
@@ -722,14 +722,14 @@ export default function ClientDetailPage() {
         <NotesTimeline noteableType="client" noteableId={id} />
       </div>
 
-      {/* Create Asset Sheet */}
-      <AssetCreateDialog
-        key={`create-asset-${createAssetOpen}`}
-        open={createAssetOpen}
-        onOpenChange={setCreateAssetOpen}
-        onSubmit={handleCreateAsset}
-        isPending={createAsset.isPending}
-        types={ASSET_TYPES}
+      {/* Create Project Sheet */}
+      <ProjectCreateDialog
+        key={`create-project-${createProjectOpen}`}
+        open={createProjectOpen}
+        onOpenChange={setCreateProjectOpen}
+        onSubmit={handleCreateProject}
+        isPending={createProject.isPending}
+        types={PROJECT_TYPES}
         clientId={id}
         contacts={client.contacts}
       />

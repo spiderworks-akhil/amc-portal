@@ -91,7 +91,7 @@ export function useDeleteServer() {
   })
 }
 
-export function useLinkAssetToServer() {
+export function useLinkProjectToServer() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ serverId, asset_ids }: { serverId: string; asset_ids: string[] }) => {
@@ -102,7 +102,7 @@ export function useLinkAssetToServer() {
       return data
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
       qc.invalidateQueries({ queryKey: [SERVERS_KEY] })
     },
     onError: (err: Error) => toast.error(err.message),

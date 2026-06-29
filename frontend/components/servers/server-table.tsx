@@ -131,7 +131,7 @@ export function ServerTable({
               <SortHeader label="Monthly Cost" field="monthly_cost" currentField={sortField} order={sortOrder} onSort={onSort} />
               <SortHeader label="Renewal Date" field="renewal_date" currentField={sortField} order={sortOrder} onSort={onSort} />
               <TableHead>Status</TableHead>
-              <TableHead>Assets</TableHead>
+              <TableHead>Projects</TableHead>
               <TableHead className="w-12 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>

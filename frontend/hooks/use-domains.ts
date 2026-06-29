@@ -69,7 +69,7 @@ export function useCreateDomain() {
     },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: [DOMAINS_KEY] })
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
       toast.success(res?.message ?? "Domain created successfully")
     },
     onError: (err: unknown) => {
@@ -95,7 +95,7 @@ export function useUpdateDomain() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [DOMAINS_KEY] })
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -110,7 +110,7 @@ export function useDeleteDomain() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [DOMAINS_KEY] })
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
       toast.success("Domain deleted")
     },
     onError: (err: Error) => toast.error(err.message),

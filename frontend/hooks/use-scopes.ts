@@ -17,14 +17,14 @@ export function useScopes() {
   })
 }
 
-export function useScopesForAsset(assetId: string | null) {
+export function useScopesForProject(projectId: string | null) {
   return useQuery({
-    queryKey: [SCOPES_KEY, "asset", assetId],
+    queryKey: [SCOPES_KEY, "asset", projectId],
     queryFn: async () => {
-      const { data } = await apiClient.get<Scope[]>(`/scopes/asset/${assetId}`)
+      const { data } = await apiClient.get<Scope[]>(`/scopes/asset/${projectId}`)
       return data
     },
-    enabled: !!assetId,
+    enabled: !!projectId,
   })
 }
 
@@ -43,31 +43,31 @@ export function useCreateScope() {
   })
 }
 
-export function useLinkScopesToAsset() {
+export function useLinkScopesToProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ assetId, scope_ids }: { assetId: string; scope_ids: string[] }) => {
-      const { data } = await apiClient.post(`/scopes/asset/${assetId}`, { scope_ids })
+    mutationFn: async ({ projectId, scope_ids }: { projectId: string; scope_ids: string[] }) => {
+      const { data } = await apiClient.post(`/scopes/asset/${projectId}`, { scope_ids })
       return data
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [SCOPES_KEY] })
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
 }
 
-export function useUnlinkScopesFromAsset() {
+export function useUnlinkScopesFromProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ assetId, scope_ids }: { assetId: string; scope_ids: string[] }) => {
-      const { data } = await apiClient.delete(`/scopes/asset/${assetId}`, { data: { scope_ids } })
+    mutationFn: async ({ projectId, scope_ids }: { projectId: string; scope_ids: string[] }) => {
+      const { data } = await apiClient.delete(`/scopes/asset/${projectId}`, { data: { scope_ids } })
       return data
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [SCOPES_KEY] })
-      qc.invalidateQueries({ queryKey: ["assets"] })
+      qc.invalidateQueries({ queryKey: ["projects"] })
     },
     onError: (err: Error) => toast.error(err.message),
   })

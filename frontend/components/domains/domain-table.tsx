@@ -79,7 +79,7 @@ export function DomainTable({
           <TableHeader>
             <TableRow className="bg-muted/30">
               <TableHead>Domain</TableHead>
-              <TableHead>Asset</TableHead>
+              <TableHead>Project</TableHead>
               <TableHead>Expiry Date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Auto-Renew</TableHead>

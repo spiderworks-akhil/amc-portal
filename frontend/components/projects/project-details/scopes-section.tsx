@@ -8,9 +8,9 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   useScopes,
-  useScopesForAsset,
-  useLinkScopesToAsset,
-  useUnlinkScopesFromAsset,
+  useScopesForProject,
+  useLinkScopesToProject,
+  useUnlinkScopesFromProject,
   useCreateScope,
 } from "@/hooks/use-scopes"
 import { Plus, X, Tags, Loader2, Check, Layers, Info } from "lucide-react"
@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils"
 import { Textarea } from "@/components/ui"
 
 interface ScopesSectionProps {
-  assetId: string
+  projectId: string
 }
 
 // ── Scope Color System ──
@@ -194,29 +194,29 @@ function ColorPicker({
 
 // ── Main Component ──
 
-export function ScopesSection({ assetId }: ScopesSectionProps) {
+export function ScopesSection({ projectId }: ScopesSectionProps) {
   const [manageOpen, setManageOpen] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState("")
   const [newDescription, setNewDescription] = useState("")
   const [newColor, setNewColor] = useState(SCOPE_COLORS[0].hex)
   const { data: allScopes, isLoading: scopesLoading } = useScopes()
-  const { data: assetScopes, isLoading: assetScopesLoading } = useScopesForAsset(assetId)
-  const linkScopes = useLinkScopesToAsset()
-  const unlinkScopes = useUnlinkScopesFromAsset()
+  const { data: projectScopes, isLoading: projectScopesLoading } = useScopesForProject(projectId)
+  const linkScopes = useLinkScopesToProject()
+  const unlinkScopes = useUnlinkScopesFromProject()
   const createScope = useCreateScope()
 
-  const isLoading = scopesLoading || assetScopesLoading
-  const assetScopeIds = new Set(assetScopes?.map((s) => s.id) ?? [])
-  const availableScopes = allScopes?.filter((s) => !assetScopeIds.has(s.id)) ?? []
-  const selectedScopes = assetScopes ?? []
+  const isLoading = scopesLoading || projectScopesLoading
+  const projectScopeIds = new Set(projectScopes?.map((s) => s.id) ?? [])
+  const availableScopes = allScopes?.filter((s) => !projectScopeIds.has(s.id)) ?? []
+  const selectedScopes = projectScopes ?? []
   const isCreatingScope = createScope.isPending
 
   const handleToggleScope = (scopeId: string, isCurrentlyLinked: boolean) => {
     if (isCurrentlyLinked) {
-      unlinkScopes.mutate({ assetId, scope_ids: [scopeId] })
+      unlinkScopes.mutate({ projectId, scope_ids: [scopeId] })
     } else {
-      linkScopes.mutate({ assetId, scope_ids: [scopeId] })
+      linkScopes.mutate({ projectId, scope_ids: [scopeId] })
     }
   }
 
@@ -239,7 +239,7 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
         onSuccess: (res) => {
           const newScopeId = res.data?.id
           if (newScopeId) {
-            linkScopes.mutate({ assetId, scope_ids: [newScopeId] })
+            linkScopes.mutate({ projectId, scope_ids: [newScopeId] })
           }
           resetCreateForm()
         },
@@ -250,8 +250,8 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
   // Sort: assigned scopes first, then alphabetical
   const sortedAllScopes = allScopes
     ? [...allScopes].sort((a, b) => {
-        const aLinked = assetScopeIds.has(a.id) ? 0 : 1
-        const bLinked = assetScopeIds.has(b.id) ? 0 : 1
+        const aLinked = projectScopeIds.has(a.id) ? 0 : 1
+        const bLinked = projectScopeIds.has(b.id) ? 0 : 1
         if (aLinked !== bLinked) return aLinked - bLinked
         return a.name.localeCompare(b.name)
       })
@@ -294,7 +294,7 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
               </div>
               <p className="text-sm font-medium text-muted-foreground">No scopes assigned</p>
               <p className="text-xs text-muted-foreground/60 mt-1 text-center max-w-xs">
-                Scopes help categorize assets by purpose, environment, or team — making it easier to filter and report.
+                Scopes help categorize projects by purpose, environment, or team — making it easier to filter and report.
               </p>
             </div>
           ) : (
@@ -322,7 +322,7 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
              Add Scopes
             </DialogTitle>
             <DialogDescription>
-              Assign or remove scopes to categorize this asset. Scopes make it easy to filter and group assets across the platform.
+               Assign or remove scopes to categorize this project. Scopes make it easy to filter and group projects across the platform.
             </DialogDescription>
           </DialogHeader>
 
@@ -448,8 +448,8 @@ export function ScopesSection({ assetId }: ScopesSectionProps) {
                     <ScopeListItem
                       key={scope.id}
                       scope={scope}
-                      isSelected={assetScopeIds.has(scope.id)}
-                      onToggle={() => handleToggleScope(scope.id, assetScopeIds.has(scope.id))}
+                       isSelected={projectScopeIds.has(scope.id)}
+                       onToggle={() => handleToggleScope(scope.id, projectScopeIds.has(scope.id))}
                     />
                   ))}
                 </div>

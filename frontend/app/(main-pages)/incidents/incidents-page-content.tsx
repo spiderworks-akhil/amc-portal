@@ -207,7 +207,7 @@ export function IncidentsPageContent() {
               <TableRow className="bg-muted/30">
                 <TableHead>Severity</TableHead>
                 <TableHead>Monitor</TableHead>
-                <TableHead>Asset</TableHead>
+                <TableHead>Project</TableHead>
                 <TableHead>Cause</TableHead>
                 <TableHead>Started</TableHead>
                 <TableHead>Duration</TableHead>

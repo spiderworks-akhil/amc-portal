@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { assetDetailDomainSchema, cleanFqdnInput, type AssetDetailDomainFormValues } from "@/components/domains/domain-validation"
+import { projectDetailDomainSchema, cleanFqdnInput, type ProjectDetailDomainFormValues } from "@/components/domains/domain-validation"
 
 interface CreateDomainFormProps {
   open: boolean
@@ -33,7 +33,7 @@ interface CreateDomainFormProps {
     notes?: string
   }) => void
   isPending: boolean
-  assetId: string
+  projectId: string
 }
 
 export function CreateDomainForm({
@@ -41,10 +41,10 @@ export function CreateDomainForm({
   onOpenChange,
   onSubmit,
   isPending,
-  assetId,
+  projectId,
 }: CreateDomainFormProps) {
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors }  } = useForm<AssetDetailDomainFormValues>({
-    resolver: zodResolver(assetDetailDomainSchema),
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors }  } = useForm<ProjectDetailDomainFormValues>({
+    resolver: zodResolver(projectDetailDomainSchema),
     defaultValues: {
       fqdn: "",
       registered_date: "",
@@ -140,14 +140,14 @@ export function CreateDomainForm({
     }
   }, [open])
 
-  const onFormSubmit = (data: AssetDetailDomainFormValues) => {
+  const onFormSubmit = (data: ProjectDetailDomainFormValues) => {
     const ns = data.nameservers
       ? data.nameservers.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined
     const nameservers = ns && ns.length > 0 ? ns : undefined
 
     onSubmit({
-      asset_id: assetId,
+      asset_id: projectId,
       fqdn: data.fqdn,
       registered_date: data.registered_date || undefined,
       expiry_date: data.expiry_date || undefined,
@@ -164,7 +164,7 @@ export function CreateDomainForm({
       <DrawerContent className="w-full sm:max-w-[458px] overflow-y-auto max-h-screen">
         <DrawerHeader>
           <DrawerTitle>Create Domain</DrawerTitle>
-          <DrawerDescription>Add a new domain and link it to this asset.</DrawerDescription>
+          <DrawerDescription>Add a new domain and link it to this project.</DrawerDescription>
         </DrawerHeader>
         <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-1 flex-col gap-5 p-4 pt-6">
           {/* FQDN */}

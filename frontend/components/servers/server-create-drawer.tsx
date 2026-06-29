@@ -72,8 +72,8 @@ interface ServerCreateDrawerProps {
     owner?: "SpiderWorks" | "client" | "thirdparty"
   }) => void
   isPending: boolean
-  /** Pre-selected asset ID — hides asset linking (used from asset detail page) */
-  assetId?: string
+  /** Pre-selected project ID — hides project linking (used from project detail page) */
+  projectId?: string
   /** Providers list (passed from parent to avoid refetch) */
   providers?: Provider[]
 }

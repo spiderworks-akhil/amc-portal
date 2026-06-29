@@ -115,7 +115,7 @@ export function ServerCard({ server, onClick }: ServerCardProps) {
         <div className="flex items-center gap-2 text-muted-foreground">
           <HardDrive className="h-3.5 w-3.5 shrink-0" />
           <span>
-            {server.asset_count} asset{server.asset_count !== 1 ? "s" : ""}
+            {server.asset_count} project{server.asset_count !== 1 ? "s" : ""}
           </span>
         </div>
       </CardContent>

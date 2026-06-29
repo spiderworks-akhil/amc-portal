@@ -18,8 +18,8 @@ import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { SearchableSelect } from "@/components/ui/searchable-select"
 import { SmoothSelect } from "@/components/ui/smooth-select"
-import { useAssets } from "@/hooks/use-assets"
-import type { AssetListItem } from "@/types/api"
+import { useProjects } from "@/hooks/use-projects"
+import type { ProjectListItem } from "@/types/api"
 
 interface MonitorCreateDrawerProps {
   open: boolean
@@ -35,11 +35,11 @@ interface MonitorCreateDrawerProps {
     enabled?: boolean
   }) => void
   isPending: boolean
-  preSelectedAssetId?: string
+  preSelectedProjectId?: string
 }
 
 const monitorSchema = z.object({
-  asset_id: z.string().min(1, "Asset is required"),
+  asset_id: z.string().min(1, "Project is required"),
   name: z.string().min(1, "Name is required").max(255),
   check_type: z.string().min(1, "Check type is required"),
   target: z.string().min(1, "Target is required").max(500),
@@ -54,9 +54,9 @@ export function MonitorCreateDrawer({
   onOpenChange,
   onSubmit,
   isPending,
-  preSelectedAssetId,
+  preSelectedProjectId,
 }: MonitorCreateDrawerProps) {
-  const { data: assetsData } = useAssets({ limit: 200, sort_by: "name", sort_order: "asc" })
+  const { data: projectsData } = useProjects({ limit: 200, sort_by: "name", sort_order: "asc" })
 
   const {
     register,
@@ -68,7 +68,7 @@ export function MonitorCreateDrawer({
   } = useForm({
     resolver: zodResolver(monitorSchema),
     defaultValues: {
-      asset_id: preSelectedAssetId ?? "",
+        asset_id: preSelectedProjectId ?? "",
       name: "",
       check_type: "https",
       target: "",
@@ -84,7 +84,7 @@ export function MonitorCreateDrawer({
   useEffect(() => {
     if (open) {
       reset({
-        asset_id: preSelectedAssetId ?? "",
+      asset_id: preSelectedProjectId ?? "",
         name: "",
         check_type: "https",
         target: "",
@@ -94,9 +94,9 @@ export function MonitorCreateDrawer({
         enabled: true,
       })
     }
-  }, [open, reset, preSelectedAssetId])
+  }, [open, reset, preSelectedProjectId])
 
-  const assetOptions = (assetsData?.data ?? []).map((a: AssetListItem) => ({
+  const projectOptions = (projectsData?.data ?? []).map((a: ProjectListItem) => ({
     value: a.id,
     label: a.name,
   }))
@@ -128,19 +128,19 @@ export function MonitorCreateDrawer({
           onSubmit={handleSubmit(onFormSubmit)}
           className="flex flex-1 flex-col gap-5 p-4 pt-6"
         >
-          {/* Asset */}
+          {/* Project */}
           <div className="space-y-2">
-            <Label htmlFor="asset-select">
-              Asset <span className="text-destructive">*</span>
+            <Label htmlFor="project-select">
+              Project <span className="text-destructive">*</span>
             </Label>
             <SearchableSelect
-              id="asset-select"
-              options={assetOptions}
+              id="project-select"
+              options={projectOptions}
               value={watch("asset_id")}
               onChange={(value) => setValue("asset_id", value, { shouldValidate: true })}
-              placeholder="Search asset..."
+              placeholder="Search project..."
               searchPlaceholder="Type to search..."
-              emptyText="No assets found."
+              emptyText="No projects found."
             />
             {errors.asset_id?.message && (
               <p className="text-xs text-destructive">{errors.asset_id.message}</p>

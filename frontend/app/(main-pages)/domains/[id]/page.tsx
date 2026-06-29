@@ -10,7 +10,7 @@ import {
 } from "@/hooks/use-domains";
 import { useProviders } from "@/hooks/use-providers";
 import { formatDate } from "@/lib/format-utils";
-import { DomainEditForm } from "@/components/assets/asset-details/domain-edit-form";
+import { DomainEditForm } from "@/components/projects/project-details/domain-edit-form";
 
 import {
   Card,
@@ -274,7 +274,7 @@ const registrars = providers?.data ?? [];
               <DetailRow
                 icon={<Building2 className="size-4 text-primary" />}
                 iconBg="bg-primary/10"
-                label="Linked Asset"
+                label="Linked Project"
                 value={
                   <button
                     type="button"

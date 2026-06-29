@@ -1,9 +1,9 @@
 "use client"
 
-import { AssetForm } from "./asset-form"
+import { ProjectForm } from "./project-form"
 import type { Contact as ContactType } from "@/types/api"
 
-interface AssetCreateDialogProps {
+interface ProjectCreateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: {
@@ -21,6 +21,6 @@ interface AssetCreateDialogProps {
   contacts?: ContactType[]
 }
 
-export function AssetCreateDialog(props: AssetCreateDialogProps) {
-  return <AssetForm mode="create" {...props} />
+export function ProjectCreateDialog(props: ProjectCreateDialogProps) {
+  return <ProjectForm mode="create" {...props} />
 }
