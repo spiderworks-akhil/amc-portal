@@ -1,6 +1,7 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import apiClient from "@/lib/api-client"
 import type { PaginatedResponse, UserListItem, ListUsersParams, UpdateUserPayload, ApiResponse } from "@/types/api"
 
@@ -27,6 +28,8 @@ export function useUpdateUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [USERS_KEY] })
+      toast.success("User updated")
     },
+    onError: (err: Error) => toast.error(err.message),
   })
 }

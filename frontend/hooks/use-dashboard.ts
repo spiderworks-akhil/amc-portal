@@ -166,7 +166,7 @@ function useDashboardOverview(managerId?: string) {
         expiredDomains: (data.expiredDomains || []).map(enrichDomain),
         expiringContracts: (data.expiringContracts || []).map((c) => ({
           ...c,
-          days_to_renewal: Math.ceil((new Date(c.renewal_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+          days_to_renewal: c.renewal_date ? Math.ceil((new Date(c.renewal_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null,
         })),
         expiringSsl: (data.expiringSsl || []).map(enrichSsl),
         expiredSslCerts: (data.expiredSslCerts || []).map(enrichSsl),

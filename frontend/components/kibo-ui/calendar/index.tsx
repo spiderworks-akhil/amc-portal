@@ -268,7 +268,9 @@ export const CalendarBody = ({ features, children }: CalendarBodyProps) => {
       >
         {day}
         <div>
-          {featuresForDay.slice(0, 3).map((feature) => children({ feature }))}
+          {featuresForDay.slice(0, 3).map((feature) => (
+            <div key={feature.id} className="contents">{children({ feature })}</div>
+          ))}
         </div>
         {featuresForDay.length > 3 && (
           <span className="block text-muted-foreground text-xs">

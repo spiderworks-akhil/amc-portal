@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable, UnauthorizedException, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { InjectKysely } from "nestjs-kysely";
@@ -10,6 +10,7 @@ import { DB } from "src/db/types.generated";
 @Injectable()
 export class AuthService {
   private readonly authServiceUrl: string;
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     @InjectKysely() private readonly db: Kysely<DB>,
@@ -157,8 +158,8 @@ export class AuthService {
           })
           .execute();
       }
-    } catch {
-      // Silently fail — token may already be invalid
+    } catch (error) {
+      this.logger.warn(`Failed to revoke token: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
