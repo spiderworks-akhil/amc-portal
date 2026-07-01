@@ -11,7 +11,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "npm run migrate && node dist/main",
+    "start:prod": "npm run db:setup && node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -23,7 +23,7 @@
     "migrate:down": "ts-node src/scripts/migrate.ts down",
     "seed": "ts-node src/scripts/seed.ts",
     "codegen": "kysely-codegen",
-    "db:setup": "npm run migrate && npm run seed"
+    "db:setup": "npm run migrate"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.7",
