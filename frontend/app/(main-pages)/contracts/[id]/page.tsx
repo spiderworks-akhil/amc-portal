@@ -269,6 +269,7 @@ export default function ContractDetailPage() {
                 <Badge
                   variant="dot"
                   size="sm"
+                  className="capitalize"
                   color={CONTRACT_STATUS_COLORS[contract.status] ?? "gray"}
                 >
                   {contract.status}

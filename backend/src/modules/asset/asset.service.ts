@@ -255,6 +255,27 @@ export class AssetService {
       .returningAll()
       .executeTakeFirst();
 
+    if (dto.server_ids !== undefined) {
+      // Remove any existing server links not in the new list
+      await this.db
+        .deleteFrom('asset_servers')
+        .where('asset_id', '=', id)
+        .where('server_id', 'not in', dto.server_ids.length > 0 ? dto.server_ids : [''])
+        .execute();
+
+      // Add new server links
+      if (dto.server_ids.length > 0) {
+        await this.db
+          .insertInto('asset_servers')
+          .values(dto.server_ids.map((serverId) => ({
+            server_id: serverId,
+            asset_id: id,
+          })))
+          .onConflict((oc) => oc.columns(['server_id', 'asset_id']).doNothing())
+          .execute();
+      }
+    }
+
     return asset;
   }
 

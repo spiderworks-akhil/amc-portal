@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ProjectTable } from "./project-table"
-import { useProjects, useCreateProject, useDeleteProject } from "@/hooks/use-projects"
+import { useProjects, useProject, useCreateProject, useUpdateProject, useDeleteProject } from "@/hooks/use-projects"
 import { useDebounce } from "@/hooks/use-debounce"
 import type { CreateProjectPayload } from "@/types/api"
 import { SmoothSelect } from "@/components/ui/smooth-select"
@@ -22,6 +22,8 @@ import { Search, Plus } from "lucide-react"
 import type { ProjectListItem } from "@/types/api"
 import type { SortField } from "./project-table"
 import { ProjectCreateDialog } from "./project-create-dialog"
+import { ProjectEditForm } from "./project-details/project-edit-form"
+import { useClient } from "@/hooks/use-clients"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
@@ -53,6 +55,7 @@ export function ProjectsPageContent() {
   const [inputValue, setInputValue] = useState(search)
   const debouncedSearch = useDebounce(inputValue, 300)
   const [createOpen, setCreateOpen] = useState(false)
+  const [editProjectId, setEditProjectId] = useState<string | null>(null)
 
   // Sync URL search param back to local state
   useEffect(() => {
@@ -87,6 +90,9 @@ export function ProjectsPageContent() {
 
   const { mutate: createProject, isPending: isCreating } = useCreateProject()
   const { mutate: deleteProject } = useDeleteProject()
+  const { data: editProject } = useProject(editProjectId)
+  const { data: editProjectClient } = useClient(editProject?.client_id ?? null)
+  const updateProject = useUpdateProject()
 
   const updateParams = useCallback(
     (updates: Record<string, string | undefined>) => {
@@ -146,11 +152,30 @@ export function ProjectsPageContent() {
     [router]
   )
 
+  const handleEditSubmit = useCallback(
+    (data: {
+      name: string
+      primary_contact_name?: string
+      primary_contact_email?: string
+      status?: string
+      monitoring_enabled?: boolean
+      notes?: string
+      server_ids?: string[]
+    }) => {
+      if (!editProjectId) return
+      updateProject.mutate(
+        { id: editProjectId, ...data },
+        { onSuccess: () => setEditProjectId(null) }
+      )
+    },
+    [editProjectId, updateProject]
+  )
+
   const handleEdit = useCallback(
     (project: ProjectListItem) => {
-      router.push(`/projects/${project.id}?edit=true`)
+      setEditProjectId(project.id)
     },
-    [router]
+    []
   )
 
   const totalPages = data?.meta.totalPages ?? 0
@@ -293,6 +318,21 @@ export function ProjectsPageContent() {
         isPending={isCreating}
         types={PROJECT_TYPES}
       />
+
+      {editProject && (
+        <ProjectEditForm
+          key={`edit-project-${editProject.id}`}
+          open={!!editProjectId}
+          onOpenChange={(open) => { if (!open) setEditProjectId(null) }}
+          onSubmit={handleEditSubmit}
+          isPending={updateProject.isPending}
+          project={{
+            ...editProject,
+            server_ids: editProject.servers.map((s) => s.id),
+          }}
+          contacts={editProjectClient?.contacts ?? []}
+        />
+      )}
     </div>
   )
 }

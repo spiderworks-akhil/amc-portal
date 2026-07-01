@@ -4,6 +4,7 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 
@@ -51,4 +52,9 @@ export class UpdateAssetDto {
   @IsOptional()
   @MaxLength(5000)
   notes?: string;
+
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  server_ids?: string[];
 }

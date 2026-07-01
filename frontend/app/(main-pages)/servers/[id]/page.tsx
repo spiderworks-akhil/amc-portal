@@ -426,6 +426,7 @@ export default function ServerDetailPage() {
                     <Badge
                       variant="dot"
                       size="sm"
+                      className="capitalize"
                       color={PROJECT_STATUS_COLORS[project.status] ?? "gray"}
                     >
                       {project.status}

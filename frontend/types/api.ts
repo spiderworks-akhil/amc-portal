@@ -534,6 +534,7 @@ export interface UpdateProjectPayload {
   custom_fields?: Record<string, unknown>
   tags?: string[]
   notes?: string
+  server_ids?: string[]
 }
 
 export interface UpdateServerPayload {

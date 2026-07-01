@@ -155,6 +155,7 @@ export default function ProjectDetailPage() {
       status?: string;
       monitoring_enabled?: boolean;
       notes?: string;
+      server_ids?: string[];
     }) => {
       updateProject.mutate(
         { id, ...data },
@@ -1495,7 +1496,10 @@ export default function ProjectDetailPage() {
         onOpenChange={setEditOpen}
         onSubmit={handleUpdateProject}
         isPending={updateProject.isPending}
-        project={project}
+        project={{
+          ...project,
+          server_ids: project.servers.map((s) => s.id),
+        }}
         contacts={projectClient?.contacts ?? []}
       />
 

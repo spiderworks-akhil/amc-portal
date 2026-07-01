@@ -93,6 +93,7 @@ type EditSubmit = (data: {
   status?: string
   monitoring_enabled?: boolean
   notes?: string
+  server_ids?: string[]
 }) => void
 
 type ProjectFormProps = {
@@ -117,6 +118,7 @@ type ProjectFormProps = {
         status?: string | null
         monitoring_enabled?: boolean | null
         notes?: string | null
+        server_ids?: string[]
       }
     }
 )
@@ -180,9 +182,11 @@ export function ProjectForm(props: ProjectFormProps) {
     defaultValues,
   })
 
-  // ── Server multi-select (create only) ──
+  // ── Server multi-select ──
 
-  const [selectedServerIds, setSelectedServerIds] = useState<string[]>([])
+  const [selectedServerIds, setSelectedServerIds] = useState<string[]>(() =>
+    isEdit ? (project?.server_ids ?? []) : []
+  )
   const [serverSearch, setServerSearch] = useState("")
   const [serverPopoverOpen, setServerPopoverOpen] = useState(false)
   const { data: serversData, isLoading: serversLoading } = useServers()
@@ -242,12 +246,14 @@ export function ProjectForm(props: ProjectFormProps) {
     if (open) {
       reset(defaultValues)
       setClientSearch("")
-      if (isCreate) {
+      setServerSearch("")
+      if (isEdit && project?.server_ids) {
+        setSelectedServerIds(project.server_ids)
+      } else if (isCreate) {
         setSelectedServerIds([])
-        setServerSearch("")
       }
     }
-  }, [open, reset, defaultValues, isCreate])
+  }, [open, reset, defaultValues, isEdit, isCreate, project?.server_ids])
 
   // Clear contact when client changes (create mode)
   useEffect(() => {
@@ -278,6 +284,7 @@ export function ProjectForm(props: ProjectFormProps) {
         status: data.status || undefined,
         monitoring_enabled: data.monitoring_enabled,
         notes: data.notes?.trim() || undefined,
+        server_ids: selectedServerIds.length > 0 ? selectedServerIds : undefined,
       })
     }
   }
@@ -316,7 +323,7 @@ export function ProjectForm(props: ProjectFormProps) {
                 Client <span className="text-destructive">*</span>
               </Label>
               <Combobox
-                modal
+                modal={true}
                 data={clientOptions}
                 onValueChange={(value) =>
                   setValue("client_id", value, { shouldValidate: true, shouldDirty: true })
@@ -408,100 +415,98 @@ export function ProjectForm(props: ProjectFormProps) {
             </div>
           )}
 
-          {/* Servers (create only) */}
-          {isCreate && (
-            <div className="space-y-2">
-              <Label>Servers</Label>
-              <Popover open={serverPopoverOpen} onOpenChange={setServerPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    role="combobox"
-                    aria-expanded={serverPopoverOpen}
-                    className={cn(
-                      "flex h-10 w-full items-center gap-2 rounded-lg border border-input px-3 text-sm transition-colors",
-                      "hover:border-ring/40",
-                      "focus:border-ring focus:ring-1 focus:ring-ring/25 focus:outline-none",
-                      selectedServerIds.length === 0 && "text-muted-foreground",
-                    )}
-                  >
-                    <Server className="size-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate text-left">
-                      {selectedServerIds.length === 0
-                        ? "Select servers..."
-                        : `${selectedServerIds.length} server${selectedServerIds.length !== 1 ? "s" : ""} selected`
-                      }
-                    </span>
-                    {selectedServerIds.length > 0 && (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={(e) => {
+          {/* Servers */}
+          <div className="space-y-2">
+            <Label>Servers</Label>
+            <Popover open={serverPopoverOpen} onOpenChange={setServerPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  role="combobox"
+                  aria-expanded={serverPopoverOpen}
+                  className={cn(
+                    "flex h-10 w-full items-center gap-2 rounded-lg border border-input px-3 text-sm transition-colors",
+                    "hover:border-ring/40",
+                    "focus:border-ring focus:ring-1 focus:ring-ring/25 focus:outline-none",
+                    selectedServerIds.length === 0 && "text-muted-foreground",
+                  )}
+                >
+                  <Server className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {selectedServerIds.length === 0
+                      ? "Select servers..."
+                      : `${selectedServerIds.length} server${selectedServerIds.length !== 1 ? "s" : ""} selected`
+                    }
+                  </span>
+                  {selectedServerIds.length > 0 && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedServerIds([])
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
                           e.stopPropagation()
                           setSelectedServerIds([])
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.stopPropagation()
-                            setSelectedServerIds([])
-                          }
-                        }}
-                        className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                        aria-label="Clear selection"
-                      >
-                        <XIcon className="size-3.5" />
-                      </span>
-                    )}
-                    <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform", serverPopoverOpen && "rotate-180")} />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[var(--radix-popover-trigger-width)] border border-input p-0 shadow-md overflow-hidden"
-                  align="start"
-                  onOpenAutoFocus={(e) => e.preventDefault()}
-                >
-                  <div className="border-b border-input px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <CheckIcon className="size-4 shrink-0 opacity-50" />
-                      <input
-                        placeholder="Search servers..."
-                        value={serverSearch}
-                        onChange={(e) => setServerSearch(e.target.value)}
-                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                      />
-                    </div>
+                        }
+                      }}
+                      className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      aria-label="Clear selection"
+                    >
+                      <XIcon className="size-3.5" />
+                    </span>
+                  )}
+                  <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform", serverPopoverOpen && "rotate-180")} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[var(--radix-popover-trigger-width)] border border-input p-0 shadow-md overflow-hidden"
+                align="start"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <div className="border-b border-input px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <CheckIcon className="size-4 shrink-0 opacity-50" />
+                    <input
+                      placeholder="Search servers..."
+                      value={serverSearch}
+                      onChange={(e) => setServerSearch(e.target.value)}
+                      className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    />
                   </div>
-                  <div className="max-h-64 overflow-y-auto p-1">
-                    {serversLoading ? (
-                      <div className="py-3 text-center text-sm text-muted-foreground">Loading servers...</div>
-                    ) : serverOptions.length === 0 ? (
-                      <div className="py-3 text-center text-sm text-muted-foreground">No servers found.</div>
-                    ) : (
-                      serverOptions.map((server) => {
-                        const isSelected = selectedServerIds.includes(server.id)
-                        return (
-                          <div
-                            key={server.id}
-                            onClick={() => toggleServer(server.id)}
-                            className={cn(
-                              "flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
-                              isSelected && "bg-accent text-accent-foreground",
-                            )}
-                          >
-                            <CheckIcon className={cn("size-4 shrink-0", isSelected ? "opacity-100" : "opacity-0")} />
-                            <span className="truncate">{server.label}</span>
-                            {server.region && (
-                              <span className="text-xs text-muted-foreground ml-auto shrink-0">{server.region}</span>
-                            )}
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
+                </div>
+                <div className="max-h-64 overflow-y-auto p-1">
+                  {serversLoading ? (
+                    <div className="py-3 text-center text-sm text-muted-foreground">Loading servers...</div>
+                  ) : serverOptions.length === 0 ? (
+                    <div className="py-3 text-center text-sm text-muted-foreground">No servers found.</div>
+                  ) : (
+                    serverOptions.map((server) => {
+                      const isSelected = selectedServerIds.includes(server.id)
+                      return (
+                        <div
+                          key={server.id}
+                          onClick={() => toggleServer(server.id)}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                            
+                          )}
+                        >
+                          <CheckIcon className={cn("size-4 shrink-0", isSelected ? "opacity-100" : "opacity-0")} />
+                          <span className="truncate">{server.label}</span>
+                          {server.region && (
+                            <span className="text-xs text-muted-foreground ml-auto shrink-0">{server.region}</span>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
           {/* Status (edit only) */}
             <div className="space-y-2">

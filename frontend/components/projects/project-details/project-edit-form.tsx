@@ -13,6 +13,7 @@ interface ProjectEditFormProps {
     status?: string
     monitoring_enabled?: boolean
     notes?: string
+    server_ids?: string[]
   }) => void
   isPending: boolean
   project: {
@@ -22,6 +23,7 @@ interface ProjectEditFormProps {
     status?: string | null
     monitoring_enabled?: boolean | null
     notes?: string | null
+    server_ids?: string[]
   }
   contacts: ContactType[]
 }
