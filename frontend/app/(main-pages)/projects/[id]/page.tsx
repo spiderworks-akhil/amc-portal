@@ -196,8 +196,8 @@ export default function ProjectDetailPage() {
       contract_number?: string;
       billing_cycle: string;
       start_date: string;
-      end_date: string;
-      renewal_date: string;
+      end_date?: string;
+      renewal_date?: string;
       amount?: number;
       currency?: string;
       auto_renew?: boolean;
@@ -1381,13 +1381,15 @@ export default function ProjectDetailPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {contractsData.data.map((contract) => {
-                const endDate = new Date(contract.end_date);
+                const endDate = contract.end_date ? new Date(contract.end_date) : null;
                 const now = new Date();
-                const daysUntilEnd = Math.ceil(
-                  (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-                );
-                const isExpiringSoon = daysUntilEnd > 0 && daysUntilEnd <= 30;
-                const isExpired = daysUntilEnd <= 0;
+                const daysUntilEnd = endDate
+                  ? Math.ceil(
+                      (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+                    )
+                  : null;
+                const isExpiringSoon = daysUntilEnd !== null && daysUntilEnd > 0 && daysUntilEnd <= 30;
+                const isExpired = daysUntilEnd !== null && daysUntilEnd <= 0;
 
                 return (
                   <div
@@ -1426,23 +1428,31 @@ export default function ProjectDetailPage() {
                         <span>End date</span>
                         <span
                           className={
-                            isExpired
-                              ? "text-destructive font-medium"
-                              : isExpiringSoon
-                                ? "text-amber-600 dark:text-amber-400 font-medium"
-                                : ""
+                            contract.end_date
+                              ? isExpired
+                                ? "text-destructive font-medium"
+                                : isExpiringSoon
+                                  ? "text-amber-600 dark:text-amber-400 font-medium"
+                                  : ""
+                              : "text-muted-foreground"
                           }
                         >
-                          {formatDate(contract.end_date)}
-                          {isExpired && (
-                            <span className="ml-1 inline-flex items-center gap-0.5 text-destructive">
-                              <AlertTriangle className="size-3" />
-                            </span>
-                          )}
-                          {isExpiringSoon && !isExpired && (
-                            <span className="ml-1 text-amber-600 dark:text-amber-400">
-                              ({daysUntilEnd}d)
-                            </span>
+                          {contract.end_date ? (
+                            <>
+                              {formatDate(contract.end_date)}
+                              {isExpired && (
+                                <span className="ml-1 inline-flex items-center gap-0.5 text-destructive">
+                                  <AlertTriangle className="size-3" />
+                                </span>
+                              )}
+                              {isExpiringSoon && !isExpired && (
+                                <span className="ml-1 text-amber-600 dark:text-amber-400">
+                                  ({daysUntilEnd}d)
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            "Not set"
                           )}
                         </span>
                       </div>

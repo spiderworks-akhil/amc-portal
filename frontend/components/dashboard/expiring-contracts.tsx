@@ -80,7 +80,7 @@ export function ExpiringContracts({ contracts, isLoading }: ExpiringContractsPro
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="truncate">{contract.contract_number || contract.billing_cycle}</span>
                       <span>·</span>
-                      <span className="shrink-0">Renews {formatDate(contract.renewal_date)}</span>
+                      <span className="shrink-0">{contract.renewal_date ? `Renews ${formatDate(contract.renewal_date)}` : "No renewal date"}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

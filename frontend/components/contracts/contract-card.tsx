@@ -32,13 +32,13 @@ const STATUS_ACCENT: Record<string, string> = {
 export function ContractCard({ contract, onClick }: ContractCardProps) {
   const title = contract.label || contract.contract_number || `Contract ${contract.id.slice(0, 8)}`
 
-  const endDate = new Date(contract.end_date)
+  const endDate = contract.end_date ? new Date(contract.end_date) : null
   const now = new Date()
-  const daysUntilEnd = Math.ceil(
-    (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  )
-  const isExpired = daysUntilEnd <= 0
-  const isExpiringSoon = daysUntilEnd > 0 && daysUntilEnd <= 30
+  const daysUntilEnd = endDate
+    ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    : null
+  const isExpired = daysUntilEnd !== null && daysUntilEnd <= 0
+  const isExpiringSoon = daysUntilEnd !== null && daysUntilEnd > 0 && daysUntilEnd <= 30
 
   const accentBg = STATUS_ACCENT[contract.status] ?? "bg-gray-400"
 
@@ -79,12 +79,18 @@ export function ContractCard({ contract, onClick }: ContractCardProps) {
           </span>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
             <CalendarClock className="h-3 w-3 shrink-0" />
-            <span>Ends {formatDate(contract.end_date)}</span>
-            {isExpired && (
-              <span className="font-medium text-destructive">· Expired</span>
-            )}
-            {isExpiringSoon && !isExpired && (
-              <span className="font-medium text-amber-600 dark:text-amber-400">· {daysUntilEnd}d</span>
+            {contract.end_date ? (
+              <>
+                <span>Ends {formatDate(contract.end_date)}</span>
+                {isExpired && (
+                  <span className="font-medium text-destructive">· Expired</span>
+                )}
+                {isExpiringSoon && !isExpired && (
+                  <span className="font-medium text-amber-600 dark:text-amber-400">· {daysUntilEnd}d</span>
+                )}
+              </>
+            ) : (
+              <span className="text-muted-foreground">No end date</span>
             )}
           </div>
         </div>

@@ -36,12 +36,12 @@ export class CreateContractDto {
   start_date: string;
 
   @IsDateString()
-  @IsNotEmpty()
-  end_date: string;
+  @IsOptional()
+  end_date?: string;
 
   @IsDateString()
-  @IsNotEmpty()
-  renewal_date: string;
+  @IsOptional()
+  renewal_date?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()

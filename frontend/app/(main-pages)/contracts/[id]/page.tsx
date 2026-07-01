@@ -90,11 +90,11 @@ export default function ContractDetailPage() {
     )
   }
 
-  const endDate = new Date(contract.end_date)
+  const endDate = contract.end_date ? new Date(contract.end_date) : null
   const now = new Date()
-  const daysUntilEnd = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-  const isExpiringSoon = daysUntilEnd > 0 && daysUntilEnd <= 30
-  const isExpired = daysUntilEnd <= 0
+  const daysUntilEnd = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null
+  const isExpiringSoon = daysUntilEnd !== null && daysUntilEnd > 0 && daysUntilEnd <= 30
+  const isExpired = daysUntilEnd !== null && daysUntilEnd <= 0
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -197,7 +197,7 @@ export default function ContractDetailPage() {
                 <div>
                   <p className="text-xs text-muted-foreground font-medium">Timeline</p>
                   <p className="text-sm">
-                    {formatDate(contract.start_date)} — {formatDate(contract.end_date)}
+                    {formatDate(contract.start_date)} — {contract.end_date ? formatDate(contract.end_date) : "No end date"}
                   </p>
                 </div>
               </div>
@@ -238,14 +238,20 @@ export default function ContractDetailPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">End Date</span>
                 <span className={`text-sm font-medium ${isExpired ? "text-destructive" : isExpiringSoon ? "text-amber-600 dark:text-amber-400" : ""}`}>
-                  {formatDate(contract.end_date)}
-                  {isExpired && <span className="ml-1 text-xs text-destructive">(Expired)</span>}
-                  {isExpiringSoon && !isExpired && <span className="ml-1 text-xs">({daysUntilEnd}d)</span>}
+                  {contract.end_date ? (
+                    <>
+                      {formatDate(contract.end_date)}
+                      {isExpired && <span className="ml-1 text-xs text-destructive">(Expired)</span>}
+                      {isExpiringSoon && !isExpired && <span className="ml-1 text-xs">({daysUntilEnd}d)</span>}
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Not set</span>
+                  )}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Renewal Date</span>
-                <span className="text-sm font-medium">{formatDate(contract.renewal_date)}</span>
+                <span className="text-sm font-medium">{contract.renewal_date ? formatDate(contract.renewal_date) : <span className="text-muted-foreground">Not set</span>}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Auto-renew</span>

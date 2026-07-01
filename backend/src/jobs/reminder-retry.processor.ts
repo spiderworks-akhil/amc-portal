@@ -394,7 +394,7 @@ export class ReminderRetryProcessor extends WorkerHost {
           ])
           .where('contracts.id', '=', targetId)
           .executeTakeFirst();
-        if (!row) return null;
+        if (!row || !row.end_date) return null;
         return {
           expiryDate: row.end_date,
           label: `Contract #${targetId.slice(0, 8)}${row.client_name ? ` (${row.client_name})` : ''}`,

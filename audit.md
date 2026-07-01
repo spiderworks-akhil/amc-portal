@@ -21,6 +21,7 @@
 
 **Location:** Multiple backend services (auth, client, asset, monitor, contract, server services)
 
+
 **Examples:**
 - `backend/src/modules/client/client.service.ts` — Uses `as any` on external client data, cached data, and error types in ~15 places.
 - `backend/src/modules/auth/auth.service.ts` — `let decoded: any` + `as any` on JWT payload.

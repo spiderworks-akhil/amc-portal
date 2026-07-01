@@ -161,7 +161,7 @@ export function ServerEditForm({
           </div>
 
           {/* Provider */}
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label>Provider</Label>
             <SmoothSelect
               options={providerOptions}
@@ -171,7 +171,7 @@ export function ServerEditForm({
               className="w-full"
             />
             {errors.provider_id && <p className="text-xs text-destructive">{errors.provider_id.message}</p>}
-          </div>
+          </div> */}
 
           {/* IP Addresses */}
           <div className="space-y-2">
@@ -259,7 +259,7 @@ export function ServerEditForm({
             <DatePicker
               value={watchedRenewalDate ? new Date(watchedRenewalDate) : null}
               onChange={(date) =>
-                setValue("renewal_date", format(date, "yyyy-MM-dd"), { shouldValidate: true })
+                setValue("renewal_date", date ? format(date, "yyyy-MM-dd") : "", { shouldValidate: true })
               }
               placeholder="Renewal date"
             />

@@ -159,10 +159,10 @@ export interface Contracts {
   created_by_id: string | null;
   currency: Generated<string>;
   deleted_at: Timestamp | null;
-  end_date: Timestamp;
+  end_date: Timestamp | null;
   id: Generated<string>;
   label: string | null;
-  renewal_date: Timestamp;
+  renewal_date: Timestamp | null;
   start_date: Timestamp;
   status: Generated<string>;
   updated_at: Generated<Timestamp>;

@@ -25,8 +25,8 @@ const contractSchema = z.object({
   label: z.string().optional(),
   billing_cycle: z.string().min(1, "Billing cycle is required"),
   start_date: z.string().min(1, "Start date is required"),
-  end_date: z.string().min(1, "End date is required"),
-  renewal_date: z.string().min(1, "Renewal date is required"),
+  end_date: z.string().optional(),
+  renewal_date: z.string().optional(),
   amount: z.string().optional(),
   currency: z.string().optional(),
   auto_renew: z.boolean().optional(),
@@ -43,8 +43,8 @@ interface ContractCreateDrawerProps {
     contract_number?: string
     billing_cycle: string
     start_date: string
-    end_date: string
-    renewal_date: string
+    end_date?: string
+    renewal_date?: string
     amount?: number
     currency?: string
     auto_renew?: boolean
@@ -122,10 +122,10 @@ export function ContractCreateDrawer({
       label: data.label?.trim() || undefined,
       billing_cycle: data.billing_cycle,
       start_date: data.start_date,
-      end_date: data.end_date,
-      renewal_date: data.renewal_date,
+      end_date: data.end_date || undefined,
+      renewal_date: data.renewal_date || undefined,
       amount: data.amount ? Number(data.amount) : undefined,
-      currency: data.currency || "USD",
+      currency: data.currency || "INR",
       auto_renew: data.auto_renew ?? true,
       scope: data.scope?.trim() || undefined,
       status: data.status || "active",

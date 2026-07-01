@@ -92,8 +92,8 @@ export function ContractsPageContent() {
       contract_number?: string
       billing_cycle: string
       start_date: string
-      end_date: string
-      renewal_date: string
+      end_date?: string
+      renewal_date?: string
       amount?: number
       currency?: string
       auto_renew?: boolean

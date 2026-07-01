@@ -22,8 +22,8 @@ const editSchema = z.object({
   label: z.string().optional(),
   billing_cycle: z.string().min(1, "Billing cycle is required"),
   start_date: z.string().min(1, "Start date is required"),
-  end_date: z.string().min(1, "End date is required"),
-  renewal_date: z.string().min(1, "Renewal date is required"),
+  end_date: z.string().optional(),
+  renewal_date: z.string().optional(),
   amount: z.string().optional(),
   currency: z.string().optional(),
   auto_renew: z.boolean().optional(),
@@ -50,7 +50,7 @@ interface ContractEditDrawerProps {
   contract: ContractDetail
 }
 
-function extractDate(dateStr: string): string {
+function extractDate(dateStr: string | null): string {
   if (!dateStr) return ""
   // Handle ISO format: "2026-06-18T00:00:00Z" → "2026-06-18"
   return dateStr.split("T")[0] ?? dateStr
@@ -108,8 +108,8 @@ export function ContractEditDrawer({
       label: data.label?.trim() || undefined,
       billing_cycle: data.billing_cycle,
       start_date: data.start_date,
-      end_date: data.end_date,
-      renewal_date: data.renewal_date,
+      end_date: data.end_date || undefined,
+      renewal_date: data.renewal_date || undefined,
       amount: data.amount ? Number(data.amount) : undefined,
       currency: data.currency || "USD",
       auto_renew: data.auto_renew ?? false,

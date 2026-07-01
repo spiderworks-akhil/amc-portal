@@ -95,7 +95,7 @@ export function ServerCreateDrawer({
       operating_system: "",
       panel_url: "",
       monthly_cost: "",
-      currency: "USD",
+      currency: "INR",
       renewal_date: "",
       notes: "",
       owner: "client",

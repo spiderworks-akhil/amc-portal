@@ -123,8 +123,8 @@ export interface DashboardContract {
   contract_number: string | null
   billing_cycle: string
   start_date: string
-  end_date: string
-  renewal_date: string
+  end_date: string | null
+  renewal_date: string | null
   amount: string | null
   currency: string
   auto_renew: boolean

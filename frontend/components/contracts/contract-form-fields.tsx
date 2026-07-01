@@ -16,8 +16,8 @@ export interface ContractFormValues {
   label?: string
   billing_cycle: string
   start_date: string
-  end_date: string
-  renewal_date: string
+  end_date?: string
+  renewal_date?: string
   amount?: string
   currency?: string
   auto_renew?: boolean
@@ -62,6 +62,9 @@ export function ContractFormFields({
 }: ContractFormFieldsProps) {
   const selectedCycle = watch("billing_cycle")
   const isCustom = selectedCycle === "custom"
+  const currentStartDate = watch("start_date")
+  const currentEndDate = watch("end_date")
+  const currentRenewalDate = watch("renewal_date")
 
   const handleDateRangeChange = useCallback(
     (range: DateRange | undefined) => {
@@ -123,8 +126,8 @@ export function ContractFormFields({
           </Label>
           <DateRangePicker
             value={{
-              from: watch("start_date") ? new Date(watch("start_date")) : undefined,
-              to: watch("end_date") ? new Date(watch("end_date")) : undefined,
+              from: currentStartDate ? new Date(currentStartDate) : undefined,
+              to: currentEndDate ? new Date(currentEndDate) : undefined,
             }}
             onChange={handleDateRangeChange}
           />
@@ -143,19 +146,17 @@ export function ContractFormFields({
                 Start <span className="text-destructive">*</span>
               </Label>
               <DatePicker
-                value={watch("start_date") ? new Date(watch("start_date")) : null}
+                value={currentStartDate ? new Date(currentStartDate) : null}
                 onChange={(date) => setValue("start_date", formatDateSafe(date), { shouldValidate: true })}
                 placeholder="Start date"
               />
               {errors.start_date?.message && <p className="text-xs text-destructive">{errors.start_date.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>
-                End <span className="text-destructive">*</span>
-              </Label>
+              <Label>End</Label>
               <DatePicker
-                value={watch("end_date") ? new Date(watch("end_date")) : null}
-                onChange={(date) => setValue("end_date", formatDateSafe(date), { shouldValidate: true })}
+                value={currentEndDate ? new Date(currentEndDate) : null}
+                onChange={(date) => setValue("end_date", date ? formatDateSafe(date) : "", { shouldValidate: true })}
                 placeholder="End date"
               />
               {errors.end_date?.message && <p className="text-xs text-destructive">{errors.end_date.message}</p>}
@@ -163,12 +164,10 @@ export function ContractFormFields({
           </div>
 
           <div className="space-y-2">
-            <Label>
-              Renewal <span className="text-destructive">*</span>
-            </Label>
+            <Label>Renewal</Label>
             <DatePicker
-              value={watch("renewal_date") ? new Date(watch("renewal_date")) : null}
-              onChange={(date) => setValue("renewal_date", formatDateSafe(date), { shouldValidate: true })}
+              value={currentRenewalDate ? new Date(currentRenewalDate) : null}
+              onChange={(date) => setValue("renewal_date", date ? formatDateSafe(date) : "", { shouldValidate: true })}
               placeholder="Renewal date"
             />
             {errors.renewal_date?.message && <p className="text-xs text-destructive">{errors.renewal_date.message}</p>}

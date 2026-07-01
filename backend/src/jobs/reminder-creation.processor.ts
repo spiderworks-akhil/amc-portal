@@ -172,11 +172,10 @@ export class ReminderCreationProcessor extends WorkerHost {
           .where('contracts.end_date', '>=', start)
           .where('contracts.end_date', '<=', end)
           .execute();
-
         return rows.map((r) => ({
           id: r.id,
           label: `Contract #${r.id.slice(0, 8)}${r.client_name ? ` (${r.client_name})` : ''}`,
-          expiryDate: r.end_date,
+          expiryDate: r.end_date!,
           targetType: 'contract' as const,
         }));
       }
